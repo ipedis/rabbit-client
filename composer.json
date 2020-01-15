@@ -16,7 +16,7 @@
     },
     "autoload": {
         "psr-4": {
-            "Ipedis\\Rabbit\\": "src/Ipedis"
+            "Ipedis\\Rabbit\\": "src/"
         }
     }
 }
