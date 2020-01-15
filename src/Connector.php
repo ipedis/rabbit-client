@@ -49,10 +49,10 @@ trait Connector
         if($this->connection !== null) $this->connection->close();
     }
 
-    abstract protected function getHost(): string;
-    abstract protected function getPort(): int;
-    abstract protected function getUser(): string;
-    abstract protected function getPassword(): string;
-    abstract protected function getExchangeName(): string;
-    abstract protected function getExchangeType(): string;
+    abstract public function getHost(): string;
+    abstract public function getPort(): int;
+    abstract public function getUser(): string;
+    abstract public function getPassword(): string;
+    abstract public function getExchangeName(): string;
+    abstract public function getExchangeType(): string;
 }
