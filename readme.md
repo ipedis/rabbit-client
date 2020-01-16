@@ -17,7 +17,7 @@ Update `composer.json` and add a repository:
 Require the library:
 
     "require": {
-        "ipedis/rabbit-client": "1.0.0"
+        "ipedis/rabbit-client": "^1.0.0"
     }
 
 List of available version on tag list from actual repository.
