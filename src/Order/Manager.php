@@ -5,7 +5,7 @@
  * Date: 31/10/2016 15:17
  */
 
-namespace Ipedis\Rabbit;
+namespace Ipedis\Rabbit\Order;
 use PhpAmqpLib\Message\AMQPMessage;
 
 trait Manager

@@ -1,9 +1,10 @@
 <?php
 
 
-namespace Ipedis\Rabbit;
+namespace Ipedis\Rabbit\Event;
 
 
+use Ipedis\Rabbit\Connector;
 use PhpAmqpLib\Message\AMQPMessage;
 
 trait EventDispatcher

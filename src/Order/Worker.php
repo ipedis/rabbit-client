@@ -5,7 +5,7 @@
  * Date: 01/11/2016 13:33
  */
 
-namespace Ipedis\Rabbit;
+namespace Ipedis\Rabbit\Order;
 
 use Closure;
 use PhpAmqpLib\Message\AMQPMessage;

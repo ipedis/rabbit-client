@@ -1,10 +1,11 @@
 <?php
 
 
-namespace Ipedis\Rabbit;
+namespace Ipedis\Rabbit\Event;
 
 
 use Closure;
+use Ipedis\Rabbit\Connector;
 use PhpAmqpLib\Message\AMQPMessage;
 
 trait EventListener
