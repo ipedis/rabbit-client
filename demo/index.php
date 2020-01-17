@@ -42,23 +42,23 @@ if ( !empty($argv[1]) ) {
 
         case 'binding':
             (new \Ipedis\Demo\Rabbit\Worker\Binding(
-                $configOrder['host'],
-                $configOrder['port'],
-                $configOrder['use'],
-                $configOrder['password'],
-                $configOrder['exchange'],
-                $configOrder['type']
+                $configEvent['host'],
+                $configEvent['port'],
+                $configEvent['use'],
+                $configEvent['password'],
+                $configEvent['exchange'],
+                $configEvent['type']
             ))->execute();
             break;
 
         case 'event':
             (new \Ipedis\Demo\Rabbit\Worker\Dispatcher(
-                $configOrder['host'],
-                $configOrder['port'],
-                $configOrder['use'],
-                $configOrder['password'],
-                $configOrder['exchange'],
-                $configOrder['type']
+                $configEvent['host'],
+                $configEvent['port'],
+                $configEvent['use'],
+                $configEvent['password'],
+                $configEvent['exchange'],
+                $configEvent['type']
             ))->main();
             break;
 

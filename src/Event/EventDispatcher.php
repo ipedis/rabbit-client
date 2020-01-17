@@ -22,6 +22,10 @@ trait EventDispatcher
      */
     public function dispatchEvent(string $event, array $data)
     {
+        if( $this->channel === null) {
+            $this->connect();
+        }
+
         /**
          * todo : add schema validation, protocol version.
          */

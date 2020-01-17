@@ -6,7 +6,7 @@ Installation
 
 Update `composer.json` and add a repository:
 
-    "repositories":[
+    "repositories": [
         {
             "type": "vcs",
             "url": "bitbucket:ipedis/rabbit-client.git"
