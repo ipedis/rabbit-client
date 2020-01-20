@@ -1,5 +1,11 @@
 <?php
 
+use Ipedis\Demo\Rabbit\Worker\Binding;
+use Ipedis\Demo\Rabbit\Worker\Dispatcher;
+use Ipedis\Demo\Rabbit\Worker\Manager;
+use Ipedis\Demo\Rabbit\Worker\Worker as WorkerProcess;
+use Ipedis\Rabbit\Channel\Factory\ChannelFactory;
+
 require __DIR__.'/../vendor/autoload.php';
 
 $configOrder = [
@@ -19,7 +25,7 @@ $configEvent = array_merge($configOrder, [
 if ( !empty($argv[1]) ) {
     switch ($argv[1]) {
         case 'worker':
-            (new \Ipedis\Demo\Rabbit\Worker\Worker(
+            (new WorkerProcess(
                 $configOrder['host'],
                 $configOrder['port'],
                 $configOrder['use'],
@@ -30,7 +36,7 @@ if ( !empty($argv[1]) ) {
         break;
 
         case 'manager':
-            (new \Ipedis\Demo\Rabbit\Worker\Manager(
+            (new Manager(
                 $configOrder['host'],
                 $configOrder['port'],
                 $configOrder['use'],
@@ -41,7 +47,7 @@ if ( !empty($argv[1]) ) {
             break;
 
         case 'binding':
-            (new \Ipedis\Demo\Rabbit\Worker\Binding(
+            (new Binding(
                 $configEvent['host'],
                 $configEvent['port'],
                 $configEvent['use'],
@@ -52,7 +58,7 @@ if ( !empty($argv[1]) ) {
             break;
 
         case 'event':
-            (new \Ipedis\Demo\Rabbit\Worker\Dispatcher(
+            (new Dispatcher(
                 $configEvent['host'],
                 $configEvent['port'],
                 $configEvent['use'],

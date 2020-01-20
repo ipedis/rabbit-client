@@ -48,7 +48,7 @@ class Manager extends ConnectorAbstract
          * We give also Anonymous callback Queue to have feedback from worker.
          */
         for ($i = 0; $i < $this->getNumberTask(); $i++){
-            $this->publishTask(Worker::QUEUE_NAME,
+            $this->publishTask(Worker::getQueueName(),
                 [
                     "hasToFail" => $i % 2 === 0, // Simulate failure on each pair message.
                     "name"      => "task {$i}"

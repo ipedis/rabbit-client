@@ -5,6 +5,7 @@ namespace Ipedis\Demo\Rabbit\Worker;
 
 
 use Ipedis\Demo\Rabbit\Utils\ConnectorAbstract;
+use Ipedis\Rabbit\Channel\OrderChannel;
 use Ipedis\Rabbit\Order\Worker as WorkerTrait;
 use PhpAmqpLib\Message\AMQPMessage;
 
@@ -12,12 +13,10 @@ class Worker extends ConnectorAbstract
 {
     use WorkerTrait;
 
-    const QUEUE_NAME = 'publispeak.worker';
 
-
-    public function getQueueName(): string
+    public static function getQueueName(): string
     {
-        return self::QUEUE_NAME;
+        return OrderChannel::fromString('v1.admin.publication.generate');
     }
 
     protected function getProcessing(): \Closure
@@ -56,7 +55,7 @@ class Worker extends ConnectorAbstract
             );
 
             printf("On channel : %s Worker Name : %s (id : %s) as done task with id %s - Fail ? %s \n",
-                $this->getQueueName(),
+                self::getQueueName(),
                 self::class,
                 $this->worker_id,
                 (!$req->has('correlation_id'))?'unknown':$req->get('correlation_id'),

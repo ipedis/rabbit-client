@@ -23,6 +23,23 @@ Require the library:
 List of available version on tag list from actual repository.
 
 
+Channel structuration standard
+==
+
+channel naming need to have robust and standard naming convention. It must following formatting as: 
+
+`<protocol>.<service>.<aggregate>.<action>`
+
+ - **Protocol** must follow pattern: `v[\d]+`
+ -- *example: v1, v99* 
+ - **service** must follow pattern: `^[\w-]+$`
+ -- *example: admin, rendering* 
+ - **aggregate** must follow pattern: `^[\w-]+(?:\.[\w-]+)?$`
+ -- *example: publication, group.graphical-customization* 
+ - **action** must follow pattern: `^[\w-]+$`
+ -- *example: compile-sass, disable* 
+
+
 Folder structure:
 ==
 

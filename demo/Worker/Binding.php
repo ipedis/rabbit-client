@@ -15,12 +15,12 @@ class Binding extends ConnectorAbstract
     protected function getProcessing(): \Closure
     {
         return function (AMQPMessage $msg) {
-            var_dump(json_decode($msg->getBody()));
+            var_dump(json_decode($msg->getBody(), true));
         };
     }
 
     protected function getBindingKey(): string
     {
-        return 'publication.*';
+        return 'v1.admin.publication.*';
     }
 }

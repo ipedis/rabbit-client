@@ -5,6 +5,7 @@ namespace Ipedis\Demo\Rabbit\Worker;
 
 
 use Ipedis\Demo\Rabbit\Utils\ConnectorAbstract;
+use Ipedis\Rabbit\Channel\EventChannel;
 use Ipedis\Rabbit\Event\EventDispatcher;
 
 class Dispatcher extends ConnectorAbstract
@@ -19,13 +20,13 @@ class Dispatcher extends ConnectorAbstract
 
     public function main()
     {
-        $this->dispatchEvent('publication.was-exported', [
+        $this->dispatchEvent(EventChannel::fromString('v1.admin.publication.was-exported'), [
             'publication' => [
                 'sid' => 3
             ]
         ]);
 
-        $this->dispatchEvent('publication.was-deleted', [
+        $this->dispatchEvent(EventChannel::fromString('v1.admin.publication.was-deleted'), [
             'publication' => [
                 'sid' => 3
             ]

@@ -156,7 +156,7 @@ trait Worker
         }
     }
 
-    abstract public function getQueueName(): string;
+    abstract public static function getQueueName(): string;
     abstract protected function getExchangeName(): string;
     abstract protected function getProcessing(): Closure;
 }
