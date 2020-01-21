@@ -19,7 +19,7 @@ class Worker extends ConnectorAbstract
         return OrderChannel::fromString('v1.admin.publication.generate');
     }
 
-    protected function getProcessing(): \Closure
+    protected function makeMessageHandler(): \Closure
     {
         return function (AMQPMessage $req) {
             //First step, you will get Parameters from Message Bag.

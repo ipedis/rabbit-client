@@ -116,7 +116,7 @@ trait Worker
      */
     public function main(AMQPMessage $req)
     {
-        $this->ackEngine($req, $this->getProcessing());
+        $this->ackEngine($req, $this->makeMessageHandler());
     }
 
 
@@ -158,5 +158,5 @@ trait Worker
 
     abstract public function getQueueName(): string;
     abstract protected function getExchangeName(): string;
-    abstract protected function getProcessing(): Closure;
+    abstract protected function makeMessageHandler(): Closure;
 }

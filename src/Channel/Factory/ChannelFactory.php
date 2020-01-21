@@ -34,48 +34,52 @@ class ChannelFactory
 
     /**
      * @param string $partialChannel
+     * @param string $protocolVersion
      * @return EventChannel
      * @throws ChannelNamingException
      */
-    public function getEvent(string $partialChannel): EventChannel
+    public function getEvent(string $partialChannel, string $protocolVersion = null): EventChannel
     {
         preg_match(EventChannel::PARTIAL_CHANNEL_PATTERN, $partialChannel, $matched);
         if (empty($matched['aggregate'] || $matched['action'])) throw new ChannelNamingException('impossible to parse : '.$partialChannel);
         /** @var EventChannel */
-        return $this->getChannel(self::TYPE_EVENT, $matched['aggregate'], $matched['action']);
+        return $this->getChannel(self::TYPE_EVENT, $matched['aggregate'], $matched['action'], $protocolVersion);
     }
 
     /**
      * @param string $partialChannel
+     * @param string $protocolVersion
      * @return OrderChannel
      * @throws ChannelNamingException
      */
-    public function getOrder(string $partialChannel): OrderChannel
+    public function getOrder(string $partialChannel, string $protocolVersion = null): OrderChannel
     {
         preg_match(OrderChannel::PARTIAL_CHANNEL_PATTERN, $partialChannel, $matched);
         if (empty($matched['aggregate'] || $matched['action'])) throw new ChannelNamingException('impossible to parse : '.$partialChannel);
         /** @var OrderChannel */
-        return $this->getChannel(self::TYPE_ORDER, $matched['aggregate'], $matched['action']);
+        return $this->getChannel(self::TYPE_ORDER, $matched['aggregate'], $matched['action'], $protocolVersion);
     }
 
     /**
      * @param string $type
      * @param string $aggregate
      * @param string $action
+     * @param string|null $protocolVersion
      * @return ChannelAbstract
      */
     private function getChannel(
         string $type,
         string $aggregate,
-        string $action
+        string $action,
+        string $protocolVersion = null
     ): ChannelAbstract {
         switch ($type)
         {
             case self::TYPE_EVENT:
-                return EventChannel::build($this->protocolVersion, $this->serviceName, $aggregate, $action);
+                return EventChannel::build($protocolVersion ?? $this->protocolVersion, $this->serviceName, $aggregate, $action);
             break;
             case self::TYPE_ORDER:
-                return OrderChannel::build($this->protocolVersion, $this->serviceName, $aggregate, $action);
+                return OrderChannel::build($protocolVersion ?? $this->protocolVersion, $this->serviceName, $aggregate, $action);
             break;
         }
     }

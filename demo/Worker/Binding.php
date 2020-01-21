@@ -12,7 +12,7 @@ class Binding extends ConnectorAbstract
 {
     use EventListener;
 
-    protected function getProcessing(): \Closure
+    protected function makeMessageHandler(): \Closure
     {
         return function (AMQPMessage $msg) {
             var_dump(json_decode($msg->getBody(), true));

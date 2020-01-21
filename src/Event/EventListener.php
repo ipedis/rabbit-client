@@ -74,6 +74,6 @@ trait EventListener
         } catch (\Exception $exception) {}
     }
 
-    abstract protected function getProcessing(): Closure;
+    abstract protected function makeMessageHandler(): Closure;
     abstract protected function getBindingKey(): string;
 }
