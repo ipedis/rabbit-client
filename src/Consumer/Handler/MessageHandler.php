@@ -13,8 +13,7 @@ abstract class MessageHandler implements MessageHandlerInterface
     public function on(AMQPMessage $req)
     {
         $data = json_decode($req->getBody(), true);
-
-        switch ($data[self::STATUS_KEY])
+        switch (strtolower($data[self::STATUS_KEY]))
         {
             case self::TYPE_SUCCESS:
                 $this->onSuccess($req);

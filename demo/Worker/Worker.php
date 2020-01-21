@@ -32,12 +32,7 @@ class Worker extends ConnectorAbstract
              *
              * If everything is ok, reply to manager.
              */
-            sleep(
-                rand(
-                    1,
-                    3
-                )
-            );
+            sleep(1);
             $this->notifyTo($req, ['status' => 'PROGRESS', 'step' => 1]);
 
             /**
@@ -47,12 +42,7 @@ class Worker extends ConnectorAbstract
              *
              * If everything is ok, reply to manager.
              */
-            sleep(
-                rand(
-                    1,
-                    3
-                )
-            );
+            sleep(1);
 
             printf("On channel : %s Worker Name : %s (id : %s) as done task with id %s - Fail ? %s \n",
                 self::getQueueName(),

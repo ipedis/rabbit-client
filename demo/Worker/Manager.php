@@ -5,18 +5,19 @@ namespace Ipedis\Demo\Rabbit\Worker;
 
 
 use Ipedis\Demo\Rabbit\Utils\ConnectorAbstract;
+use Ipedis\Demo\Rabbit\Worker\Handler\ManagerHandler;
+use Ipedis\Rabbit\Consumer\Handler\MessageHandler;
 use Ipedis\Rabbit\Order\Manager as ManagerTrait;
 use PhpAmqpLib\Message\AMQPMessage;
 
 class Manager extends ConnectorAbstract
 {
     use ManagerTrait;
-    /**
-     * Util Flag to know if is finish or nop.
-     */
-    protected $numberTask;
-    protected $count;
 
+    /**
+     * @var MessageHandler
+     */
+    protected $messageHandler;
     /**
      * Manager constructor.
      * @param string $host
@@ -29,25 +30,28 @@ class Manager extends ConnectorAbstract
     public function __construct(string $host, int $port, string $user, string $password, string $exchange, string $type)
     {
         parent::__construct($host, $port, $user, $password, $exchange, $type);
-        $this->numberTask = 10;
-        $this->count = 0;
         $this->connect();
     }
-
 
     public function __destruct()
     {
         $this->disconnect();
     }
+
     public function main()
     {
-        $anoQueue = $this->bindCallbackToAnonymousQueue([$this,"callback"]);
+        $this->messageHandler = new ManagerHandler();
+        
+        $anoQueue = $this->bindCallbackToAnonymousQueue([
+            $this->messageHandler,
+            'on'
+        ]);
 
         /**
          * We publish N Tasks on queue "Worker" who should be consume by this Worker.
          * We give also Anonymous callback Queue to have feedback from worker.
          */
-        for ($i = 0; $i < $this->getNumberTask(); $i++){
+        for ($i = 0; $i < $this->messageHandler->getNumberTask(); $i++) {
             $this->publishTask('v1.admin.publication.generate',
                 [
                     "hasToFail" => $i % 2 === 0, // Simulate failure on each pair message.
@@ -61,54 +65,11 @@ class Manager extends ConnectorAbstract
         /**
          * Wait all tasks.
          */
-        while ($this->count < $this->getNumberTask()){
+        while ( $this->messageHandler->getCount() < $this->messageHandler->getNumberTask() )
+        {
             $this->channel->wait();
         }
 
-        printf("%s task are currently traited on queue : %s . Full traitment done :). \n",$this->count, Worker::class);
-    }
-
-
-    public function getNumberTask() {
-        return $this->numberTask;
-    }
-
-    /**
-     * @description callback binded by anonymous queue created and given to worker for feedback message.
-     * @param AMQPMessage $message
-     */
-    public function callback(AMQPMessage $message) {
-        $params = json_decode($message->getBody(),true);
-        print_r("\n Received message for task with id :  ".$message->get('correlation_id'));
-        switch ($params['status']) {
-            case "PROGRESS":
-                $this->onProgress($message);
-                break;
-            case "SUCCESS":
-                $this->onSuccess($message);
-                break;
-            case "ERROR":
-                $this->onError($message);
-                break;
-        }
-
-    }
-
-    private function onProgress(AMQPMessage $message)
-    {
-        print_r("\t progress :| - ".$message->getBody());
-    }
-
-    private function onSuccess(AMQPMessage $message)
-    {
-        print_r("\t success :) - ".$message->getBody()."\n\n\n");
-        //for sample we just increment counter to determier if all tasks are done.
-        $this->count++;
-    }
-
-    private function onError(AMQPMessage $message)
-    {
-        print_r("\t fail :( - ".$message->getBody()."\n\n\n");
-        $this->count++;
+        printf("%s task are currently traited on queue : %s . Full traitment done :). \n", $this->messageHandler->getCount(), Worker::class);
     }
 }
