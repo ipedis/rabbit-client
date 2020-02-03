@@ -4,12 +4,18 @@
 namespace Ipedis\Rabbit\Event;
 
 
-use Ipedis\Rabbit\Channel\ChannelAbstract;
+use Ipedis\Rabbit\Channel\EventChannel;
 use Ipedis\Rabbit\Channel\Factory\ChannelFactory;
 use Ipedis\Rabbit\Connector;
 use Ipedis\Rabbit\Exception\Channel\ChannelFactoryException;
+use Ipedis\Rabbit\Exception\Channel\ChannelNamingException;
 use PhpAmqpLib\Message\AMQPMessage;
 
+/**
+ * Trait EventDispatcher
+ * @package Ipedis\Rabbit\Event
+ * @method ChannelFactory|null matchPartial($channel)
+ */
 trait EventDispatcher
 {
     use Connector;
@@ -23,6 +29,7 @@ trait EventDispatcher
      * @param mixed $event
      * @param array $data
      * @throws ChannelFactoryException
+     * @throws ChannelNamingException
      */
     public function dispatchEvent($event, array $data)
     {
@@ -43,16 +50,30 @@ trait EventDispatcher
         $this->channel->basic_publish($msg, $this->getExchangeName(), $eventName);
     }
 
+    /**
+     * @param $event
+     * @return string
+     * @throws ChannelNamingException
+     */
     private function getEventName($event): string
     {
-        if ($event instanceof ChannelAbstract) {
+        if (is_string($event)) {
+            // if it is partial channel name
+            if ($this->channelFactory->matchPartial($event)) {
+                return (string)$this->channelFactory->getEvent($event);
+            }
+
+            // if it is full name, this will throw exception if full name is invalid.
+            $eventObj = EventChannel::fromString($event);
+
+            return (string)$eventObj;
+        }
+        // if it is an instance, get channel full name
+        if ($event instanceof EventChannel) {
             return (string)$event;
         }
 
-        if ($this->channelFactory->matchPartial($event)) {
-            return (string)$this->channelFactory->getEvent($event);
-        }
-
-        return $event;
+        // no criteria fulfilled, throw an exception.
+        throw new ChannelNamingException('Invalid channel provided.');
     }
 }
