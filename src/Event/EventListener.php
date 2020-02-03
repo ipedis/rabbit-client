@@ -70,7 +70,7 @@ trait EventListener
     public function main(AMQPMessage $req)
     {
         try {
-            $this->getProcessing()($req);
+            $this->makeMessageHandler()($req);
         } catch (\Exception $exception) {}
     }
 

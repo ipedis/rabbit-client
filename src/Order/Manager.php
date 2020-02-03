@@ -6,8 +6,17 @@
  */
 
 namespace Ipedis\Rabbit\Order;
+use Ipedis\Rabbit\Channel\Factory\ChannelFactory;
+use Ipedis\Rabbit\Channel\OrderChannel;
+use Ipedis\Rabbit\Exception\Channel\ChannelFactoryException;
+use Ipedis\Rabbit\Exception\Channel\ChannelNamingException;
 use PhpAmqpLib\Message\AMQPMessage;
 
+/**
+ * Trait Manager
+ * @package Ipedis\Rabbit\Order
+ * @method ChannelFactory|null matchPartial($channel)
+ */
 trait Manager
 {
     /**
@@ -44,9 +53,17 @@ trait Manager
      * @param $data
      * @param bool $replyQueue optional
      * @param bool $correlation_id optional
+     * @throws ChannelFactoryException
+     * @throws ChannelNamingException
      */
     public function publishTask($queueName, $data, $replyQueue = false, $correlation_id = false)
     {
+        if (!isset($this->channelFactory) || !$this->channelFactory) {
+            throw new ChannelFactoryException('Must provide channel factory {channelFactory} with version and service.');
+        }
+
+        $queue = $this->getQueueName($queueName);
+
         $properties = [];
         if ($replyQueue && $correlation_id) {
             // case we will have eventCallback and manager will listen and wait the answser
@@ -58,7 +75,34 @@ trait Manager
         //craft associated message.
         $msg = new AMQPMessage(json_encode($data), $properties);
         //push it to the pile of tasks for this queue.
-        $this->channel->basic_publish($msg,  $this->getExchangeName(), $queueName);
+        $this->channel->basic_publish($msg,  $this->getExchangeName(), $queue);
+    }
+
+    /**
+     * @param $queueName
+     * @return string
+     * @throws ChannelNamingException
+     */
+    private function getQueueName($queueName): string
+    {
+        if (is_string($queueName)) {
+            // if it is partial channel name
+            if ($this->channelFactory->matchPartial($queueName)) {
+                return (string)$this->channelFactory->getOrder($queueName);
+            }
+
+            // if it is full name, this will throw exception if full name is invalid.
+            $eventObj = OrderChannel::fromString($queueName);
+
+            return (string)$eventObj;
+        }
+        // if it is an instance, get channel full name
+        if ($queueName instanceof OrderChannel) {
+            return (string)$queueName;
+        }
+
+        // no criteria fulfilled, throw an exception.
+        throw new ChannelNamingException('Invalid channel provided.');
     }
 
     abstract protected function getExchangeName(): string;
