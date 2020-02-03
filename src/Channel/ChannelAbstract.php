@@ -89,7 +89,8 @@ abstract class ChannelAbstract
      * @return static
      * @throws ChannelNamingException
      */
-    public static function fromString(string $channel): self {
+    public static function fromString(string $channel): self
+    {
         preg_match(self::CHANNEL_PATTERN, $channel, $catched);
         if(
             empty($catched['protocol']) ||
