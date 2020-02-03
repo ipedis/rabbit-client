@@ -60,7 +60,7 @@ class ChannelFactory
         return $this->getChannel(self::TYPE_ORDER, $matched['aggregate'], $matched['action'], $protocolVersion);
     }
 
-    public static function matchPartial(string $channel): bool
+    public function matchPartial(string $channel): bool
     {
         preg_match(OrderChannel::PARTIAL_CHANNEL_PATTERN, $channel, $matches);
 

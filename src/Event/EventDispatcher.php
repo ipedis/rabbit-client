@@ -49,7 +49,7 @@ trait EventDispatcher
             return (string)$event;
         }
 
-        if (ChannelFactory::matchPartial($event)) {
+        if ($this->channelFactory->matchPartial($event)) {
             return (string)$this->channelFactory->getEvent($event);
         }
 
