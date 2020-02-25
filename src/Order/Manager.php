@@ -10,6 +10,7 @@ use Ipedis\Rabbit\Channel\Factory\ChannelFactory;
 use Ipedis\Rabbit\Channel\OrderChannel;
 use Ipedis\Rabbit\Exception\Channel\ChannelFactoryException;
 use Ipedis\Rabbit\Exception\Channel\ChannelNamingException;
+use Ipedis\Rabbit\Payload\OrderPayload;
 use PhpAmqpLib\Message\AMQPMessage;
 
 /**
@@ -72,10 +73,20 @@ trait Manager
                 'reply_to' => $replyQueue
             ];
         }
+
         //craft associated message.
-        $msg = new AMQPMessage(json_encode($data), $properties);
+        $payload = new OrderPayload(
+            $queue,
+            (($correlation_id === false) ? $correlation_id : null),
+            $data
+        );
+
         //push it to the pile of tasks for this queue.
-        $this->channel->basic_publish($msg,  $this->getExchangeName(), $queue);
+        $this->channel->basic_publish(
+            (new AMQPMessage(json_encode($payload), $properties)),
+            $this->getExchangeName(),
+            $queue
+        );
     }
 
     /**

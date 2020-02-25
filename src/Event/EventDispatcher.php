@@ -9,6 +9,7 @@ use Ipedis\Rabbit\Channel\Factory\ChannelFactory;
 use Ipedis\Rabbit\Connector;
 use Ipedis\Rabbit\Exception\Channel\ChannelFactoryException;
 use Ipedis\Rabbit\Exception\Channel\ChannelNamingException;
+use Ipedis\Rabbit\Payload\EventPayload;
 use PhpAmqpLib\Message\AMQPMessage;
 
 /**
@@ -43,11 +44,16 @@ trait EventDispatcher
 
         $eventName = $this->getEventName($event);
 
+        $payload = new EventPayload($eventName, $data);
+
         /**
          * todo : add schema validation, protocol version.
          */
-        $msg = new AMQPMessage(json_encode(['event' => $eventName, 'data' => $data]));
-        $this->channel->basic_publish($msg, $this->getExchangeName(), $eventName);
+        $this->channel->basic_publish(
+            (new AMQPMessage(json_encode($payload))),
+            $this->getExchangeName(),
+            $eventName
+        );
     }
 
     /**

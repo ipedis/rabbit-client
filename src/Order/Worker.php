@@ -8,6 +8,7 @@
 namespace Ipedis\Rabbit\Order;
 
 use Closure;
+use Ipedis\Rabbit\Payload\OrderPayload;
 use PhpAmqpLib\Message\AMQPMessage;
 
 /**
@@ -47,16 +48,20 @@ trait Worker
          * Creating a reply message with the same correlation id than the incoming message
          */
         $options['correlation_id'] = $req->get('correlation_id');
-        $msg = new AMQPMessage(
-            json_encode($options),      //message
-            $options       // Response Message Bag.
+
+        $payload = new OrderPayload(
+            $req->get('reply_to'),
+            $req->get('correlation_id'),
+            $options
         );
+
+        $msg = new AMQPMessage(json_encode($payload), $options);
 
         /*
          * Publishing to the same channel from the incoming message
          */
         $req->delivery_info['channel']->basic_publish(
-            $msg,                        //message
+            (new AMQPMessage(json_encode($payload), $options)),                        //message
             '', //exchange
             $req->get('reply_to')       //routing key
         );

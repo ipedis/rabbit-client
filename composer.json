@@ -12,7 +12,8 @@
     "require": {
         "php": ">7.2.0",
         "php-amqplib/php-amqplib": "^2.6",
-        "ext-json": "*"
+        "ext-json": "*",
+        "symfony/polyfill-uuid": "^1.14"
     },
     "autoload": {
         "psr-4": {
