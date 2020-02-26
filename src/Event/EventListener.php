@@ -1,6 +1,5 @@
 <?php
 
-
 namespace Ipedis\Rabbit\Event;
 
 
@@ -71,9 +70,12 @@ trait EventListener
     {
         try {
             $this->makeMessageHandler()($req);
-        } catch (\Exception $exception) {}
+        } catch (\Exception $exception) {
+            $this->makeExceptionHandler()($exception, $req);
+        }
     }
 
     abstract protected function makeMessageHandler(): Closure;
+    abstract protected function makeExceptionHandler(): Closure;
     abstract protected function getBindingKey(): string;
 }
