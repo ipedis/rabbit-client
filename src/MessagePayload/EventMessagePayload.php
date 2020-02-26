@@ -1,9 +1,36 @@
 <?php
 
-
 namespace Ipedis\Rabbit\MessagePayload;
+
+
+use Ipedis\Rabbit\Exception\MessagePayload\MessagePayloadFormatException;
 
 class EventMessagePayload extends MessagePayloadAbstract
 {
+    /**
+     * Factory method
+     *
+     * @param string $msg
+     * @return EventMessagePayload
+     * @throws MessagePayloadFormatException
+     */
+    public static function fromJson(string $msg): self
+    {
+        $msgBody = json_decode($msg, true);
 
+        if (
+            json_last_error() !== JSON_ERROR_NONE ||
+            !isset($msgBody['header']) ||
+            !isset($msgBody['header'][self::HEADER_CHANNEL]) ||
+            !isset($msgBody['data'])
+        ) {
+            throw new MessagePayloadFormatException('Message body format is invalid');
+        }
+
+        return new self(
+            $msgBody['header'][self::HEADER_CHANNEL],
+            $msgBody['data'],
+            $msgBody['header']
+        );
+    }
 }

@@ -4,7 +4,10 @@ namespace Ipedis\Rabbit\Event;
 
 
 use Closure;
+use Exception;
 use Ipedis\Rabbit\Connector;
+use Ipedis\Rabbit\Exception\MessagePayload\MessagePayloadFormatException;
+use Ipedis\Rabbit\MessagePayload\EventMessagePayload;
 use PhpAmqpLib\Message\AMQPMessage;
 
 trait EventListener
@@ -69,13 +72,16 @@ trait EventListener
 
     /**
      * @param AMQPMessage $req
+     * @throws MessagePayloadFormatException
      */
     public function main(AMQPMessage $req)
     {
+        $messagePayload = EventMessagePayload::fromJson($req->getBody());
+
         try {
-            $this->makeMessageHandler()($req);
-        } catch (\Exception $exception) {
-            $this->makeExceptionHandler()($exception, $req);
+            $this->makeMessageHandler()($messagePayload);
+        } catch (Exception $exception) {
+            $this->makeExceptionHandler()($exception, $messagePayload);
         }
     }
 

@@ -1,6 +1,5 @@
 <?php
 
-
 namespace Ipedis\Demo\Rabbit\Worker;
 
 
@@ -8,7 +7,7 @@ use Closure;
 use Exception;
 use Ipedis\Demo\Rabbit\Utils\ConnectorAbstract;
 use Ipedis\Rabbit\Event\EventListener;
-use PhpAmqpLib\Message\AMQPMessage;
+use Ipedis\Rabbit\MessagePayload\EventMessagePayload;
 
 class Binding extends ConnectorAbstract
 {
@@ -21,8 +20,10 @@ class Binding extends ConnectorAbstract
      */
     protected function makeMessageHandler(): Closure
     {
-        return function (AMQPMessage $msg) {
-            var_dump(json_decode($msg->getBody(), true));
+        return function (EventMessagePayload $messagePayload) {
+            var_dump($messagePayload->getChannel());
+            var_dump($messagePayload->getData());
+            var_dump($messagePayload->getHeaders());
         };
     }
 
@@ -33,7 +34,7 @@ class Binding extends ConnectorAbstract
      */
     protected function makeExceptionHandler(): Closure
     {
-        return function (Exception $exception, AMQPMessage $msg) {
+        return function (Exception $exception, EventMessagePayload $messagePayload) {
             var_dump($exception->getMessage());
         };
     }
