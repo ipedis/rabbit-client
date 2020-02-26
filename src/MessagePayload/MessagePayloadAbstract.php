@@ -1,6 +1,6 @@
 <?php
 
-namespace Ipedis\Rabbit\Payload;
+namespace Ipedis\Rabbit\MessagePayload;
 
 
 use JsonSerializable;
@@ -9,7 +9,7 @@ use JsonSerializable;
  * This class is responsible for standardizing the message body
  *
  */
-abstract class PayloadAbstract implements JsonSerializable
+abstract class MessagePayloadAbstract implements JsonSerializable
 {
     const HEADER_UUID       = 'uuid';
     const HEADER_TIMESTAMP  = 'sendAt';
@@ -31,6 +31,14 @@ abstract class PayloadAbstract implements JsonSerializable
     protected $headers;
 
     /**
+     * Channel for the message
+     *
+     * @var string
+     */
+    protected $channel;
+
+
+    /**
      * PayloadAbstract constructor.
      *
      * @param string $channel
@@ -41,6 +49,7 @@ abstract class PayloadAbstract implements JsonSerializable
     {
         $this->data = $data;
         $this->headers = $headers;
+        $this->channel = $channel;
 
         $this->headers[self::HEADER_CHANNEL] = $channel;
     }
@@ -77,6 +86,27 @@ abstract class PayloadAbstract implements JsonSerializable
     public function getHeaders(): array
     {
         return $this->headers;
+    }
+
+    /**
+     * @param string $key
+     * @param null $default
+     * @return mixed|null
+     */
+    public function getHeader(string $key, $default = null)
+    {
+        return ($this->hasHeader($key)) ?
+            $this->headers[$key] :
+            $default
+        ;
+    }
+
+    /**
+     * @return string
+     */
+    public function getChannel(): string
+    {
+        return $this->channel;
     }
 
     public function jsonSerialize()

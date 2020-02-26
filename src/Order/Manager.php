@@ -10,7 +10,7 @@ use Ipedis\Rabbit\Channel\Factory\ChannelFactory;
 use Ipedis\Rabbit\Channel\OrderChannel;
 use Ipedis\Rabbit\Exception\Channel\ChannelFactoryException;
 use Ipedis\Rabbit\Exception\Channel\ChannelNamingException;
-use Ipedis\Rabbit\Payload\OrderPayload;
+use Ipedis\Rabbit\MessagePayload\OrderMessagePayload;
 use PhpAmqpLib\Message\AMQPMessage;
 
 /**
@@ -75,7 +75,7 @@ trait Manager
         }
 
         //craft associated message.
-        $payload = new OrderPayload(
+        $payload = new OrderMessagePayload(
             $queue,
             (($correlation_id === false) ? $correlation_id : null),
             $data

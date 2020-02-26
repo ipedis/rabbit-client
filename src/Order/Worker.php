@@ -8,7 +8,7 @@
 namespace Ipedis\Rabbit\Order;
 
 use Closure;
-use Ipedis\Rabbit\Payload\OrderPayload;
+use Ipedis\Rabbit\MessagePayload\OrderMessagePayload;
 use PhpAmqpLib\Message\AMQPMessage;
 
 /**
@@ -49,7 +49,7 @@ trait Worker
          */
         $options['correlation_id'] = $req->get('correlation_id');
 
-        $payload = new OrderPayload(
+        $payload = new OrderMessagePayload(
             $req->get('reply_to'),
             $req->get('correlation_id'),
             $options

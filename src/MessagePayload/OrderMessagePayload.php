@@ -1,9 +1,9 @@
 <?php
 
 
-namespace Ipedis\Rabbit\Payload;
+namespace Ipedis\Rabbit\MessagePayload;
 
-class OrderPayload extends PayloadAbstract
+class OrderMessagePayload extends MessagePayloadAbstract
 {
     const HEADER_CORRELATION_ID = 'correlation_id';
 

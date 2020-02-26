@@ -9,11 +9,12 @@ use Ipedis\Rabbit\Channel\Factory\ChannelFactory;
 use Ipedis\Rabbit\Connector;
 use Ipedis\Rabbit\Exception\Channel\ChannelFactoryException;
 use Ipedis\Rabbit\Exception\Channel\ChannelNamingException;
-use Ipedis\Rabbit\Payload\EventPayload;
+use Ipedis\Rabbit\MessagePayload\EventMessagePayload;
 use PhpAmqpLib\Message\AMQPMessage;
 
 /**
  * Trait EventDispatcher
+ *
  * @package Ipedis\Rabbit\Event
  * @method ChannelFactory|null matchPartial($channel)
  */
@@ -34,7 +35,7 @@ trait EventDispatcher
      */
     public function dispatchEvent($event, array $data)
     {
-        if( $this->channel === null) {
+        if ( $this->channel === null) {
             $this->connect();
         }
 
@@ -44,7 +45,7 @@ trait EventDispatcher
 
         $eventName = $this->getEventName($event);
 
-        $payload = new EventPayload($eventName, $data);
+        $payload = new EventMessagePayload($eventName, $data);
 
         /**
          * todo : add schema validation, protocol version.
