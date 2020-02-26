@@ -10,6 +10,7 @@ use PhpAmqpLib\Message\AMQPMessage;
 trait EventListener
 {
     use Connector;
+
     /**
      * @var string
      */
@@ -24,9 +25,11 @@ trait EventListener
         $this->connect();
         $this->queueDeclare();
         $this->queueConsume();
+
         while(count($this->channel->callbacks)) {
             $this->channel->wait();
         }
+
         $this->disconnect();
     }
 
@@ -44,6 +47,7 @@ trait EventListener
             $this->getExchangeName(),
             $this->getExchangeType()
         );
+
         list($queue, ,) = $this->channel->queue_declare('', false, false, true, false);
         $this->channel->queue_bind($queue,$this->getExchangeName(), $this->getBindingKey());
     }

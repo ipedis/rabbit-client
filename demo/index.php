@@ -21,6 +21,7 @@ $configEvent = array_merge($configOrder, [
     'exchange' => 'publispeak_events',
 ]);
 
+$channelFactory = new ChannelFactory('v1', 'admin');
 
 if ( !empty($argv[1]) ) {
     switch ($argv[1]) {
@@ -43,7 +44,7 @@ if ( !empty($argv[1]) ) {
                 $configOrder['password'],
                 $configOrder['exchange'],
                 $configOrder['type'],
-                (new ChannelFactory('v1', 'admin'))
+                $channelFactory
             ))->main();
             break;
 
@@ -66,7 +67,7 @@ if ( !empty($argv[1]) ) {
                 $configEvent['password'],
                 $configEvent['exchange'],
                 $configEvent['type'],
-                (new ChannelFactory('v1', 'admin'))
+                $channelFactory
             ))->main();
             break;
 
