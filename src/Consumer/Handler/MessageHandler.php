@@ -17,9 +17,11 @@ abstract class MessageHandler implements MessageHandlerInterface
         {
             case self::TYPE_SUCCESS:
                 $this->onSuccess($req);
+                $this->onFinish($req);
             break;
             case self::TYPE_ERROR:
                 $this->onError($req);
+                $this->onFinish($req);
             break;
             case self::TYPE_PROGRESS:
                 $this->onProgress($req);

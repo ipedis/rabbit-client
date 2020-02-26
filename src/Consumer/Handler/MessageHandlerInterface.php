@@ -18,4 +18,5 @@ interface MessageHandlerInterface
     public function onSuccess(AMQPMessage $req);
     public function onError(AMQPMessage $req);
     public function onProgress(AMQPMessage $req);
+    public function onFinish(AMQPMessage $req);
 }

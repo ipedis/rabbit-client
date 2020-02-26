@@ -42,7 +42,8 @@ if ( !empty($argv[1]) ) {
                 $configOrder['use'],
                 $configOrder['password'],
                 $configOrder['exchange'],
-                $configOrder['type']
+                $configOrder['type'],
+                (new ChannelFactory('v1', 'admin'))
             ))->main();
             break;
 
@@ -64,7 +65,8 @@ if ( !empty($argv[1]) ) {
                 $configEvent['use'],
                 $configEvent['password'],
                 $configEvent['exchange'],
-                $configEvent['type']
+                $configEvent['type'],
+                (new ChannelFactory('v1', 'admin'))
             ))->main();
             break;
 
