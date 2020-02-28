@@ -59,10 +59,7 @@ class Manager extends ConnectorAbstract
     {
         $this->messageHandler = new ManagerHandler();
         
-        $anoQueue = $this->bindCallbackToAnonymousQueue([
-            $this->messageHandler,
-            'on'
-        ]);
+        $anoQueue = $this->bindCallbackToAnonymousQueue($this->messageHandler);
 
         /**
          * We publish N Tasks on queue "Worker" who should be consume by this Worker.
