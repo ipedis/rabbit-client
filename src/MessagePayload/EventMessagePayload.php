@@ -10,6 +10,19 @@ class EventMessagePayload extends MessagePayloadAbstract
     /**
      * Factory method
      *
+     * @param string $channel
+     * @param array $data
+     * @param array $headers
+     * @return EventMessagePayload
+     */
+    public static function build(string $channel, array $data = [], array $headers = []): self
+    {
+        return new self($channel, $data, $headers);
+    }
+
+    /**
+     * Factory method to create message payload from json
+     *
      * @param string $msg
      * @return EventMessagePayload
      * @throws MessagePayloadFormatException

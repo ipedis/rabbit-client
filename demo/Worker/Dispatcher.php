@@ -7,6 +7,7 @@ use Ipedis\Demo\Rabbit\Utils\ConnectorAbstract;
 use Ipedis\Rabbit\Channel\EventChannel;
 use Ipedis\Rabbit\Channel\Factory\ChannelFactory;
 use Ipedis\Rabbit\Event\EventDispatcher;
+use Ipedis\Rabbit\MessagePayload\EventMessagePayload;
 
 class Dispatcher extends ConnectorAbstract
 {
@@ -34,16 +35,30 @@ class Dispatcher extends ConnectorAbstract
 
     public function main()
     {
-        $this->dispatchEvent(EventChannel::fromString('v1.admin.publication.was-exported'), [
-            'publication' => [
-                'sid' => 3
+        $this->dispatchEvent(EventMessagePayload::build(
+            EventChannel::fromString('v1.admin.publication.was-exported'),
+            [
+                'publication' => [
+                    'sid' => 3
+                ]
             ]
-        ]);
+        ));
 
-        $this->dispatchEvent(EventChannel::fromString('v1.admin.publication.was-deleted'), [
-            'publication' => [
-                'sid' => 3
+        $this->dispatchEvent(EventMessagePayload::build(
+            EventChannel::fromString('v1.admin.publication.was-deleted'),
+            [
+                'publication' => [
+                    'sid' => 3
+                ]
             ]
-        ]);
+        ));
+    }
+
+    /**
+     * @return ChannelFactory
+     */
+    public function getChannelFactory(): ChannelFactory
+    {
+        return $this->channelFactory;
     }
 }

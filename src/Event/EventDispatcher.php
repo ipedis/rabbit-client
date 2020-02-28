@@ -1,6 +1,5 @@
 <?php
 
-
 namespace Ipedis\Rabbit\Event;
 
 
@@ -28,12 +27,11 @@ trait EventDispatcher
     }
 
     /**
-     * @param mixed $event
-     * @param array $data
+     * @param EventMessagePayload $messagePayload
      * @throws ChannelFactoryException
      * @throws ChannelNamingException
      */
-    public function dispatchEvent($event, array $data)
+    public function dispatchEvent(EventMessagePayload $messagePayload)
     {
         if ( $this->channel === null) {
             $this->connect();
@@ -43,15 +41,16 @@ trait EventDispatcher
             throw new ChannelFactoryException('Must provide channel factory {channelFactory} with version and service.');
         }
 
-        $eventName = $this->getEventName($event);
-
-        $payload = new EventMessagePayload($eventName, $data);
+        /**
+         * Validate channel naming and return event name
+         */
+        $eventName = $this->getEventName($messagePayload->getChannel());
 
         /**
          * todo : add schema validation, protocol version.
          */
         $this->channel->basic_publish(
-            (new AMQPMessage(json_encode($payload))),
+            (new AMQPMessage(json_encode($messagePayload))),
             $this->getExchangeName(),
             $eventName
         );
