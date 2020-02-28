@@ -78,6 +78,16 @@ abstract class MessagePayloadAbstract implements MessagePayloadInterface
     }
 
     /**
+     * json version of data
+     *
+     * @return string
+     */
+    public function getStringifyData(): string
+    {
+        return json_encode($this->getData());
+    }
+
+    /**
      * @return array
      */
     public function getHeaders(): array

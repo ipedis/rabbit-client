@@ -12,4 +12,6 @@ interface MessagePayloadInterface extends JsonSerializable
     public function getData(): array;
 
     public function getChannel(): string;
+
+    public function getStringifyData(): string;
 }

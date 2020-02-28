@@ -47,7 +47,7 @@ class Dispatcher extends ConnectorAbstract
             EventChannel::fromString('v1.admin.publication.was-exported'),
             [
                 'publication' => [
-                    'sid' => 3
+                    'sid' => 12
                 ]
             ]
         ));
