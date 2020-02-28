@@ -8,6 +8,7 @@ use Ipedis\Rabbit\Channel\EventChannel;
 use Ipedis\Rabbit\Channel\Factory\ChannelFactory;
 use Ipedis\Rabbit\Event\EventDispatcher;
 use Ipedis\Rabbit\MessagePayload\EventMessagePayload;
+use Ipedis\Rabbit\MessagePayload\Validator\ValidatorInterface;
 
 class Dispatcher extends ConnectorAbstract
 {
@@ -18,6 +19,11 @@ class Dispatcher extends ConnectorAbstract
      */
     private $channelFactory;
 
+    /**
+     * @var ValidatorInterface $messagePayloadValidator
+     */
+    private $messagePayloadValidator;
+
     public function __construct(
         string $host,
         int $port,
@@ -25,11 +31,13 @@ class Dispatcher extends ConnectorAbstract
         string $password,
         string $exchange,
         string $type,
-        ChannelFactory $channelFactory
+        ChannelFactory $channelFactory,
+        ValidatorInterface $messagePayloadValidator
     ) {
         parent::__construct($host, $port, $user, $password, $exchange, $type);
 
         $this->channelFactory = $channelFactory;
+        $this->messagePayloadValidator = $messagePayloadValidator;
         $this->connect();
     }
 
@@ -60,5 +68,13 @@ class Dispatcher extends ConnectorAbstract
     public function getChannelFactory(): ChannelFactory
     {
         return $this->channelFactory;
+    }
+
+    /**
+     * @return ValidatorInterface
+     */
+    public function getMessagePayloadValidator(): ValidatorInterface
+    {
+        return $this->messagePayloadValidator;
     }
 }

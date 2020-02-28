@@ -6,9 +6,10 @@ namespace Ipedis\Demo\Rabbit\Worker;
 
 use Ipedis\Demo\Rabbit\Utils\ConnectorAbstract;
 use Ipedis\Demo\Rabbit\Worker\Handler\ManagerHandler;
+use Ipedis\Rabbit\Channel\Factory\ChannelFactory;
 use Ipedis\Rabbit\Consumer\Handler\MessageHandler;
 use Ipedis\Rabbit\Order\Manager as ManagerTrait;
-use PhpAmqpLib\Message\AMQPMessage;
+
 
 class Manager extends ConnectorAbstract
 {
@@ -18,6 +19,12 @@ class Manager extends ConnectorAbstract
      * @var MessageHandler
      */
     protected $messageHandler;
+
+    /**
+     * @var ChannelFactory $channelFactory
+     */
+    private $channelFactory;
+
     /**
      * Manager constructor.
      * @param string $host
@@ -26,10 +33,20 @@ class Manager extends ConnectorAbstract
      * @param string $password
      * @param string $exchange
      * @param string $type
+     * @param ChannelFactory $channelFactory
      */
-    public function __construct(string $host, int $port, string $user, string $password, string $exchange, string $type)
-    {
+    public function __construct(
+        string $host,
+        int $port,
+        string $user,
+        string $password,
+        string $exchange,
+        string $type,
+        ChannelFactory $channelFactory
+    ) {
         parent::__construct($host, $port, $user, $password, $exchange, $type);
+
+        $this->channelFactory = $channelFactory;
         $this->connect();
     }
 
@@ -71,5 +88,13 @@ class Manager extends ConnectorAbstract
         }
 
         printf("%s task are currently traited on queue : %s . Full traitment done :). \n", $this->messageHandler->getCount(), Worker::class);
+    }
+
+    /**
+     * @return ChannelFactory
+     */
+    public function getChannelFactory(): ChannelFactory
+    {
+        return $this->channelFactory;
     }
 }

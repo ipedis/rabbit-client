@@ -1,5 +1,6 @@
 <?php
 
+use Ipedis\Demo\Rabbit\Utils\MessagePayloadValidator\MessagePayloadValidator;
 use Ipedis\Demo\Rabbit\Worker\Binding;
 use Ipedis\Demo\Rabbit\Worker\Dispatcher;
 use Ipedis\Demo\Rabbit\Worker\Manager;
@@ -22,6 +23,7 @@ $configEvent = array_merge($configOrder, [
 ]);
 
 $channelFactory = new ChannelFactory('v1', 'admin');
+$messagePayloadValidator = new MessagePayloadValidator();
 
 if ( !empty($argv[1]) ) {
     switch ($argv[1]) {
@@ -67,7 +69,8 @@ if ( !empty($argv[1]) ) {
                 $configEvent['password'],
                 $configEvent['exchange'],
                 $configEvent['type'],
-                $channelFactory
+                $channelFactory,
+                $messagePayloadValidator
             ))->main();
             break;
 

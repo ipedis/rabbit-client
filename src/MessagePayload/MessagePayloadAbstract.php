@@ -3,13 +3,11 @@
 namespace Ipedis\Rabbit\MessagePayload;
 
 
-use JsonSerializable;
-
 /**
  * This class is responsible for standardizing the message body
  *
  */
-abstract class MessagePayloadAbstract implements JsonSerializable
+abstract class MessagePayloadAbstract implements MessagePayloadInterface
 {
     const HEADER_UUID       = 'uuid';
     const HEADER_TIMESTAMP  = 'sendAt';
@@ -36,7 +34,6 @@ abstract class MessagePayloadAbstract implements JsonSerializable
      * @var string
      */
     protected $channel;
-
 
     /**
      * PayloadAbstract constructor.

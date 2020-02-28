@@ -8,7 +8,9 @@ use Ipedis\Rabbit\Channel\Factory\ChannelFactory;
 use Ipedis\Rabbit\Connector;
 use Ipedis\Rabbit\Exception\Channel\ChannelFactoryException;
 use Ipedis\Rabbit\Exception\Channel\ChannelNamingException;
+use Ipedis\Rabbit\Exception\MessagePayload\MessagePayloadValidatorException;
 use Ipedis\Rabbit\MessagePayload\EventMessagePayload;
+use Ipedis\Rabbit\MessagePayload\Validator\ValidatorInterface;
 use PhpAmqpLib\Message\AMQPMessage;
 
 /**
@@ -30,6 +32,7 @@ trait EventDispatcher
      * @param EventMessagePayload $messagePayload
      * @throws ChannelFactoryException
      * @throws ChannelNamingException
+     * @throws MessagePayloadValidatorException
      */
     public function dispatchEvent(EventMessagePayload $messagePayload)
     {
@@ -41,10 +44,19 @@ trait EventDispatcher
             throw new ChannelFactoryException('Must provide channel factory {channelFactory} with version and service.');
         }
 
+        if (!$this->getMessagePayloadValidator() instanceof ValidatorInterface) {
+            throw new MessagePayloadValidatorException("Must provide message payload validator {messagePayloadValidator}");
+        }
+
         /**
          * Validate channel naming and return event name
          */
         $eventName = $this->getEventName($messagePayload->getChannel());
+
+        /**
+         * Validate message payload data schema
+         */
+        $this->getMessagePayloadValidator()->validate($messagePayload);
 
         /**
          * todo : add schema validation, protocol version.
