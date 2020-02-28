@@ -55,4 +55,9 @@ class ManagerHandler extends MessageHandler
         print_r("\t fail :( - ".$message->getBody()."\n\n\n");
         $this->count++;
     }
+
+    public function onFinish(AMQPMessage $message)
+    {
+        print_r("\t Finish :( - ".$message->getBody()."\n\n\n");
+    }
 }

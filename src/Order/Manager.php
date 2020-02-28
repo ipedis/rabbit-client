@@ -1,15 +1,14 @@
 <?php
-/**
- * File: RabbitManager.php
- * User: Yanis Ghidouche <yanis@ipedis.com>
- * Date: 31/10/2016 15:17
- */
 
 namespace Ipedis\Rabbit\Order;
+
+
 use Ipedis\Rabbit\Channel\Factory\ChannelFactory;
 use Ipedis\Rabbit\Channel\OrderChannel;
+use Ipedis\Rabbit\Consumer\Handler\MessageHandlerInterface;
 use Ipedis\Rabbit\Exception\Channel\ChannelFactoryException;
 use Ipedis\Rabbit\Exception\Channel\ChannelNamingException;
+use Ipedis\Rabbit\Exception\InvalidCallableException;
 use Ipedis\Rabbit\MessagePayload\OrderMessagePayload;
 use PhpAmqpLib\Message\AMQPMessage;
 
@@ -21,34 +20,71 @@ use PhpAmqpLib\Message\AMQPMessage;
 trait Manager
 {
     /**
-     * @description create anonymous and uniq queue. Generally use to have inLive queue callback to wait answer of our worker.
+     * Create anonymous and uniq queue.
+     * Generally use to have inLive queue callback to wait answer of our worker.
+     *
      * @param string $indicator
      * @return string $callback_queue
      */
-    public function createAnonymousQueue($indicator = "")
+    public function createAnonymousQueue(string $indicator = "")
     {
         list($callback_queue, ,) = $this->channel->queue_declare($indicator,false,false,true);
         $this->channel->queue_bind($callback_queue, $this->getExchangeName());
+
         return $callback_queue;
     }
 
-    public function bindCallbackToQueue($queue,array $callBack)
+    /**
+     * Callback to call when consuming message from queue
+     *
+     * @param $queue
+     * @param $callBack
+     * @throws InvalidCallableException
+     */
+    public function bindCallbackToQueue(string $queue, $callBack)
     {
+        /**
+         * If callback instance of MessageHandlerInterface,
+         * automatically bind to method 'on'
+         */
+        if ($callBack instanceof MessageHandlerInterface) {
+            $this->channel->basic_consume($queue,'',false,false,false,false,
+                [$callBack, 'on']
+            );
+
+            return;
+        }
+
+        if (!is_callable($callBack)) {
+            throw new InvalidCallableException(sprintf('Invalid callable provided for queue {%s}', $queue));
+        }
+
         $this->channel->basic_consume($queue,'',false,false,false,false,
             $callBack //have to be array as [$this,"nameOfPublicMethod"]
         );
     }
 
-    public function bindCallbackToAnonymousQueue(array $callback,$indicator = '')
+    /**
+     * Create anonymous queue and bind callback to it
+     *
+     * @param $callback
+     * @param string $indicator
+     * @return string
+     * @throws InvalidCallableException
+     */
+    public function bindCallbackToAnonymousQueue($callback, string $indicator = '')
     {
         $queue = $this->createAnonymousQueue($indicator);
-        $this->bindCallbackToQueue($queue,$callback);
+        $this->bindCallbackToQueue($queue, $callback);
+
         return $queue;
     }
 
     /**
-     * @description function to publish on queue new Message, can have two optional parameters.
-     * $replyQueue and $correlation_id will help worker to know where and what he have to answer when he have finish.
+     * Function to publish on queue new Message,
+     * can have two optional parameters :
+     * - $replyQueue
+     * - $correlation_id will help worker to know where and what he have to answer when he have finish.
      *
      * @param $queueName
      * @param $data
@@ -67,7 +103,7 @@ trait Manager
 
         $properties = [];
         if ($replyQueue && $correlation_id) {
-            // case we will have eventCallback and manager will listen and wait the answser
+            // case we will have eventCallback and manager will listen and wait the answer
             $properties = [
                 'correlation_id' => $correlation_id,
                 'reply_to' => $replyQueue

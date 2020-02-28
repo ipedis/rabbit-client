@@ -1,9 +1,4 @@
 <?php
-/**
- * File: Worker.php
- * User: Yanis Ghidouche <yanis@ipedis.com>
- * Date: 01/11/2016 13:33
- */
 
 namespace Ipedis\Rabbit\Order;
 
