@@ -59,7 +59,7 @@ trait Manager
      */
     public function publishTask($queueName, $data, $replyQueue = false, $correlation_id = false)
     {
-        if (!isset($this->channelFactory) || !$this->channelFactory) {
+        if (!$this->getChannelFactory() instanceof ChannelFactory) {
             throw new ChannelFactoryException('Must provide channel factory {channelFactory} with version and service.');
         }
 
@@ -98,8 +98,8 @@ trait Manager
     {
         if (is_string($queueName)) {
             // if it is partial channel name
-            if ($this->channelFactory->matchPartial($queueName)) {
-                return (string)$this->channelFactory->getOrder($queueName);
+            if ($this->getChannelFactory()->matchPartial($queueName)) {
+                return (string)$this->getChannelFactory()->getOrder($queueName);
             }
 
             // if it is full name, this will throw exception if full name is invalid.

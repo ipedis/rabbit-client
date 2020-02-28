@@ -39,7 +39,7 @@ trait EventDispatcher
             $this->connect();
         }
 
-        if (!isset($this->channelFactory) || !$this->channelFactory) {
+        if (!$this->getChannelFactory() instanceof ChannelFactory) {
             throw new ChannelFactoryException('Must provide channel factory {channelFactory} with version and service.');
         }
 
@@ -66,8 +66,8 @@ trait EventDispatcher
     {
         if (is_string($event)) {
             // if it is partial channel name
-            if ($this->channelFactory->matchPartial($event)) {
-                return (string)$this->channelFactory->getEvent($event);
+            if ($this->getChannelFactory()->matchPartial($event)) {
+                return (string)$this->getChannelFactory()->getEvent($event);
             }
 
             // if it is full name, this will throw exception if full name is invalid.
