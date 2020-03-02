@@ -48,7 +48,10 @@ abstract class MessagePayloadAbstract implements MessagePayloadInterface
         $this->headers = $headers;
         $this->channel = $channel;
 
-        $this->headers[self::HEADER_CHANNEL] = $channel;
+        /**
+         * Add channel to header
+         */
+        $this->addHeader(self::HEADER_CHANNEL, $channel);
     }
 
     /**
@@ -124,6 +127,18 @@ abstract class MessagePayloadAbstract implements MessagePayloadInterface
             'header' => $this->getHeaders(),
             'data'   => $this->getData()
         ];
+    }
+
+    /**
+     * @param string $key
+     * @param $value
+     * @return MessagePayloadAbstract
+     */
+    protected function addHeader(string $key, $value) :self
+    {
+        $this->headers[$key] = $value;
+
+        return $this;
     }
 
     /**

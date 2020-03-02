@@ -49,10 +49,10 @@ class Worker extends ConnectorAbstract
                 self::class,
                 $this->worker_id,
                 (!$req->has('correlation_id'))?'unknown':$req->get('correlation_id'),
-                ($params["hasToFail"]) ? 'yes' : 'no'
+                ($params['data']["hasToFail"]) ? 'yes' : 'no'
             );
 
-            if($params["hasToFail"]) throw new \Exception('oups something bad happen', 10);
+            if($params['data']["hasToFail"]) throw new \Exception('oups something bad happen', 10);
 
             return ["foo" => "bar"];
         };

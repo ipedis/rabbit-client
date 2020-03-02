@@ -7,7 +7,9 @@ namespace Ipedis\Demo\Rabbit\Worker;
 use Ipedis\Demo\Rabbit\Utils\ConnectorAbstract;
 use Ipedis\Demo\Rabbit\Worker\Handler\ManagerHandler;
 use Ipedis\Rabbit\Channel\Factory\ChannelFactory;
+use Ipedis\Rabbit\Channel\OrderChannel;
 use Ipedis\Rabbit\Consumer\Handler\MessageHandler;
+use Ipedis\Rabbit\MessagePayload\OrderMessagePayload;
 use Ipedis\Rabbit\Order\Manager as ManagerTrait;
 
 
@@ -66,20 +68,21 @@ class Manager extends ConnectorAbstract
          * We give also Anonymous callback Queue to have feedback from worker.
          */
         for ($i = 0; $i < $this->messageHandler->getNumberTask(); $i++) {
-            $taskId = $this->publishTask('v1.admin.publication.generate',
+            $this->publishTask(OrderMessagePayload::build(
+                OrderChannel::fromString('v1.admin.publication.generate'),
+                $anoQueue,
                 [
                     "hasToFail" => $i % 2 === 0, // Simulate failure on each pair message.
                     "name"      => "task {$i}"
-                ],
-                $anoQueue
-            );
+                ]
+            ));
         }
         print_r('all message are published on queue'."\n");
+
         /**
          * Wait all tasks.
          */
-        while ( $this->messageHandler->getCount() < $this->messageHandler->getNumberTask() )
-        {
+        while(count($this->messageHandler->getCompletedTasks()) !== count($this->getTasks())) {
             $this->channel->wait();
         }
 

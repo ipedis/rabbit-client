@@ -25,11 +25,6 @@ trait Manager
     private $tasks = [];
 
     /**
-     * @var array $completedTasks
-     */
-    private $completedTasks = [];
-
-    /**
      * Create anonymous and uniq queue.
      * Generally use to have inLive queue callback to wait answer of our worker.
      *
@@ -96,14 +91,12 @@ trait Manager
      * - $replyQueue
      * - $correlation_id will help worker to know where and what he have to answer when he have finish.
      *
-     * @param $queueName
-     * @param $data
-     * @param bool $replyQueue optional
+     * @param OrderMessagePayload $messagePayload
      * @return string|null
      * @throws ChannelFactoryException
      * @throws ChannelNamingException
      */
-    public function publishTask(string $queueName, array $data, $replyQueue = false)
+    public function publishTask(OrderMessagePayload $messagePayload)
     {
         if (!$this->getChannelFactory() instanceof ChannelFactory) {
             throw new ChannelFactoryException('Must provide channel factory {channelFactory} with version and service.');
@@ -112,36 +105,25 @@ trait Manager
         /**
          * Validate channel and return queue name
          */
-        $queue = $this->getQueueName($queueName);
+        $queue = $this->getQueueName($messagePayload->getChannel());
 
         /**
-         * Generate unique correlation id
+         * Push it to the pile of tasks for this queue.
          */
-        $correlation_id = uuid_create();
-
-        $properties = [];
-        $properties['correlation_id'] = $correlation_id;
-
-        if ($replyQueue) {
-            // case we will have eventCallback and manager will listen and wait the answer
-            $properties['reply_to'] = $replyQueue;
-        }
-
-        //craft associated message.
-        $payload = new OrderMessagePayload(
-            $queue,
-            (($correlation_id === false) ? $correlation_id : null),
-            $data
-        );
-
-        //push it to the pile of tasks for this queue.
         $this->channel->basic_publish(
-            (new AMQPMessage(json_encode($payload), $properties)),
+            (new AMQPMessage(json_encode($messagePayload), $messagePayload->getMessageProperties())),
             $this->getExchangeName(),
             $queue
         );
 
-        return $correlation_id;
+        $this->tasks[] = $messagePayload->getTaskId();
+
+        return $messagePayload->getTaskId();
+    }
+
+    protected function getTasks(): array
+    {
+        return $this->tasks;
     }
 
     /**
