@@ -20,6 +20,16 @@ use PhpAmqpLib\Message\AMQPMessage;
 trait Manager
 {
     /**
+     * @var array $tasks
+     */
+    private $tasks = [];
+
+    /**
+     * @var array $completedTasks
+     */
+    private $completedTasks = [];
+
+    /**
      * Create anonymous and uniq queue.
      * Generally use to have inLive queue callback to wait answer of our worker.
      *
@@ -89,25 +99,32 @@ trait Manager
      * @param $queueName
      * @param $data
      * @param bool $replyQueue optional
-     * @param bool $correlation_id optional
+     * @return string|null
      * @throws ChannelFactoryException
      * @throws ChannelNamingException
      */
-    public function publishTask($queueName, $data, $replyQueue = false, $correlation_id = false)
+    public function publishTask(string $queueName, array $data, $replyQueue = false)
     {
         if (!$this->getChannelFactory() instanceof ChannelFactory) {
             throw new ChannelFactoryException('Must provide channel factory {channelFactory} with version and service.');
         }
 
+        /**
+         * Validate channel and return queue name
+         */
         $queue = $this->getQueueName($queueName);
 
+        /**
+         * Generate unique correlation id
+         */
+        $correlation_id = uuid_create();
+
         $properties = [];
-        if ($replyQueue && $correlation_id) {
+        $properties['correlation_id'] = $correlation_id;
+
+        if ($replyQueue) {
             // case we will have eventCallback and manager will listen and wait the answer
-            $properties = [
-                'correlation_id' => $correlation_id,
-                'reply_to' => $replyQueue
-            ];
+            $properties['reply_to'] = $replyQueue;
         }
 
         //craft associated message.
@@ -123,6 +140,8 @@ trait Manager
             $this->getExchangeName(),
             $queue
         );
+
+        return $correlation_id;
     }
 
     /**

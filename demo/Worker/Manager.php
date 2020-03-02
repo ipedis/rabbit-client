@@ -66,13 +66,12 @@ class Manager extends ConnectorAbstract
          * We give also Anonymous callback Queue to have feedback from worker.
          */
         for ($i = 0; $i < $this->messageHandler->getNumberTask(); $i++) {
-            $this->publishTask('v1.admin.publication.generate',
+            $taskId = $this->publishTask('v1.admin.publication.generate',
                 [
                     "hasToFail" => $i % 2 === 0, // Simulate failure on each pair message.
                     "name"      => "task {$i}"
                 ],
-                $anoQueue,
-                "task".$i
+                $anoQueue
             );
         }
         print_r('all message are published on queue'."\n");
