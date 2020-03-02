@@ -3,7 +3,10 @@
 
 namespace Ipedis\Rabbit\Consumer\Handler;
 
+use Ipedis\Rabbit\Exception\MessagePayload\MessagePayloadFormatException;
+use Ipedis\Rabbit\MessagePayload\ReplyToMessagePayload;
 use PhpAmqpLib\Message\AMQPMessage;
+
 
 abstract class MessageHandler implements MessageHandlerInterface
 {
@@ -11,27 +14,32 @@ abstract class MessageHandler implements MessageHandlerInterface
 
     /**
      * @param AMQPMessage $req
+     * @throws MessagePayloadFormatException
      */
     public function on(AMQPMessage $req)
     {
-        $data = json_decode($req->getBody(), true);
+        /**
+         * Create message payload objectValue from request body
+         */
+        $messagePayload = ReplyToMessagePayload::fromJson($req->getBody());
+        $data = $messagePayload->getData();
 
-        switch (strtolower($data['data'][self::STATUS_KEY]))
+        switch (strtolower($data[self::STATUS_KEY]))
         {
             case self::TYPE_SUCCESS:
-                $this->tasksCompleted[] = $data['header']['correlation_id'];
+                $this->tasksCompleted[] = $messagePayload->getTaskId();
 
-                $this->onSuccess($req);
-                $this->onFinish($req);
-            break;
+                $this->onSuccess($messagePayload);
+                $this->onFinish($messagePayload);
+                break;
             case self::TYPE_ERROR:
-                $this->tasksCompleted[] = $data['header']['correlation_id'];
+                $this->tasksCompleted[] = $messagePayload->getTaskId();
 
-                $this->onError($req);
-                $this->onFinish($req);
-            break;
+                $this->onError($messagePayload);
+                $this->onFinish($messagePayload);
+                break;
             case self::TYPE_PROGRESS:
-                $this->onProgress($req);
+                $this->onProgress($messagePayload);
             break;
         }
     }

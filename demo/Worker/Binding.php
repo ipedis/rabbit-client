@@ -21,9 +21,7 @@ class Binding extends ConnectorAbstract
     protected function makeMessageHandler(): Closure
     {
         return function (EventMessagePayload $messagePayload) {
-            var_dump($messagePayload->getChannel());
-            var_dump($messagePayload->getData());
-            var_dump($messagePayload->getHeaders());
+            print_r($messagePayload->getData());
         };
     }
 

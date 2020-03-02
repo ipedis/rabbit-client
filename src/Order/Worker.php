@@ -4,6 +4,7 @@ namespace Ipedis\Rabbit\Order;
 
 use Closure;
 use Ipedis\Rabbit\MessagePayload\OrderMessagePayload;
+use Ipedis\Rabbit\MessagePayload\ReplyToMessagePayload;
 use PhpAmqpLib\Message\AMQPMessage;
 
 /**
@@ -15,15 +16,50 @@ trait Worker
     protected $worker_id;
 
     /**
-     * @param AMQPMessage $req
-     * @param array $options
+     * Initialise worker by
+     * - connecting to rabbitMQ
+     * - declare the queue
+     * - wait for message
      */
-    public function replyTo(AMQPMessage $req, $options = [])
+    public function execute()
+    {
+        $this->worker_id = uniqid("worker_id_");
+        $this->connect();
+        $this->queueDeclare();
+        $this->queueConsume();
+
+        while(count($this->channel->callbacks)) {
+            $this->channel->wait();
+        }
+
+        $this->disconnect();
+    }
+
+    public function __destruct()
+    {
+        $this->disconnect();
+    }
+
+    /**
+     * Method first executed when receiving message
+     *
+     * @param AMQPMessage $req
+     */
+    public function main(AMQPMessage $req)
+    {
+        $this->ackEngine($req, $this->makeMessageHandler());
+    }
+
+    /**
+     * @param AMQPMessage $req
+     * @param ReplyToMessagePayload $replyToMessagePayload
+     */
+    public function replyTo(AMQPMessage $req, ReplyToMessagePayload $replyToMessagePayload)
     {
         /**
          * Craft message.
          */
-        $this->notifyTo($req, $options);
+        $this->notifyTo($req, $replyToMessagePayload);
         /*
          * Acknowledging the message
          */
@@ -34,111 +70,45 @@ trait Worker
 
     /**
      * @param AMQPMessage $req
-     * @param array $options
-     * @return AMQPMessage
+     * @param ReplyToMessagePayload $replyToMessagePayload
+     * @return void
      */
-    public function notifyTo(AMQPMessage $req, $options = []): AMQPMessage
+    public function notifyTo(AMQPMessage $req, ReplyToMessagePayload $replyToMessagePayload)
     {
-        /*
-         * Creating a reply message with the same correlation id than the incoming message
-         */
-        $options['correlation_id'] = $req->get('correlation_id');
-
-        $payload = new OrderMessagePayload(
-            $req->get('reply_to'),
-            $req->get('correlation_id'),
-            $options
-        );
-
-        $msg = new AMQPMessage(json_encode($payload), $options);
-
         /*
          * Publishing to the same channel from the incoming message
          */
         $req->delivery_info['channel']->basic_publish(
-            (new AMQPMessage(json_encode($payload), $options)),                        //message
+            (new AMQPMessage(json_encode($replyToMessagePayload), $replyToMessagePayload->getMessageProperties())),                        //message
             '', //exchange
-            $req->get('reply_to')       //routing key
-        );
-
-        return $msg;
-    }
-
-
-    /**
-     * @description execution cycle time.
-     */
-    public function execute()
-    {
-        $this->worker_id = uniqid("worker_id_");
-        $this->connect();
-        $this->queueDeclare();
-        $this->queueConsume();
-        while(count($this->channel->callbacks)) {
-            $this->channel->wait();
-        }
-        $this->disconnect();
-    }
-
-    public function __destruct()
-    {
-        $this->disconnect();
-    }
-
-    /**
-     *
-     */
-    protected function queueDeclare()
-    {
-        list($queue, ,) = $this->channel->queue_declare($this->getQueueName(), false, false, false, false);
-        $this->channel->queue_bind($queue, $this->getExchangeName(), $this->getQueueName());
-    }
-
-    /**
-     *
-     */
-    protected function queueConsume()
-    {
-        $this->channel->basic_qos(null, 1, null);
-        $this->channel->basic_consume(
-            $this->getQueueName(), //queue
-            '', //consumer tag
-            false, //no local
-            false, //no ack
-            false, //exclusive
-            false, //no wait
-            [$this,"main"] //$this->mainWork(AMQPMessage $req) callback
+            $req->get('reply_to') //routing key
         );
     }
-
-    /**
-     * @param AMQPMessage $req
-     */
-    public function main(AMQPMessage $req)
-    {
-        $this->ackEngine($req, $this->makeMessageHandler());
-    }
-
 
     protected function ackEngine(AMQPMessage $req, Closure $onMessage)
     {
         /**
+         * Create message payload objectValue from request body
+         */
+        $messagePayload = OrderMessagePayload::fromJson($req->getBody());
+
+        /**
          * let try to run the command. Otherwise catch the error.
          */
         try {
-            $answser = array_merge(
-                $onMessage($req), // Closure call
+            $answer = array_merge(
+                $onMessage($req, $messagePayload), // Closure call
                 [
                     'status' => 'SUCCESS'
                 ]
             );
         } catch (\Exception $exception) {
-            $answser = array_merge(
+            $answer = array_merge(
             [
                 "queue" => $this->getQueueName(),
                 "worker" => self::class,
                 "id" => $this->worker_id,
-                "correlation_id" => (!$req->has('correlation_id'))?'unknown':$req->get('correlation_id')
+                "correlation_id" => $messagePayload->getTaskId()
             ],
             [
                 'status' => 'ERROR',
@@ -148,12 +118,50 @@ trait Worker
 
         } finally {
             /**
+             * Create new message to reply back to manager with
+             * same taskId (correlation id)
+             */
+            $replyToMessage = ReplyToMessagePayload::build(
+                $messagePayload->getReplyQueue(),
+                $messagePayload->getTaskId(),
+                $answer
+            );
+
+            /**
              * We always consider current message as consumed
              * let the responsability of the manager to determine if
              * message have to be republished or not.
              */
-            $this->replyTo($req, $answser);
+            $this->replyTo($req, $replyToMessage);
         }
+    }
+
+    /**
+     * Create new queue on rabbitMQ and
+     * bind queue to exchange with routing key
+     */
+    protected function queueDeclare()
+    {
+        list($queue, ,) = $this->channel->queue_declare($this->getQueueName(), false, false, false, false);
+        $this->channel->queue_bind($queue, $this->getExchangeName(), $this->getQueueName());
+    }
+
+    /**
+     * Attach callback to queue
+     */
+    protected function queueConsume()
+    {
+        $this->channel->basic_qos(null, 1, null);
+
+        $this->channel->basic_consume(
+            $this->getQueueName(), //queue
+            '', //consumer tag
+            false, //no local
+            false, //no ack
+            false, //exclusive
+            false, //no wait
+            [$this,"main"] //$this->mainWork(AMQPMessage $req) callback
+        );
     }
 
     abstract public function getQueueName(): string;

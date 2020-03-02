@@ -5,6 +5,7 @@ namespace Ipedis\Demo\Rabbit\Worker\Handler;
 
 
 use Ipedis\Rabbit\Consumer\Handler\MessageHandler;
+use Ipedis\Rabbit\MessagePayload\ReplyToMessagePayload;
 use PhpAmqpLib\Message\AMQPMessage;
 
 class ManagerHandler extends MessageHandler
@@ -13,15 +14,10 @@ class ManagerHandler extends MessageHandler
      * @var int
      */
     protected $numberTask;
-    /**
-     * @var int
-     */
-    protected $count;
 
     public function __construct()
     {
         $this->numberTask = 10;
-        $this->count = 0;
     }
 
     public function getNumberTask(): int
@@ -29,35 +25,23 @@ class ManagerHandler extends MessageHandler
         return $this->numberTask;
     }
 
-    /**
-     * @return int
-     */
-    public function getCount(): int
+    public function onProgress(ReplyToMessagePayload $messagePayload)
     {
-        return $this->count;
+        print_r("\t progress :| - ".json_encode($messagePayload->getData()));
     }
 
-
-    public function onProgress(AMQPMessage $message)
+    public function onSuccess(ReplyToMessagePayload $messagePayload)
     {
-        print_r("\t progress :| - ".$message->getBody());
+        print_r("\t success :) - ".json_encode($messagePayload->getData())."\n\n\n");
     }
 
-    public function onSuccess(AMQPMessage $message)
+    public function onError(ReplyToMessagePayload $messagePayload)
     {
-        print_r("\t success :) - ".$message->getBody()."\n\n\n");
-        //for sample we just increment counter to determier if all tasks are done.
-        $this->count++;
+        print_r("\t fail :( - ".json_encode($messagePayload->getData())."\n\n\n");
     }
 
-    public function onError(AMQPMessage $message)
+    public function onFinish(ReplyToMessagePayload $messagePayload)
     {
-        print_r("\t fail :( - ".$message->getBody()."\n\n\n");
-        $this->count++;
-    }
-
-    public function onFinish(AMQPMessage $message)
-    {
-        print_r("\t Finish :( - ".$message->getBody()."\n\n\n");
+        print_r("\t Finish :( - ".json_encode($messagePayload->getData())."\n\n\n");
     }
 }

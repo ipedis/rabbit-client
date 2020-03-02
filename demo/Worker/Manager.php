@@ -86,7 +86,7 @@ class Manager extends ConnectorAbstract
             $this->channel->wait();
         }
 
-        printf("%s task are currently traited on queue : %s . Full traitment done :). \n", $this->messageHandler->getCount(), Worker::class);
+        printf("%s task are currently traited on queue : %s . Full traitment done :). \n", count($this->messageHandler->getCompletedTasks()), Worker::class);
     }
 
     /**

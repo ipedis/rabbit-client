@@ -3,66 +3,45 @@
 
 namespace Ipedis\Rabbit\MessagePayload;
 
+
 use Ipedis\Rabbit\Exception\MessagePayload\MessagePayloadFormatException;
 
-class OrderMessagePayload extends MessagePayloadAbstract
+class ReplyToMessagePayload extends MessagePayloadAbstract
 {
     const HEADER_CORRELATION_ID = 'correlation_id';
-    const HEADER_REPLY_QUEUE    = 'replyQueue';
 
     /**
      * @var string $taskId
      */
     private $taskId;
 
-    /**
-     * @var string $replyQueue
-     */
-    private $replyQueue;
-
-    public function __construct(string $channel, string $replyQueue, array $data = [], array $headers = [])
+    public function __construct(string $channel, string $taskId, array $data = [], array $headers = [])
     {
         parent::__construct($channel, $data, $headers);
 
-        if (empty($headers[self::HEADER_CORRELATION_ID])) {
-            /**
-             * Generate unique uuid for task
-             */
-            $this->taskId = uuid_create();
-            $this->addHeader(self::HEADER_CORRELATION_ID, $this->taskId);
-        } else {
-            /**
-             * Headers already has taskid
-             */
-            $this->taskId = $headers[self::HEADER_CORRELATION_ID];
-        }
-
-        /**
-         * Add reply queue to header
-         */
-        $this->replyQueue = $replyQueue;
-        $this->addHeader(self::HEADER_REPLY_QUEUE, $this->replyQueue);
+        $this->taskId = $taskId;
+        $this->addHeader(self::HEADER_CORRELATION_ID, $taskId);
     }
 
     /**
      * Factory method
      *
      * @param string $channel
-     * @param string $replyQueue
+     * @param string $taskId
      * @param array $data
      * @param array $headers
-     * @return OrderMessagePayload
+     * @return ReplyToMessagePayload
      */
-    public static function build(string $channel, string $replyQueue, array $data = [], array $headers = []): self
+    public static function build(string $channel, string $taskId, array $data = [], array $headers = []): self
     {
-        return new self($channel, $replyQueue, $data, $headers);
+        return new self($channel, $taskId, $data, $headers);
     }
 
     /**
      * Factory method to create message payload from json
      *
      * @param string $msg
-     * @return OrderMessagePayload
+     * @return ReplyToMessagePayload
      * @throws MessagePayloadFormatException
      */
     public static function fromJson(string $msg): self
@@ -73,7 +52,6 @@ class OrderMessagePayload extends MessagePayloadAbstract
             json_last_error() !== JSON_ERROR_NONE ||
             !isset($msgBody['header']) ||
             !isset($msgBody['header'][self::HEADER_CHANNEL]) ||
-            !isset($msgBody['header'][self::HEADER_REPLY_QUEUE]) ||
             !isset($msgBody['header'][self::HEADER_CORRELATION_ID]) ||
             !isset($msgBody['data'])
         ) {
@@ -82,7 +60,7 @@ class OrderMessagePayload extends MessagePayloadAbstract
 
         return new self(
             $msgBody['header'][self::HEADER_CHANNEL],
-            $msgBody['header'][self::HEADER_REPLY_QUEUE],
+            $msgBody['header'][self::HEADER_CORRELATION_ID],
             $msgBody['data'],
             $msgBody['header']
         );
@@ -97,14 +75,6 @@ class OrderMessagePayload extends MessagePayloadAbstract
     }
 
     /**
-     * @return string
-     */
-    public function getReplyQueue(): string
-    {
-        return $this->replyQueue;
-    }
-
-    /**
      * Helper function
      * to return custom properties for rabbitmq message obj
      *
@@ -113,8 +83,7 @@ class OrderMessagePayload extends MessagePayloadAbstract
     public function getMessageProperties(): array
     {
         return [
-            'correlation_id' => $this->getTaskId(),
-            'reply_to'       => $this->getReplyQueue()
+            'correlation_id' => $this->getTaskId()
         ];
     }
 }

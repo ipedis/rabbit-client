@@ -6,6 +6,8 @@ namespace Ipedis\Demo\Rabbit\Worker;
 
 use Ipedis\Demo\Rabbit\Utils\ConnectorAbstract;
 use Ipedis\Rabbit\Channel\OrderChannel;
+use Ipedis\Rabbit\MessagePayload\OrderMessagePayload;
+use Ipedis\Rabbit\MessagePayload\ReplyToMessagePayload;
 use Ipedis\Rabbit\Order\Worker as WorkerTrait;
 use PhpAmqpLib\Message\AMQPMessage;
 
@@ -21,9 +23,8 @@ class Worker extends ConnectorAbstract
 
     protected function makeMessageHandler(): \Closure
     {
-        return function (AMQPMessage $req) {
-            //First step, you will get Parameters from Message Bag.
-            $params = json_decode($req->body,true);
+        return function (AMQPMessage $req, OrderMessagePayload $messagePayload) {
+            $params = $messagePayload->getData();
 
             /**
              * Do some traitment.
@@ -33,7 +34,14 @@ class Worker extends ConnectorAbstract
              * If everything is ok, reply to manager.
              */
             sleep(1);
-            $this->notifyTo($req, ['status' => 'PROGRESS', 'step' => 1]);
+            $this->notifyTo(
+                $req,
+                ReplyToMessagePayload::build(
+                    $messagePayload->getReplyQueue(),
+                    $messagePayload->getTaskId(),
+                    ['status' => 'PROGRESS', 'step' => 1]
+                )
+            );
 
             /**
              * Do some traitment.
@@ -48,11 +56,11 @@ class Worker extends ConnectorAbstract
                 self::getQueueName(),
                 self::class,
                 $this->worker_id,
-                (!$req->has('correlation_id'))?'unknown':$req->get('correlation_id'),
-                ($params['data']["hasToFail"]) ? 'yes' : 'no'
+                $messagePayload->getTaskId(),
+                ($params["hasToFail"]) ? 'yes' : 'no'
             );
 
-            if($params['data']["hasToFail"]) throw new \Exception('oups something bad happen', 10);
+            if($params["hasToFail"]) throw new \Exception('oups something bad happen', 10);
 
             return ["foo" => "bar"];
         };
