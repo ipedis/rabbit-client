@@ -24,18 +24,24 @@ class ReplyToMessagePayload extends MessagePayloadAbstract
     }
 
     /**
-     * Factory method
+     * Factory method to build reply from order message
      *
-     * @param string $channel
-     * @param string $taskId
+     * @param OrderMessagePayload $orderMessagePayload
      * @param array $data
-     * @param array $headers
      * @return ReplyToMessagePayload
      */
-    public static function build(string $channel, string $taskId, array $data = [], array $headers = []): self
+    public static function buildFromOrderMessagePayload(
+        OrderMessagePayload $orderMessagePayload,
+        array $data = []
+    ): self
     {
-        return new self($channel, $taskId, $data, $headers);
+        return new self(
+            $orderMessagePayload->getReplyQueue(),
+            $orderMessagePayload->getTaskId(),
+            $data
+        );
     }
+
 
     /**
      * Factory method to create message payload from json

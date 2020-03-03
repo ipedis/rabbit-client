@@ -121,7 +121,7 @@ abstract class MessagePayloadAbstract implements MessagePayloadInterface
 
     public function jsonSerialize()
     {
-        $this->checkForMissingHeaders();
+        $this->setDefaultHeader();
 
         return [
             'header' => $this->getHeaders(),
@@ -146,7 +146,7 @@ abstract class MessagePayloadAbstract implements MessagePayloadInterface
      *
      * @throws \Exception
      */
-    private function checkForMissingHeaders(): void
+    private function setDefaultHeader(): void
     {
         /**
          * Add random uuid to header if missing

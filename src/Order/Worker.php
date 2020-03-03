@@ -16,7 +16,7 @@ trait Worker
     protected $worker_id;
 
     /**
-     * Initialise worker by
+     * Method to initialise worker by
      * - connecting to rabbitMQ
      * - declare the queue
      * - wait for message
@@ -121,15 +121,14 @@ trait Worker
              * Create new message to reply back to manager with
              * same taskId (correlation id)
              */
-            $replyToMessage = ReplyToMessagePayload::build(
-                $messagePayload->getReplyQueue(),
-                $messagePayload->getTaskId(),
+            $replyToMessage = ReplyToMessagePayload::buildFromOrderMessagePayload(
+                $messagePayload,
                 $answer
             );
 
             /**
              * We always consider current message as consumed
-             * let the responsability of the manager to determine if
+             * let the responsibility of the manager to determine if
              * message have to be republished or not.
              */
             $this->replyTo($req, $replyToMessage);

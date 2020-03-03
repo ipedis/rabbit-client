@@ -20,9 +20,9 @@ use PhpAmqpLib\Message\AMQPMessage;
 trait Manager
 {
     /**
-     * @var array $tasks
+     * @var array $dispatchedTasks
      */
-    private $tasks = [];
+    private $dispatchedTasks = [];
 
     /**
      * Function to publish on queue new Message,
@@ -31,10 +31,11 @@ trait Manager
      * - $correlation_id will help worker to know where and what he have to answer when he have finish.
      *
      * @param OrderMessagePayload $messagePayload
+     * @return string
      * @throws ChannelFactoryException
      * @throws ChannelNamingException
      */
-    public function publishTask(OrderMessagePayload $messagePayload)
+    public function publishTask(OrderMessagePayload $messagePayload): string
     {
         if (!$this->getChannelFactory() instanceof ChannelFactory) {
             throw new ChannelFactoryException('Must provide channel factory {channelFactory} with version and service.');
@@ -57,7 +58,9 @@ trait Manager
         /**
          * Add dispatched task to task list
          */
-        $this->tasks[] = $messagePayload->getTaskId();
+        $this->dispatchedTasks[] = $messagePayload->getTaskId();
+
+        return $messagePayload->getTaskId();
     }
 
     /**
@@ -122,9 +125,9 @@ trait Manager
         return $queue;
     }
 
-    public function getTasks(): array
+    public function getDispatchedTasks(): array
     {
-        return $this->tasks;
+        return $this->dispatchedTasks;
     }
 
     /**

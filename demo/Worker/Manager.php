@@ -82,7 +82,7 @@ class Manager extends ConnectorAbstract
         /**
          * Wait all tasks.
          */
-        while(count($this->messageHandler->getCompletedTasks()) !== count($this->getTasks())) {
+        while(count($this->messageHandler->getCompletedTasks()) !== count($this->getDispatchedTasks())) {
             $this->channel->wait();
         }
 
