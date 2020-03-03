@@ -36,9 +36,8 @@ class Worker extends ConnectorAbstract
             sleep(1);
             $this->notifyTo(
                 $req,
-                ReplyToMessagePayload::build(
-                    $messagePayload->getReplyQueue(),
-                    $messagePayload->getTaskId(),
+                ReplyToMessagePayload::buildFromOrderMessagePayload(
+                    $messagePayload,
                     ['status' => 'PROGRESS', 'step' => 1]
                 )
             );
