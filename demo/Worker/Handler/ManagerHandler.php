@@ -27,7 +27,7 @@ class ManagerHandler extends MessageHandler
 
     public function onProgress(ReplyToMessagePayload $messagePayload)
     {
-        print_r("\t progress :| - ".json_encode($messagePayload->getData()));
+        print_r("\t progress :| - ".json_encode($messagePayload->getData())."\n\n\n");
     }
 
     public function onSuccess(ReplyToMessagePayload $messagePayload)

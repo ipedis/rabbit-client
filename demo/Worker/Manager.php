@@ -9,7 +9,9 @@ use Ipedis\Demo\Rabbit\Worker\Handler\ManagerHandler;
 use Ipedis\Rabbit\Channel\Factory\ChannelFactory;
 use Ipedis\Rabbit\Channel\OrderChannel;
 use Ipedis\Rabbit\Consumer\Handler\MessageHandler;
+use Ipedis\Rabbit\Consumer\Handler\MessageHandlerInterface;
 use Ipedis\Rabbit\MessagePayload\OrderMessagePayload;
+use Ipedis\Rabbit\MessagePayload\ReplyToMessagePayload;
 use Ipedis\Rabbit\Order\Manager as ManagerTrait;
 
 
@@ -59,7 +61,14 @@ class Manager extends ConnectorAbstract
 
     public function main()
     {
-        $this->messageHandler = new ManagerHandler();
+        /**
+         * Example of binding a handler to an event
+         */
+        $this->messageHandler = (new ManagerHandler())
+            ->bind(MessageHandlerInterface::TYPE_PROGRESS, function(ReplyToMessagePayload $messagePayload) {
+                print_r("\t ======> In progress binded handler :) - ".json_encode($messagePayload->getData())."\n\n\n");
+            })
+        ;
         
         $anoQueue = $this->bindCallbackToAnonymousQueue($this->messageHandler);
 
