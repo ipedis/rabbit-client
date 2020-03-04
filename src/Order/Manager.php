@@ -6,6 +6,7 @@ namespace Ipedis\Rabbit\Order;
 use Ipedis\Rabbit\Channel\Factory\ChannelFactory;
 use Ipedis\Rabbit\Channel\OrderChannel;
 use Ipedis\Rabbit\Consumer\Handler\MessageHandlerInterface;
+use Ipedis\Rabbit\DTO\Task\Task;
 use Ipedis\Rabbit\Exception\Channel\ChannelFactoryException;
 use Ipedis\Rabbit\Exception\Channel\ChannelNamingException;
 use Ipedis\Rabbit\Exception\InvalidCallableException;
@@ -25,13 +26,10 @@ trait Manager
     private $dispatchedTasks = [];
 
     /**
-     * Function to publish on queue new Message,
-     * can have two optional parameters :
-     * - $replyQueue
-     * - $correlation_id will help worker to know where and what he have to answer when he have finish.
+     * Function to publish new message/task on queue
      *
      * @param OrderMessagePayload $messagePayload
-     * @return string
+     * @return string TaskId
      * @throws ChannelFactoryException
      * @throws ChannelNamingException
      */
@@ -56,9 +54,9 @@ trait Manager
         );
 
         /**
-         * Add dispatched task to task list
+         * Add task to dispatched task list
          */
-        $this->dispatchedTasks[] = $messagePayload->getTaskId();
+        $this->addToDispatchedTasks($messagePayload);
 
         return $messagePayload->getTaskId();
     }
@@ -125,9 +123,25 @@ trait Manager
         return $queue;
     }
 
+    /**
+     * Get collection of dispatched task
+     *
+     * @return array
+     */
     public function getDispatchedTasks(): array
     {
         return $this->dispatchedTasks;
+    }
+
+    /**
+     * Helper to get progression rate
+     *
+     * @param array $completedTasks
+     * @return float
+     */
+    public function getPercentageCompletedTasks(array $completedTasks): float
+    {
+        return round((count($completedTasks) / count($this->dispatchedTasks)) * 100);
     }
 
     /**
@@ -155,6 +169,19 @@ trait Manager
 
         // no criteria fulfilled, throw an exception.
         throw new ChannelNamingException('Invalid channel provided.');
+    }
+
+    /**
+     * Add task to dispatched task list
+     *
+     * @param OrderMessagePayload $messagePayload
+     */
+    private function addToDispatchedTasks(OrderMessagePayload $messagePayload)
+    {
+        $this->dispatchedTasks[] = Task::build(
+            $messagePayload->getTaskId(),
+            MessageHandlerInterface::TYPE_PROGRESS
+        );
     }
 
     abstract protected function getExchangeName(): string;

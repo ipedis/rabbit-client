@@ -5,7 +5,7 @@ namespace Ipedis\Rabbit\MessagePayload;
 
 use Ipedis\Rabbit\Exception\MessagePayload\MessagePayloadFormatException;
 
-class OrderMessagePayload extends MessagePayloadAbstract
+final class OrderMessagePayload extends MessagePayloadAbstract
 {
     const HEADER_CORRELATION_ID = 'correlation_id';
     const HEADER_REPLY_QUEUE    = 'replyQueue';

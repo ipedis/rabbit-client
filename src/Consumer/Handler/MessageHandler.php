@@ -1,8 +1,10 @@
 <?php
 
-
 namespace Ipedis\Rabbit\Consumer\Handler;
 
+
+use Closure;
+use Ipedis\Rabbit\DTO\Task\Task;
 use Ipedis\Rabbit\Exception\MessagePayload\MessagePayloadFormatException;
 use Ipedis\Rabbit\MessagePayload\MessagePayloadInterface;
 use Ipedis\Rabbit\MessagePayload\ReplyMessagePayload;
@@ -14,29 +16,31 @@ abstract class MessageHandler implements MessageHandlerInterface
     /**
      * Keep track of completed tasks
      *
-     * @var array $tasksCompleted
+     * @var array $completedTasks
      */
-    protected $tasksCompleted = [];
+    protected $completedTasks = [];
 
     /**
-     * Holds a collection of binded handlers
-     * Each element of collection has the following format [
-     *  event   => 'event',
-     *  handler => callback()
-     * ]
+     * Holds a collection of callable handlers to be
+     * executed on defined events
      *
-     * @var array $bindedHandlers
+     * Only one handler is allowed for each event type
+     *
+     * @var array $eventHandlers
      */
-    protected $bindedHandlers = [];
+    protected $eventHandlers = [];
 
     /**
+     * The main method that gets executed
+     * when implementing MessageHandlerInterface
+     *
      * @param AMQPMessage $req
      * @throws MessagePayloadFormatException
      */
     public function on(AMQPMessage $req)
     {
         /**
-         * Create message payload objectValue from request body
+         * Re-construct message payload from request body
          */
         $messagePayload = ReplyMessagePayload::fromJson($req->getBody());
         $data = $messagePayload->getData();
@@ -46,11 +50,11 @@ abstract class MessageHandler implements MessageHandlerInterface
         switch ($taskStatus)
         {
             case self::TYPE_SUCCESS:
-                $this->setTaskAsCompleted($messagePayload->getTaskId());
+                $this->setTaskAsCompleted($messagePayload->getTaskId(), self::TYPE_SUCCESS);
                 $this->onSuccess($messagePayload);
                 break;
             case self::TYPE_ERROR:
-                $this->setTaskAsCompleted($messagePayload->getTaskId());
+                $this->setTaskAsCompleted($messagePayload->getTaskId(), self::TYPE_ERROR);
                 $this->onError($messagePayload);
                 break;
             case self::TYPE_PROGRESS:
@@ -59,12 +63,12 @@ abstract class MessageHandler implements MessageHandlerInterface
         }
 
         /**
-         * Execute binded handler for current event if any
+         * Execute handler for current event if any
          */
-        $this->executeHandlersForEvent($taskStatus, $messagePayload);
+        $this->executeEventHandler($taskStatus, $messagePayload);
 
         /**
-         * An error or success eventually leads to finish
+         * An error or success eventually leads to completion
          */
         if ($taskStatus === self::TYPE_SUCCESS || $taskStatus === self::TYPE_ERROR) {
             $this->onFinish($messagePayload);
@@ -72,16 +76,16 @@ abstract class MessageHandler implements MessageHandlerInterface
     }
 
     /**
-     * Bind handler to allowed events
+     * Bind handler to allowed event
      *
      * @param string $event
-     * @param \Closure $handler
+     * @param Closure $handler
      * @return MessageHandler
      */
-    public function bind(string $event, \Closure $handler) : self
+    public function bind(string $event, Closure $handler) : self
     {
         if (in_array($event, self::AVAILABLE_TYPES)) {
-            $this->bindedHandlers[$event] = $handler;
+            $this->eventHandlers[$event] = $handler;
         }
 
         return $this;
@@ -94,17 +98,42 @@ abstract class MessageHandler implements MessageHandlerInterface
      */
     public function getCompletedTasks(): array
     {
-        return $this->tasksCompleted;
+        return $this->completedTasks;
     }
 
     /**
-     * Add task id to complete collection
+     * Get collection of successfully completed tasks
+     *
+     * @return array
+     */
+    public function getSuccessfulTasks(): array
+    {
+        return array_filter($this->completedTasks, function(Task $task) {
+            return $task->getStatus() === self::TYPE_SUCCESS;
+        });
+    }
+
+    /**
+     * Get collection of completed tasks which have failed
+     *
+     * @return array
+     */
+    public function getFailedTasks(): array
+    {
+        return array_filter($this->completedTasks, function (Task $task) {
+            return $task->getStatus() === self::TYPE_ERROR;
+        });
+    }
+
+    /**
+     * Add task to completion list
      *
      * @param string $taskId
+     * @param string $status
      */
-    private function setTaskAsCompleted(string $taskId)
+    private function setTaskAsCompleted(string $taskId, string $status)
     {
-        $this->tasksCompleted[] = $taskId;
+        $this->completedTasks[] = Task::build($taskId, $status);
     }
 
     /**
@@ -113,10 +142,10 @@ abstract class MessageHandler implements MessageHandlerInterface
      * @param string $event
      * @param MessagePayloadInterface $messagePayload
      */
-    private function executeHandlersForEvent(string $event, MessagePayloadInterface $messagePayload)
+    private function executeEventHandler(string $event, MessagePayloadInterface $messagePayload)
     {
-        if (isset($this->bindedHandlers[$event])) {
-            $handler = $this->bindedHandlers[$event];
+        if (isset($this->eventHandlers[$event])) {
+            $handler = $this->eventHandlers[$event];
             $handler($messagePayload);
         }
     }

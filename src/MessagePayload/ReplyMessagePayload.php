@@ -6,7 +6,7 @@ namespace Ipedis\Rabbit\MessagePayload;
 use Ipedis\Rabbit\Consumer\Handler\MessageHandlerInterface;
 use Ipedis\Rabbit\Exception\MessagePayload\MessagePayloadFormatException;
 
-class ReplyMessagePayload extends MessagePayloadAbstract
+final class ReplyMessagePayload extends MessagePayloadAbstract
 {
     const HEADER_CORRELATION_ID = 'correlation_id';
     const HEADER_STATUS = 'status';
