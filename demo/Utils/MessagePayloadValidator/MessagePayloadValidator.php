@@ -12,6 +12,8 @@ use Opis\JsonSchema\Validator;
 
 class MessagePayloadValidator implements ValidatorInterface
 {
+    const CHANNEL_NAME_SEPARATOR = '.';
+
     /**
      * @var Validator
      */
@@ -55,7 +57,7 @@ class MessagePayloadValidator implements ValidatorInterface
      */
     private function getSchemaPath(MessagePayloadInterface $messagePayload) : string
     {
-        $schemaPath = implode('/', explode('.', $messagePayload->getChannel()));
+        $schemaPath = str_replace(self::CHANNEL_NAME_SEPARATOR, DIRECTORY_SEPARATOR, $messagePayload->getChannel());
         $schemaAbsolutePath = sprintf('%s/../../documents/schema/%s/schema.json', __DIR__, $schemaPath);
 
         if (!file_exists($schemaAbsolutePath)) {

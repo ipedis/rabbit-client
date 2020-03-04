@@ -5,7 +5,7 @@ namespace Ipedis\Rabbit\MessagePayload;
 
 use Ipedis\Rabbit\Exception\MessagePayload\MessagePayloadFormatException;
 
-final class EventMessagePayload extends MessagePayloadAbstract
+class EventMessagePayload extends MessagePayloadAbstract
 {
     /**
      * Factory method
