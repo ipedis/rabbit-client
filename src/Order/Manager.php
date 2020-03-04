@@ -44,7 +44,7 @@ trait Manager
         /**
          * Validate channel and return queue name
          */
-        $queue = $this->getQueueName($messagePayload->getChannel());
+        $channel = $this->getChannelName($messagePayload->getChannel());
 
         /**
          * Push it to the pile of tasks for this queue.
@@ -52,7 +52,7 @@ trait Manager
         $this->channel->basic_publish(
             (new AMQPMessage(json_encode($messagePayload), $messagePayload->getMessageProperties())),
             $this->getExchangeName(),
-            $queue
+            $channel
         );
 
         /**
@@ -135,7 +135,7 @@ trait Manager
      * @return string
      * @throws ChannelNamingException
      */
-    private function getQueueName($queueName): string
+    private function getChannelName($queueName): string
     {
         if (is_string($queueName)) {
             // if it is partial channel name
