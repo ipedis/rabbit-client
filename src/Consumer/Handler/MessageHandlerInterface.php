@@ -4,7 +4,7 @@
 namespace Ipedis\Rabbit\Consumer\Handler;
 
 
-use Ipedis\Rabbit\MessagePayload\ReplyToMessagePayload;
+use Ipedis\Rabbit\MessagePayload\ReplyMessagePayload;
 use PhpAmqpLib\Message\AMQPMessage;
 
 interface MessageHandlerInterface
@@ -16,8 +16,8 @@ interface MessageHandlerInterface
     const STATUS_KEY = 'status';
 
     public function on(AMQPMessage $req);
-    public function onSuccess(ReplyToMessagePayload $messagePayload);
-    public function onError(ReplyToMessagePayload $messagePayload);
-    public function onProgress(ReplyToMessagePayload $messagePayload);
-    public function onFinish(ReplyToMessagePayload $messagePayload);
+    public function onSuccess(ReplyMessagePayload $messagePayload);
+    public function onError(ReplyMessagePayload $messagePayload);
+    public function onProgress(ReplyMessagePayload $messagePayload);
+    public function onFinish(ReplyMessagePayload $messagePayload);
 }

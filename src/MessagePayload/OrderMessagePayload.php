@@ -20,7 +20,7 @@ class OrderMessagePayload extends MessagePayloadAbstract
      */
     private $replyQueue;
 
-    public function __construct(string $channel, string $replyQueue, array $data = [], array $headers = [])
+    protected function __construct(string $channel, string $replyQueue, array $data = [], array $headers = [])
     {
         parent::__construct($channel, $data, $headers);
 

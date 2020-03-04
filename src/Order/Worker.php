@@ -2,9 +2,13 @@
 
 namespace Ipedis\Rabbit\Order;
 
+
 use Closure;
+use Exception;
+use Ipedis\Rabbit\Consumer\Handler\MessageHandlerInterface;
+use Ipedis\Rabbit\Exception\MessagePayload\MessagePayloadFormatException;
 use Ipedis\Rabbit\MessagePayload\OrderMessagePayload;
-use Ipedis\Rabbit\MessagePayload\ReplyToMessagePayload;
+use Ipedis\Rabbit\MessagePayload\ReplyMessagePayload;
 use PhpAmqpLib\Message\AMQPMessage;
 
 /**
@@ -44,6 +48,7 @@ trait Worker
      * Method first executed when receiving message
      *
      * @param AMQPMessage $req
+     * @throws MessagePayloadFormatException
      */
     public function main(AMQPMessage $req)
     {
@@ -51,15 +56,19 @@ trait Worker
     }
 
     /**
+     * Notify manager with reply message and
+     * acknowledge message as processed on rabbitMQ
+     *
      * @param AMQPMessage $req
-     * @param ReplyToMessagePayload $replyToMessagePayload
+     * @param ReplyMessagePayload $replyToMessagePayload
      */
-    public function replyTo(AMQPMessage $req, ReplyToMessagePayload $replyToMessagePayload)
+    public function replyTo(AMQPMessage $req, ReplyMessagePayload $replyToMessagePayload)
     {
         /**
-         * Craft message.
+         * Notify manager with reply
          */
         $this->notifyTo($req, $replyToMessagePayload);
+
         /*
          * Acknowledging the message
          */
@@ -69,60 +78,78 @@ trait Worker
     }
 
     /**
+     * Notify manager with an update
+     * Can be a progress update or the final reply back message
+     *
      * @param AMQPMessage $req
-     * @param ReplyToMessagePayload $replyToMessagePayload
+     * @param ReplyMessagePayload $replyToMessagePayload
      * @return void
      */
-    public function notifyTo(AMQPMessage $req, ReplyToMessagePayload $replyToMessagePayload)
+    public function notifyTo(AMQPMessage $req, ReplyMessagePayload $replyToMessagePayload)
     {
         /*
          * Publishing to the same channel from the incoming message
          */
         $req->delivery_info['channel']->basic_publish(
-            (new AMQPMessage(json_encode($replyToMessagePayload), $replyToMessagePayload->getMessageProperties())),                        //message
+            (new AMQPMessage(json_encode($replyToMessagePayload), $replyToMessagePayload->getMessageProperties())), //message
             '', //exchange
             $req->get('reply_to') //routing key
         );
     }
 
+    /**
+     * Helper method
+     *
+     * Consume message by calling client callback and
+     * standardize the reply to manager
+     *
+     * - Notify status success if callback run successfully
+     * - Notify status error if error captured while running client callback
+     *
+     * @param AMQPMessage $req
+     * @param Closure $onMessage
+     * @throws MessagePayloadFormatException
+     */
     protected function ackEngine(AMQPMessage $req, Closure $onMessage)
     {
         /**
-         * Create message payload objectValue from request body
+         * Re-construct message payload objectValue from request body
          */
         $messagePayload = OrderMessagePayload::fromJson($req->getBody());
 
         /**
-         * let try to run the command. Otherwise catch the error.
+         * let try to run the client callback. Otherwise catch the error.
          */
         try {
-            $answer = array_merge(
-                $onMessage($req, $messagePayload), // Closure call
-                [
-                    'status' => 'SUCCESS'
-                ]
-            );
-        } catch (\Exception $exception) {
+            $answer = $onMessage($req, $messagePayload);
+
+            $status = MessageHandlerInterface::TYPE_SUCCESS;
+            $answer = array_merge($answer, [
+                'status' => $status
+            ]);
+        } catch (Exception $exception) {
+            $status = MessageHandlerInterface::TYPE_ERROR;
+
             $answer = array_merge(
             [
-                "queue" => $this->getQueueName(),
+                "queue"  => $this->getQueueName(),
                 "worker" => self::class,
-                "id" => $this->worker_id,
+                "id"     => $this->worker_id,
                 "correlation_id" => $messagePayload->getTaskId()
             ],
             [
-                'status' => 'ERROR',
+                'status'  => $status,
                 'message' => $exception->getMessage(),
-                'code' => $exception->getCode()
+                'code'    => $exception->getCode()
             ]);
-
         } finally {
             /**
-             * Create new message to reply back to manager with
+             * Create final message to reply back to manager with
              * same taskId (correlation id)
              */
-            $replyToMessage = ReplyToMessagePayload::buildFromOrderMessagePayload(
+            $replyToMessage = ReplyMessagePayload::buildFromOrderMessagePayload(
                 $messagePayload,
+                $status,
                 $answer
             );
 
@@ -163,7 +190,25 @@ trait Worker
         );
     }
 
+    /**
+     * The queue name to be used by the worker
+     *
+     * @return string
+     */
     abstract public function getQueueName(): string;
+
+    /**
+     * The exchange to be used to bind worker's queue
+     *
+     * @return string
+     */
     abstract protected function getExchangeName(): string;
+
+    /**
+     * The client callback to be executed
+     * on receiving a message
+     *
+     * @return Closure
+     */
     abstract protected function makeMessageHandler(): Closure;
 }

@@ -1,53 +1,84 @@
 <?php
 
-
 namespace Ipedis\Rabbit\MessagePayload;
 
 
+use Ipedis\Rabbit\Consumer\Handler\MessageHandlerInterface;
 use Ipedis\Rabbit\Exception\MessagePayload\MessagePayloadFormatException;
 
-class ReplyToMessagePayload extends MessagePayloadAbstract
+class ReplyMessagePayload extends MessagePayloadAbstract
 {
     const HEADER_CORRELATION_ID = 'correlation_id';
+    const HEADER_STATUS = 'status';
 
     /**
      * @var string $taskId
      */
     private $taskId;
 
-    public function __construct(string $channel, string $taskId, array $data = [], array $headers = [])
+    /**
+     * @var string $status
+     */
+    private $status;
+
+    protected function __construct(
+        string $channel,
+        string $taskId,
+        string $status,
+        array $data = [],
+        array $headers = []
+    )
     {
         parent::__construct($channel, $data, $headers);
 
         $this->taskId = $taskId;
         $this->addHeader(self::HEADER_CORRELATION_ID, $taskId);
+
+        $this->status = $status;
+        $this->addHeader(self::HEADER_STATUS, $status);
     }
 
     /**
      * Factory method to build reply from order message
      *
      * @param OrderMessagePayload $orderMessagePayload
+     * @param string $status
      * @param array $data
-     * @return ReplyToMessagePayload
+     * @param array $headers
+     * @return ReplyMessagePayload
+     * @throws MessagePayloadFormatException
      */
     public static function buildFromOrderMessagePayload(
         OrderMessagePayload $orderMessagePayload,
-        array $data = []
-    ): self
-    {
+        string $status,
+        array $data = [],
+        array $headers = []
+    ): self {
+        if (!in_array($status, MessageHandlerInterface::AVAILABLE_TYPES)) {
+            throw new MessagePayloadFormatException('Invalid Status for building reply message.');
+        }
+
+        /**
+         * Add order payload to data
+         */
+        $data = array_merge($data, [
+            'orderPayload' => $orderMessagePayload->getData()
+        ]);
+
         return new self(
             $orderMessagePayload->getReplyQueue(),
             $orderMessagePayload->getTaskId(),
-            $data
+            $status,
+            $data,
+            $headers
         );
     }
-
 
     /**
      * Factory method to create message payload from json
      *
      * @param string $msg
-     * @return ReplyToMessagePayload
+     * @return ReplyMessagePayload
      * @throws MessagePayloadFormatException
      */
     public static function fromJson(string $msg): self
@@ -59,6 +90,7 @@ class ReplyToMessagePayload extends MessagePayloadAbstract
             !isset($msgBody['header']) ||
             !isset($msgBody['header'][self::HEADER_CHANNEL]) ||
             !isset($msgBody['header'][self::HEADER_CORRELATION_ID]) ||
+            !isset($msgBody['header'][self::HEADER_STATUS]) ||
             !isset($msgBody['data'])
         ) {
             throw new MessagePayloadFormatException('Order message body format is invalid');
@@ -67,6 +99,7 @@ class ReplyToMessagePayload extends MessagePayloadAbstract
         return new self(
             $msgBody['header'][self::HEADER_CHANNEL],
             $msgBody['header'][self::HEADER_CORRELATION_ID],
+            $msgBody['header'][self::HEADER_STATUS],
             $msgBody['data'],
             $msgBody['header']
         );
@@ -78,6 +111,14 @@ class ReplyToMessagePayload extends MessagePayloadAbstract
     public function getTaskId(): string
     {
         return $this->taskId;
+    }
+
+    /**
+     * @return string
+     */
+    public function getStatus(): string
+    {
+        return $this->status;
     }
 
     /**

@@ -6,8 +6,9 @@ namespace Ipedis\Demo\Rabbit\Worker;
 
 use Ipedis\Demo\Rabbit\Utils\ConnectorAbstract;
 use Ipedis\Rabbit\Channel\OrderChannel;
+use Ipedis\Rabbit\Consumer\Handler\MessageHandlerInterface;
 use Ipedis\Rabbit\MessagePayload\OrderMessagePayload;
-use Ipedis\Rabbit\MessagePayload\ReplyToMessagePayload;
+use Ipedis\Rabbit\MessagePayload\ReplyMessagePayload;
 use Ipedis\Rabbit\Order\Worker as WorkerTrait;
 use PhpAmqpLib\Message\AMQPMessage;
 
@@ -36,8 +37,9 @@ class Worker extends ConnectorAbstract
             sleep(1);
             $this->notifyTo(
                 $req,
-                ReplyToMessagePayload::buildFromOrderMessagePayload(
+                ReplyMessagePayload::buildFromOrderMessagePayload(
                     $messagePayload,
+                    MessageHandlerInterface::TYPE_PROGRESS,
                     ['status' => 'PROGRESS', 'step' => 1]
                 )
             );

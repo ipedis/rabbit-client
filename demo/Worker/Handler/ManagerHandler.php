@@ -1,12 +1,10 @@
 <?php
 
-
 namespace Ipedis\Demo\Rabbit\Worker\Handler;
 
 
 use Ipedis\Rabbit\Consumer\Handler\MessageHandler;
-use Ipedis\Rabbit\MessagePayload\ReplyToMessagePayload;
-use PhpAmqpLib\Message\AMQPMessage;
+use Ipedis\Rabbit\MessagePayload\ReplyMessagePayload;
 
 class ManagerHandler extends MessageHandler
 {
@@ -25,22 +23,22 @@ class ManagerHandler extends MessageHandler
         return $this->numberTask;
     }
 
-    public function onProgress(ReplyToMessagePayload $messagePayload)
+    public function onProgress(ReplyMessagePayload $messagePayload)
     {
         print_r("\t progress :| - ".json_encode($messagePayload->getData())."\n\n\n");
     }
 
-    public function onSuccess(ReplyToMessagePayload $messagePayload)
+    public function onSuccess(ReplyMessagePayload $messagePayload)
     {
         print_r("\t success :) - ".json_encode($messagePayload->getData())."\n\n\n");
     }
 
-    public function onError(ReplyToMessagePayload $messagePayload)
+    public function onError(ReplyMessagePayload $messagePayload)
     {
         print_r("\t fail :( - ".json_encode($messagePayload->getData())."\n\n\n");
     }
 
-    public function onFinish(ReplyToMessagePayload $messagePayload)
+    public function onFinish(ReplyMessagePayload $messagePayload)
     {
         print_r("\t Finish :( - ".json_encode($messagePayload->getData())."\n\n\n");
     }

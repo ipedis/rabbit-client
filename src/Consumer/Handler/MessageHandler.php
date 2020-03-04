@@ -5,7 +5,7 @@ namespace Ipedis\Rabbit\Consumer\Handler;
 
 use Ipedis\Rabbit\Exception\MessagePayload\MessagePayloadFormatException;
 use Ipedis\Rabbit\MessagePayload\MessagePayloadInterface;
-use Ipedis\Rabbit\MessagePayload\ReplyToMessagePayload;
+use Ipedis\Rabbit\MessagePayload\ReplyMessagePayload;
 use PhpAmqpLib\Message\AMQPMessage;
 
 
@@ -38,7 +38,7 @@ abstract class MessageHandler implements MessageHandlerInterface
         /**
          * Create message payload objectValue from request body
          */
-        $messagePayload = ReplyToMessagePayload::fromJson($req->getBody());
+        $messagePayload = ReplyMessagePayload::fromJson($req->getBody());
         $data = $messagePayload->getData();
 
         $taskStatus = strtolower($data[self::STATUS_KEY]);

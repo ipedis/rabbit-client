@@ -42,7 +42,7 @@ abstract class MessagePayloadAbstract implements MessagePayloadInterface
      * @param array $data
      * @param array $headers
      */
-    public function __construct(string $channel, array $data = [], array $headers = [])
+    protected function __construct(string $channel, array $data = [], array $headers = [])
     {
         $this->data = $data;
         $this->headers = $headers;
