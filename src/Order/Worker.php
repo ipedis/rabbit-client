@@ -3,13 +3,15 @@
 namespace Ipedis\Rabbit\Order;
 
 
+use AMQPEnvelope;
+use AMQPExchange;
+use AMQPQueue;
 use Closure;
 use Exception;
 use Ipedis\Rabbit\Consumer\Handler\MessageHandlerInterface;
 use Ipedis\Rabbit\Exception\MessagePayload\MessagePayloadFormatException;
 use Ipedis\Rabbit\MessagePayload\OrderMessagePayload;
 use Ipedis\Rabbit\MessagePayload\ReplyMessagePayload;
-use PhpAmqpLib\Message\AMQPMessage;
 
 /**
  * Class Worker
@@ -17,13 +19,21 @@ use PhpAmqpLib\Message\AMQPMessage;
  */
 trait Worker
 {
+    /**
+     * @var string $worker_id
+     */
     protected $worker_id;
+
+    /**
+     * @var AMQPQueue $queue
+     */
+    protected $queue = null;
 
     /**
      * Method to initialise worker by
      * - connecting to rabbitMQ
      * - declare the queue
-     * - wait for message
+     * - declare callback to be used to consume message
      */
     public function execute()
     {
@@ -31,10 +41,6 @@ trait Worker
         $this->connect();
         $this->queueDeclare();
         $this->queueConsume();
-
-        while(count($this->channel->callbacks)) {
-            $this->channel->wait();
-        }
 
         $this->disconnect();
     }
@@ -47,53 +53,65 @@ trait Worker
     /**
      * Method first executed when receiving message
      *
-     * @param AMQPMessage $req
+     * @param AMQPEnvelope $message
+     * @param AMQPQueue $q
      * @throws MessagePayloadFormatException
+     * @throws \AMQPChannelException
+     * @throws \AMQPConnectionException
+     * @throws \AMQPExchangeException
      */
-    public function main(AMQPMessage $req)
+    public function main(AMQPEnvelope $message, AMQPQueue $q)
     {
-        $this->ackEngine($req, $this->makeMessageHandler());
+        $this->ackEngine($message, $q, $this->makeMessageHandler());
     }
 
     /**
      * Notify manager with reply message and
      * acknowledge message as processed on rabbitMQ
      *
-     * @param AMQPMessage $req
+     * @param AMQPEnvelope $message
+     * @param AMQPQueue $q
      * @param ReplyMessagePayload $replyToMessagePayload
+     * @throws \AMQPChannelException
+     * @throws \AMQPConnectionException
+     * @throws \AMQPExchangeException
      */
-    public function replyTo(AMQPMessage $req, ReplyMessagePayload $replyToMessagePayload)
+    public function replyTo(AMQPEnvelope $message, AMQPQueue $q, ReplyMessagePayload $replyToMessagePayload)
     {
         /**
          * Notify manager with reply
          */
-        $this->notifyTo($req, $replyToMessagePayload);
+        $this->notifyTo($message, $replyToMessagePayload);
 
         /*
          * Acknowledging the message
          */
-        $req->delivery_info['channel']->basic_ack(
-            $req->delivery_info['delivery_tag'] //delivery tag
-        );
+        $q->ack($message->getDeliveryTag());
     }
 
     /**
      * Notify manager with an update
      * Can be a progress update or the final reply back message
      *
-     * @param AMQPMessage $req
+     * @param AMQPEnvelope $message
      * @param ReplyMessagePayload $replyToMessagePayload
      * @return void
+     * @throws \AMQPChannelException
+     * @throws \AMQPConnectionException
+     * @throws \AMQPExchangeException
      */
-    public function notifyTo(AMQPMessage $req, ReplyMessagePayload $replyToMessagePayload)
+    public function notifyTo(AMQPEnvelope $message, ReplyMessagePayload $replyToMessagePayload)
     {
-        /*
+        $defaultExchange = new AMQPExchange($this->channel);
+
+        /**
          * Publishing to the same channel from the incoming message
          */
-        $req->delivery_info['channel']->basic_publish(
-            (new AMQPMessage(json_encode($replyToMessagePayload), $replyToMessagePayload->getMessageProperties())), //message
-            '', //exchange
-            $req->get('reply_to') //routing key
+        $defaultExchange->publish(
+            json_encode($replyToMessagePayload),
+            $message->getReplyTo(),
+            AMQP_NOPARAM,
+            $replyToMessagePayload->getMessageProperties()
         );
     }
 
@@ -106,22 +124,26 @@ trait Worker
      * - Notify status success if callback run successfully
      * - Notify status error if error captured while running client callback
      *
-     * @param AMQPMessage $req
+     * @param AMQPEnvelope $message
+     * @param AMQPQueue $q
      * @param Closure $onMessage
      * @throws MessagePayloadFormatException
+     * @throws \AMQPChannelException
+     * @throws \AMQPConnectionException
+     * @throws \AMQPExchangeException
      */
-    protected function ackEngine(AMQPMessage $req, Closure $onMessage)
+    protected function ackEngine(AMQPEnvelope $message, AMQPQueue $q, Closure $onMessage)
     {
         /**
          * Re-construct message payload objectValue from request body
          */
-        $messagePayload = OrderMessagePayload::fromJson($req->getBody());
+        $messagePayload = OrderMessagePayload::fromJson($message->getBody());
 
         /**
          * let try to run the client callback. Otherwise catch the error.
          */
         try {
-            $answer = $onMessage($req, $messagePayload);
+            $answer = $onMessage($message, $messagePayload);
 
             $status = MessageHandlerInterface::TYPE_SUCCESS;
             $answer = array_merge($answer, [
@@ -158,7 +180,7 @@ trait Worker
              * let the responsibility of the manager to determine if
              * message have to be republished or not.
              */
-            $this->replyTo($req, $replyToMessage);
+            $this->replyTo($message, $q, $replyToMessage);
         }
     }
 
@@ -168,26 +190,21 @@ trait Worker
      */
     protected function queueDeclare()
     {
-        list($queue, ,) = $this->channel->queue_declare($this->getQueueName(), false, false, false, false);
-        $this->channel->queue_bind($queue, $this->getExchangeName(), $this->getQueueName());
+        $this->queue = new AMQPQueue($this->channel);
+        $this->queue->setName($this->getQueueName());
+        $this->queue->setFlags(AMQP_EXCLUSIVE);
+        $this->queue->declareQueue();
+
+        $this->queue->bind($this->getExchangeName(), $this->getQueueName());
     }
 
     /**
      * Attach callback to queue
+     *
      */
     protected function queueConsume()
     {
-        $this->channel->basic_qos(null, 1, null);
-
-        $this->channel->basic_consume(
-            $this->getQueueName(), //queue
-            '', //consumer tag
-            false, //no local
-            false, //no ack
-            false, //exclusive
-            false, //no wait
-            [$this,"main"] //$this->mainWork(AMQPMessage $req) callback
-        );
+        $this->queue->consume([$this, "main"]); //$this->mainWork(AMQPMessage $req) callback
     }
 
     /**

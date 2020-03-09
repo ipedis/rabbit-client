@@ -4,6 +4,8 @@
 namespace Ipedis\Demo\Rabbit\Worker;
 
 
+use AMQPEnvelope;
+use AMQPQueue;
 use Ipedis\Demo\Rabbit\Utils\ConnectorAbstract;
 use Ipedis\Demo\Rabbit\Worker\Handler\ManagerHandler;
 use Ipedis\Rabbit\Channel\Factory\ChannelFactory;
@@ -28,7 +30,6 @@ class Manager extends ConnectorAbstract
      * @var ChannelFactory $channelFactory
      */
     private $channelFactory;
-
     /**
      * Manager constructor.
      * @param string $host
@@ -64,36 +65,34 @@ class Manager extends ConnectorAbstract
         /**
          * Example of binding a handler to an event
          */
-        $this->messageHandler = (new ManagerHandler())
-            ->bind(MessageHandlerInterface::TYPE_PROGRESS, function(ReplyMessagePayload $messagePayload) {
-                print_r("\t ======> In progress binded handler :) - ".json_encode($messagePayload->getData())."\n\n\n");
-            })
-        ;
-        
-        $anoQueue = $this->bindCallbackToAnonymousQueue($this->messageHandler);
+        $this->messageHandler = (new ManagerHandler());
+
+        /**
+         * Create Anonymous queue
+         */
+        $anoQueue = $this->createAnonymousQueue();
 
         /**
          * We publish N Tasks on queue "Worker" who should be consume by this Worker.
          * We give also Anonymous callback Queue to have feedback from worker.
          */
         for ($i = 0; $i < $this->messageHandler->getNumberTask(); $i++) {
-            $this->publishTask(OrderMessagePayload::build(
+            $taskId = $this->publishTask(OrderMessagePayload::build(
                 OrderChannel::fromString('v1.admin.publication.generate'),
-                $anoQueue,
+                $anoQueue->getName(),
                 [
                     "hasToFail" => $i % 2 === 0, // Simulate failure on each pair message.
                     "name"      => "task {$i}"
                 ]
             ));
+
+            $this->messageHandler->addDispatchedTask($taskId);
         }
+
         print_r('all message are published on queue'."\n");
 
-        /**
-         * Wait all tasks.
-         */
-        while(count($this->messageHandler->getCompletedTasks()) !== count($this->getDispatchedTasks())) {
-            $this->channel->wait();
-        }
+        $this->waitForReplies($anoQueue, $this->messageHandler);
+
 
         printf("%s task are currently traited on queue : %s . Full traitment done :). \n", count($this->messageHandler->getCompletedTasks()), Worker::class);
     }

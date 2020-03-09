@@ -1,52 +1,109 @@
 <?php
-/**
- * File: Connector.php
- * User: Yanis Ghidouche <yanis@ipedis.com>
- * Date: 01/11/2016 13:41
- */
 
 namespace Ipedis\Rabbit;
-use PhpAmqpLib\Channel\AMQPChannel;
-use PhpAmqpLib\Connection\AMQPStreamConnection;
+
+
+use AMQPChannel;
+use AMQPConnection;
+use AMQPExchange;
 
 trait Connector
 {
     /**
-     * @var AMQPStreamConnection $connection
+     * @var AMQPConnection $connection
      */
     protected $connection = null;
+
     /**
      * @var AMQPChannel $channel
      */
     protected $channel = null;
 
     /**
-     * @description connection to RabbitMQ
+     * @var AMQPExchange $exchange
+     */
+    protected $exchange = null;
+
+    /**
+     * Connection to rabbitMQ
      */
     protected function connect()
     {
-        $this->connection = new AMQPStreamConnection(
-            $this->getHost(),
-            $this->getPort(),
-            $this->getUser(),
-            $this->getPassword()
+        try {
+            /**
+             * Establish connection to AMQP
+             */
+            $this->connection = $this->getAMQPConnection();
 
-        );
+            /**
+             * Create and declare channel
+             */
+            $this->setChannel();
 
-        $this->channel = $this->connection->channel();
-        $this->channel->exchange_declare(
-            $this->getExchangeName(),
-            $this->getExchangeType()
-        );
+            /**
+             * Create and declare exchange
+             */
+            $this->setExchange();
+
+        } catch (\Exception $exception) {
+            /**
+             * @todo error handling
+             */
+           // var_dump(sprintf('Error:  %s', $exception->getMessage()));
+        }
     }
 
     /**
-     * @description disconnect to RabbitMQ
+     * Disconnect to RabbitMQ
      */
     protected function disconnect()
     {
         if($this->channel !== null) $this->channel->close();
-        if($this->connection !== null) $this->connection->close();
+        if($this->connection !== null) $this->connection->disconnect();
+    }
+
+    /**
+     * Create and declare exchange
+     * AMQPC Exchange is the publishing mechanism
+     *
+     * @throws \AMQPChannelException
+     * @throws \AMQPConnectionException
+     * @throws \AMQPExchangeException
+     */
+    private function setExchange()
+    {
+        $this->exchange = new AMQPExchange( $this->channel);
+        $this->exchange->setType($this->getExchangeType());
+        $this->exchange->setName($this->getExchangeName());
+        $this->exchange->declareExchange();
+    }
+
+    /**
+     * Create and declare channel
+     *
+     * @throws \AMQPConnectionException
+     */
+    private function setChannel()
+    {
+        $this->channel = new AMQPChannel($this->connection);
+        $this->channel->setPrefetchCount(1);
+    }
+
+    /**
+     * Create AMQP Connection
+     */
+    private function getAMQPConnection(): AMQPConnection
+    {
+        $connection = new AMQPConnection([
+            'host'      => $this->getHost(),
+            'port'      => $this->getPort(),
+            'login'     => $this->getUser(),
+            'password'  => $this->getPassword()
+        ]);
+
+        $connection->connect();
+
+        return $connection;
     }
 
     abstract public function getHost(): string;

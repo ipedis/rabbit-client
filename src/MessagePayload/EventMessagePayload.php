@@ -37,7 +37,7 @@ class EventMessagePayload extends MessagePayloadAbstract
             !isset($msgBody['header'][self::HEADER_CHANNEL]) ||
             !isset($msgBody['data'])
         ) {
-            throw new MessagePayloadFormatException('Event message body format is invalid');
+            throw new MessagePayloadFormatException(sprintf('Event message body format is invalid : {%s}', $msg));
         }
 
         return new self(

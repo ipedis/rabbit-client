@@ -77,7 +77,7 @@ class OrderMessagePayload extends MessagePayloadAbstract
             !isset($msgBody['header'][self::HEADER_CORRELATION_ID]) ||
             !isset($msgBody['data'])
         ) {
-            throw new MessagePayloadFormatException('Order message body format is invalid');
+            throw new MessagePayloadFormatException(sprintf('Order message body format is invalid : {%s}', $msg));
         }
 
         return new self(

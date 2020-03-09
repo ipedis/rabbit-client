@@ -3,6 +3,7 @@
 namespace Ipedis\Rabbit\Order;
 
 
+use AMQPQueue;
 use Ipedis\Rabbit\Channel\Factory\ChannelFactory;
 use Ipedis\Rabbit\Channel\OrderChannel;
 use Ipedis\Rabbit\Consumer\Handler\MessageHandlerInterface;
@@ -11,7 +12,6 @@ use Ipedis\Rabbit\Exception\Channel\ChannelFactoryException;
 use Ipedis\Rabbit\Exception\Channel\ChannelNamingException;
 use Ipedis\Rabbit\Exception\InvalidCallableException;
 use Ipedis\Rabbit\MessagePayload\OrderMessagePayload;
-use PhpAmqpLib\Message\AMQPMessage;
 
 /**
  * Trait Manager
@@ -26,7 +26,7 @@ trait Manager
     private $dispatchedTasks = [];
 
     /**
-     * Function to publish new message/task on queue
+     * Method to publish new message/task on queue
      *
      * @param OrderMessagePayload $messagePayload
      * @return string TaskId
@@ -47,10 +47,11 @@ trait Manager
         /**
          * Push it to the pile of tasks for this queue.
          */
-        $this->channel->basic_publish(
-            (new AMQPMessage(json_encode($messagePayload), $messagePayload->getMessageProperties())),
-            $this->getExchangeName(),
-            $channel
+        $this->exchange->publish(
+            json_encode($messagePayload),
+            $channel,
+            AMQP_NOPARAM,
+            $messagePayload->getMessageProperties()
         );
 
         /**
@@ -67,60 +68,42 @@ trait Manager
      * Generally use to have inLive queue callback to wait answer of our worker.
      *
      * @param string $indicator
-     * @return string $callback_queue
+     * @return AMQPQueue $callback_queue
+     * @throws \AMQPChannelException
+     * @throws \AMQPConnectionException
+     * @throws \AMQPQueueException
      */
-    public function createAnonymousQueue(string $indicator = "")
+    public function createAnonymousQueue(string $indicator = ""): AMQPQueue
     {
-        list($callback_queue, ,) = $this->channel->queue_declare($indicator,false,false,true);
-        $this->channel->queue_bind($callback_queue, $this->getExchangeName());
+        $callbackQueue = new AMQPQueue($this->channel);
+        $callbackQueue->setFlags(AMQP_EXCLUSIVE);
 
-        return $callback_queue;
+        if (!empty($indicator)) {
+            $callbackQueue->setName($indicator);
+        }
+
+        $callbackQueue->declareQueue();
+
+        return $callbackQueue;
     }
 
-    /**
-     * Callback to call when consuming message from queue
-     *
-     * @param $queue
-     * @param $callBack
-     * @throws InvalidCallableException
-     */
-    public function bindCallbackToQueue(string $queue, $callBack)
+    public function waitForReplies(AMQPQueue $anoQueue, $callback)
     {
         /**
          * If callback instance of MessageHandlerInterface,
          * automatically bind to method 'on'
          */
-        if ($callBack instanceof MessageHandlerInterface) {
-            $this->channel->basic_consume($queue,'',false,false,false,false,
-                [$callBack, 'on']
-            );
+        if ($callback instanceof MessageHandlerInterface) {
+            $anoQueue->consume([$callback, 'on']);
 
             return;
         }
 
-        if (!is_callable($callBack)) {
-            throw new InvalidCallableException(sprintf('Invalid callable provided for queue {%s}', $queue));
+        if (!is_callable($callback)) {
+            throw new InvalidCallableException(sprintf('Invalid callable provided for queue {%s}', $anoQueue));
         }
 
-        $this->channel->basic_consume($queue,'',false,false,false,false,
-            $callBack //have to be array as [$this,"nameOfPublicMethod"]
-        );
-    }
-
-    /**
-     * Create anonymous queue and bind callback to it
-     *
-     * @param $callback
-     * @param string $indicator
-     * @return string
-     * @throws InvalidCallableException
-     */
-    public function bindCallbackToAnonymousQueue($callback, string $indicator = '')
-    {
-        $queue = $this->createAnonymousQueue($indicator);
-        $this->bindCallbackToQueue($queue, $callback);
-
-        return $queue;
+        $anoQueue->consume($callback);// callback have to be array as [$this,"nameOfPublicMethod"]
     }
 
     /**

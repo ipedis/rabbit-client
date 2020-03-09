@@ -11,7 +11,6 @@ use Ipedis\Rabbit\Exception\Channel\ChannelNamingException;
 use Ipedis\Rabbit\Exception\MessagePayload\MessagePayloadValidatorException;
 use Ipedis\Rabbit\MessagePayload\EventMessagePayload;
 use Ipedis\Rabbit\MessagePayload\Validator\ValidatorInterface;
-use PhpAmqpLib\Message\AMQPMessage;
 
 /**
  * Trait EventDispatcher
@@ -29,10 +28,15 @@ trait EventDispatcher
     }
 
     /**
+     * Publish event on exchange
+     *
      * @param EventMessagePayload $messagePayload
      * @throws ChannelFactoryException
      * @throws ChannelNamingException
      * @throws MessagePayloadValidatorException
+     * @throws \AMQPChannelException
+     * @throws \AMQPConnectionException
+     * @throws \AMQPExchangeException
      */
     public function dispatchEvent(EventMessagePayload $messagePayload)
     {
@@ -59,16 +63,15 @@ trait EventDispatcher
         $this->getMessagePayloadValidator()->validate($messagePayload);
 
         /**
-         * todo : add schema validation, protocol version.
+         * Publish message on exchange
          */
-        $this->channel->basic_publish(
-            (new AMQPMessage(json_encode($messagePayload))),
-            $this->getExchangeName(),
-            $eventName
-        );
+        $this->exchange->publish(json_encode($messagePayload), $eventName);
     }
 
     /**
+     * Validate event naming
+     * Event name is used as routing key when publishing message
+     *
      * @param $event
      * @return string
      * @throws ChannelNamingException

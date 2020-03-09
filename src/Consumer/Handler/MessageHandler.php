@@ -3,12 +3,13 @@
 namespace Ipedis\Rabbit\Consumer\Handler;
 
 
+use AMQPEnvelope;
+use AMQPQueue;
 use Closure;
 use Ipedis\Rabbit\DTO\Task\Task;
 use Ipedis\Rabbit\Exception\MessagePayload\MessagePayloadFormatException;
 use Ipedis\Rabbit\MessagePayload\MessagePayloadInterface;
 use Ipedis\Rabbit\MessagePayload\ReplyMessagePayload;
-use PhpAmqpLib\Message\AMQPMessage;
 
 
 abstract class MessageHandler implements MessageHandlerInterface
@@ -19,6 +20,8 @@ abstract class MessageHandler implements MessageHandlerInterface
      * @var array $completedTasks
      */
     protected $completedTasks = [];
+
+    protected $dispatchedTasks = [];
 
     /**
      * Holds a collection of callable handlers to be
@@ -34,15 +37,19 @@ abstract class MessageHandler implements MessageHandlerInterface
      * The main method that gets executed
      * when implementing MessageHandlerInterface
      *
-     * @param AMQPMessage $req
+     * @param AMQPEnvelope $message
+     * @param AMQPQueue $q
+     * @return bool
      * @throws MessagePayloadFormatException
+     * @throws \AMQPChannelException
+     * @throws \AMQPConnectionException
      */
-    public function on(AMQPMessage $req)
+    public function on(AMQPEnvelope $message, AMQPQueue $q)
     {
         /**
          * Re-construct message payload from request body
          */
-        $messagePayload = ReplyMessagePayload::fromJson($req->getBody());
+        $messagePayload = ReplyMessagePayload::fromJson($message->getBody());
         $data = $messagePayload->getData();
 
         $taskStatus = strtolower($data[self::STATUS_KEY]);
@@ -73,6 +80,15 @@ abstract class MessageHandler implements MessageHandlerInterface
         if ($taskStatus === self::TYPE_SUCCESS || $taskStatus === self::TYPE_ERROR) {
             $this->onFinish($messagePayload);
         }
+
+        /**
+         * wait for all replies
+         */
+        if (count($this->getCompletedTasks()) !== count($this->getDispatchedTasks())) {
+            return true;
+        }
+
+        return false;
     }
 
     /**
@@ -99,6 +115,16 @@ abstract class MessageHandler implements MessageHandlerInterface
     public function getCompletedTasks(): array
     {
         return $this->completedTasks;
+    }
+
+    public function getDispatchedTasks(): array
+    {
+        return $this->dispatchedTasks;
+    }
+
+    public function addDispatchedTask($taskId)
+    {
+        $this->dispatchedTasks[] = $taskId;
     }
 
     /**

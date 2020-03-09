@@ -28,7 +28,7 @@ abstract class ConnectorAbstract
     /**
      * @var string
      */
-    private $exchange;
+    private $exchangeName;
     /**
      * @var string
      */
@@ -49,7 +49,7 @@ abstract class ConnectorAbstract
         $this->port = $port;
         $this->user = $user;
         $this->password = $password;
-        $this->exchange = $exchange;
+        $this->exchangeName = $exchange;
         $this->type = $type;
     }
 
@@ -92,6 +92,6 @@ abstract class ConnectorAbstract
 
     protected function getExchangeName(): string
     {
-        return $this->exchange;
+        return $this->exchangeName;
     }
 }

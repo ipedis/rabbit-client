@@ -55,7 +55,7 @@ final class ReplyMessagePayload extends MessagePayloadAbstract
         array $headers = []
     ): self {
         if (!in_array($status, MessageHandlerInterface::AVAILABLE_TYPES)) {
-            throw new MessagePayloadFormatException('Invalid Status for building reply message.');
+            throw new MessagePayloadFormatException(sprintf('Invalid Status {%s} for building reply message.', $status));
         }
 
         /**
@@ -93,7 +93,7 @@ final class ReplyMessagePayload extends MessagePayloadAbstract
             !isset($msgBody['header'][self::HEADER_STATUS]) ||
             !isset($msgBody['data'])
         ) {
-            throw new MessagePayloadFormatException('Order message body format is invalid');
+            throw new MessagePayloadFormatException(sprintf('Order message body format is invalid : {%s}', $msg));
         }
 
         return new self(

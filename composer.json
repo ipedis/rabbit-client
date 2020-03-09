@@ -14,7 +14,8 @@
         "php-amqplib/php-amqplib": "^2.6",
         "ext-json": "*",
         "symfony/polyfill-uuid": "^1.14",
-        "opis/json-schema": "^1.0"
+        "opis/json-schema": "^1.0",
+        "ext-amqp": "^1.9"
     },
     "autoload": {
         "psr-4": {

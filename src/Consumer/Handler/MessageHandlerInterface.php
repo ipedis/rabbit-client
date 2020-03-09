@@ -1,11 +1,11 @@
 <?php
 
-
 namespace Ipedis\Rabbit\Consumer\Handler;
 
 
+use AMQPEnvelope;
+use AMQPQueue;
 use Ipedis\Rabbit\MessagePayload\ReplyMessagePayload;
-use PhpAmqpLib\Message\AMQPMessage;
 
 interface MessageHandlerInterface
 {
@@ -15,7 +15,7 @@ interface MessageHandlerInterface
     const AVAILABLE_TYPES = [self::TYPE_ERROR, self::TYPE_PROGRESS, self::TYPE_SUCCESS];
     const STATUS_KEY = 'status';
 
-    public function on(AMQPMessage $req);
+    public function on(AMQPEnvelope $message, AMQPQueue $q);
     public function onSuccess(ReplyMessagePayload $messagePayload);
     public function onError(ReplyMessagePayload $messagePayload);
     public function onProgress(ReplyMessagePayload $messagePayload);

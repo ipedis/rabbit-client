@@ -3,12 +3,13 @@
 namespace Ipedis\Rabbit\Event;
 
 
+use AMQPEnvelope;
+use AMQPQueue;
 use Closure;
 use Exception;
 use Ipedis\Rabbit\Connector;
 use Ipedis\Rabbit\Exception\MessagePayload\MessagePayloadFormatException;
 use Ipedis\Rabbit\MessagePayload\EventMessagePayload;
-use PhpAmqpLib\Message\AMQPMessage;
 
 trait EventListener
 {
@@ -20,7 +21,15 @@ trait EventListener
     protected $worker_id;
 
     /**
-     * @description execution cycle time.
+     * @var AMQPQueue $queue
+     */
+    protected $queue = null;
+
+    /**
+     * Instantiate event listener by
+     * - Connect to rabbitMQ
+     * - Create/declare queue and bind with exchange
+     * - Define callback to be used for consuming message
      */
     public function execute()
     {
@@ -28,10 +37,6 @@ trait EventListener
         $this->connect();
         $this->queueDeclare();
         $this->queueConsume();
-
-        while(count($this->channel->callbacks)) {
-            $this->channel->wait();
-        }
 
         $this->disconnect();
     }
@@ -42,47 +47,43 @@ trait EventListener
     }
 
     /**
-     * override from worker.
-     */
-    protected function queueDeclare()
-    {
-        $this->channel->exchange_declare(
-            $this->getExchangeName(),
-            $this->getExchangeType()
-        );
-
-        list($queue, ,) = $this->channel->queue_declare('', false, false, true, false);
-        $this->channel->queue_bind($queue,$this->getExchangeName(), $this->getBindingKey());
-    }
-    /**
-     * override from worker.
-     */
-    protected function queueConsume()
-    {
-        $this->channel->basic_consume(
-            '', //queue
-            '', //consumer tag
-            false, //no local
-            true, //no ack
-            false, //exclusive
-            false, //no wait
-            [$this,"main"] //$this->mainWork(AMQPMessage $req) callback
-        );
-    }
-
-    /**
-     * @param AMQPMessage $req
+     * @param AMQPEnvelope $message
+     * @param AMQPQueue $q
      * @throws MessagePayloadFormatException
+     * @throws \AMQPChannelException
+     * @throws \AMQPConnectionException
      */
-    public function main(AMQPMessage $req)
+    public function main(AMQPEnvelope $message, AMQPQueue $q)
     {
-        $messagePayload = EventMessagePayload::fromJson($req->getBody());
+        $messagePayload = EventMessagePayload::fromJson($message->getBody());
 
         try {
             $this->makeMessageHandler()($messagePayload);
         } catch (Exception $exception) {
             $this->makeExceptionHandler()($exception, $messagePayload);
         }
+
+        $q->ack($message->getDeliveryTag());
+    }
+
+    /**
+     * Declare Queue and bind with exchange
+     */
+    protected function queueDeclare()
+    {
+        $this->queue = new AMQPQueue($this->channel);
+        $this->queue->setFlags(AMQP_EXCLUSIVE);
+        $this->queue->declareQueue();
+        $this->queue->bind($this->exchange->getName(), $this->getBindingKey());
+    }
+
+    /**
+     * Define callback to be executed
+     * when consuming message from queue
+     */
+    protected function queueConsume()
+    {
+        $this->queue->consume([$this, 'main']);
     }
 
     abstract protected function makeMessageHandler(): Closure;
