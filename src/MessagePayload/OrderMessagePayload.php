@@ -11,51 +11,67 @@ class OrderMessagePayload extends MessagePayloadAbstract
     const HEADER_REPLY_QUEUE    = 'replyQueue';
 
     /**
-     * @var string $taskId
+     * @var string $orderId
      */
-    private $taskId;
+    private $orderId;
 
     /**
      * @var string $replyQueue
      */
     private $replyQueue;
 
-    protected function __construct(string $channel, string $replyQueue, array $data = [], array $headers = [])
+    protected function __construct(string $channel, array $data = [], array $headers = [])
     {
         parent::__construct($channel, $data, $headers);
 
-        if (empty($headers[self::HEADER_CORRELATION_ID])) {
-            /**
-             * Generate unique uuid for task
-             */
-            $this->taskId = uuid_create();
-            $this->addHeader(self::HEADER_CORRELATION_ID, $this->taskId);
-        } else {
-            /**
-             * Headers already has taskid
-             */
-            $this->taskId = $headers[self::HEADER_CORRELATION_ID];
+        if (isset($headers[self::HEADER_CORRELATION_ID])) {
+            $this->orderId = $headers[self::HEADER_CORRELATION_ID];
         }
 
-        /**
-         * Add reply queue to header
-         */
-        $this->replyQueue = $replyQueue;
-        $this->addHeader(self::HEADER_REPLY_QUEUE, $this->replyQueue);
+        if (isset($headers[self::HEADER_REPLY_QUEUE])) {
+            $this->replyQueue = $headers[self::HEADER_REPLY_QUEUE];
+        }
     }
 
     /**
      * Factory method
      *
      * @param string $channel
-     * @param string $replyQueue
      * @param array $data
      * @param array $headers
      * @return OrderMessagePayload
      */
-    public static function build(string $channel, string $replyQueue, array $data = [], array $headers = []): self
+    public static function build(string $channel, array $data = [], array $headers = []): self
     {
-        return new self($channel, $replyQueue, $data, $headers);
+        return new self($channel, $data, $headers);
+    }
+
+    /**
+     * Set Task Id
+     *
+     * @param string $orderId
+     * @return OrderMessagePayload
+     */
+    public function setOrderId(string $orderId): self
+    {
+        $this->orderId = $orderId;
+        $this->headers[self::HEADER_CORRELATION_ID] = $orderId;
+
+        return $this;
+    }
+
+    /**
+     * Set reply queue
+     *
+     * @param string $replyQueue
+     * @return OrderMessagePayload
+     */
+    public function setReplyQueue(string $replyQueue): self
+    {
+        $this->replyQueue = $replyQueue;
+        $this->headers[self::HEADER_REPLY_QUEUE] = $replyQueue;
+
+        return $this;
     }
 
     /**
@@ -82,7 +98,6 @@ class OrderMessagePayload extends MessagePayloadAbstract
 
         return new self(
             $msgBody['header'][self::HEADER_CHANNEL],
-            $msgBody['header'][self::HEADER_REPLY_QUEUE],
             $msgBody['data'],
             $msgBody['header']
         );
@@ -91,9 +106,9 @@ class OrderMessagePayload extends MessagePayloadAbstract
     /**
      * @return string
      */
-    public function getTaskId(): string
+    public function getOrderId(): string
     {
-        return $this->taskId;
+        return $this->orderId;
     }
 
     /**
@@ -113,7 +128,7 @@ class OrderMessagePayload extends MessagePayloadAbstract
     public function getMessageProperties(): array
     {
         return [
-            'correlation_id' => $this->getTaskId(),
+            'correlation_id' => $this->getOrderId(),
             'reply_to'       => $this->getReplyQueue()
         ];
     }

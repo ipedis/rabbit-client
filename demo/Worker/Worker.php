@@ -57,7 +57,7 @@ class Worker extends ConnectorAbstract
                 self::getQueueName(),
                 self::class,
                 $this->worker_id,
-                $messagePayload->getTaskId(),
+                $messagePayload->getOrderId(),
                 ($params["hasToFail"]) ? 'yes' : 'no'
             );
 

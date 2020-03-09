@@ -12,9 +12,9 @@ final class ReplyMessagePayload extends MessagePayloadAbstract
     const HEADER_STATUS = 'status';
 
     /**
-     * @var string $taskId
+     * @var string $orderId
      */
-    private $taskId;
+    private $orderId;
 
     /**
      * @var string $status
@@ -31,7 +31,7 @@ final class ReplyMessagePayload extends MessagePayloadAbstract
     {
         parent::__construct($channel, $data, $headers);
 
-        $this->taskId = $taskId;
+        $this->orderId = $taskId;
         $this->addHeader(self::HEADER_CORRELATION_ID, $taskId);
 
         $this->status = $status;
@@ -67,7 +67,7 @@ final class ReplyMessagePayload extends MessagePayloadAbstract
 
         return new self(
             $orderMessagePayload->getReplyQueue(),
-            $orderMessagePayload->getTaskId(),
+            $orderMessagePayload->getOrderId(),
             $status,
             $data,
             $headers
@@ -108,9 +108,9 @@ final class ReplyMessagePayload extends MessagePayloadAbstract
     /**
      * @return string
      */
-    public function getTaskId(): string
+    public function getOrderId(): string
     {
-        return $this->taskId;
+        return $this->orderId;
     }
 
     /**
@@ -130,7 +130,7 @@ final class ReplyMessagePayload extends MessagePayloadAbstract
     public function getMessageProperties(): array
     {
         return [
-            'correlation_id' => $this->getTaskId()
+            'correlation_id' => $this->getOrderId()
         ];
     }
 }

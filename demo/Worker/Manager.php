@@ -4,31 +4,23 @@
 namespace Ipedis\Demo\Rabbit\Worker;
 
 
-use AMQPEnvelope;
-use AMQPQueue;
 use Ipedis\Demo\Rabbit\Utils\ConnectorAbstract;
 use Ipedis\Demo\Rabbit\Worker\Handler\ManagerHandler;
 use Ipedis\Rabbit\Channel\Factory\ChannelFactory;
 use Ipedis\Rabbit\Channel\OrderChannel;
-use Ipedis\Rabbit\Consumer\Handler\MessageHandler;
 use Ipedis\Rabbit\Consumer\Handler\MessageHandlerInterface;
 use Ipedis\Rabbit\MessagePayload\OrderMessagePayload;
 use Ipedis\Rabbit\MessagePayload\ReplyMessagePayload;
 use Ipedis\Rabbit\Order\Manager as ManagerTrait;
-
 
 class Manager extends ConnectorAbstract
 {
     use ManagerTrait;
 
     /**
-     * @var MessageHandler
-     */
-    protected $messageHandler;
-
-    /**
      * @var ChannelFactory $channelFactory
      */
+
     private $channelFactory;
     /**
      * Manager constructor.
@@ -53,6 +45,11 @@ class Manager extends ConnectorAbstract
 
         $this->channelFactory = $channelFactory;
         $this->connect();
+
+        /**
+         * Initialise order queue
+         */
+        $this->resetOrdersQueue();
     }
 
     public function __destruct()
@@ -65,36 +62,38 @@ class Manager extends ConnectorAbstract
         /**
          * Example of binding a handler to an event
          */
-        $this->messageHandler = (new ManagerHandler());
-
-        /**
-         * Create Anonymous queue
-         */
-        $anoQueue = $this->createAnonymousQueue();
+        $messageHandler = new ManagerHandler();
 
         /**
          * We publish N Tasks on queue "Worker" who should be consume by this Worker.
          * We give also Anonymous callback Queue to have feedback from worker.
          */
-        for ($i = 0; $i < $this->messageHandler->getNumberTask(); $i++) {
-            $taskId = $this->publishTask(OrderMessagePayload::build(
-                OrderChannel::fromString('v1.admin.publication.generate'),
-                $anoQueue->getName(),
-                [
-                    "hasToFail" => $i % 2 === 0, // Simulate failure on each pair message.
-                    "name"      => "task {$i}"
-                ]
-            ));
+        for ($i = 0; $i < $messageHandler->getNumberTask(); $i++) {
 
-            $this->messageHandler->addDispatchedTask($taskId);
+            /**
+             * Create Order payload
+             */
+            $orderMessagePayload = OrderMessagePayload::build(OrderChannel::fromString('v1.admin.publication.generate'), [
+                "hasToFail" => $i % 2 === 0, // Simulate failure on each pair message.
+                "name"      => "task {$i}"
+            ]);
+
+            $this->publish($orderMessagePayload, $messageHandler)
+                ->bind(MessageHandlerInterface::TYPE_PROGRESS, function(ReplyMessagePayload $messagePayload) {
+                    printf("[[ ----------- PROGRESSION PERCENTAGE %s%% COMPLETED ---------- ]]\n\n", (string) $this->getPercentageProgression());
+                })
+            ;
         }
 
-        print_r('all message are published on queue'."\n");
+        printf("%s messages are published on queue\n\n", count($this->getDispatchedOrders()));
 
-        $this->waitForReplies($anoQueue, $this->messageHandler);
+        $this->waitForTasksCompletion();
 
-
-        printf("%s task are currently traited on queue : %s . Full traitment done :). \n", count($this->messageHandler->getCompletedTasks()), Worker::class);
+        printf("All orders(%s in total) executed with %s orders as success and %s orders as error :). \n",
+            count($this->getCompletedOrders()),
+            count($this->getSuccessfulOrders()),
+            count($this->getFailedOrders())
+        );
     }
 
     /**

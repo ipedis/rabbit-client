@@ -3,40 +3,95 @@
 namespace Ipedis\Rabbit\Order;
 
 
+use AMQPChannel;
+use AMQPChannelException;
+use AMQPConnectionException;
+use AMQPEnvelope;
+use AMQPEnvelopeException;
 use AMQPQueue;
+use AMQPQueueException;
+use Closure;
 use Ipedis\Rabbit\Channel\Factory\ChannelFactory;
 use Ipedis\Rabbit\Channel\OrderChannel;
 use Ipedis\Rabbit\Consumer\Handler\MessageHandlerInterface;
-use Ipedis\Rabbit\DTO\Task\Task;
+use Ipedis\Rabbit\DTO\Order\Order;
 use Ipedis\Rabbit\Exception\Channel\ChannelFactoryException;
 use Ipedis\Rabbit\Exception\Channel\ChannelNamingException;
 use Ipedis\Rabbit\Exception\InvalidCallableException;
+use Ipedis\Rabbit\Exception\MessagePayload\MessagePayloadFormatException;
+use Ipedis\Rabbit\MessagePayload\MessagePayloadInterface;
 use Ipedis\Rabbit\MessagePayload\OrderMessagePayload;
+use Ipedis\Rabbit\MessagePayload\ReplyMessagePayload;
 
 /**
  * Trait Manager
+ *
  * @package Ipedis\Rabbit\Order
  * @method ChannelFactory|null matchPartial($channel)
  */
 trait Manager
 {
     /**
-     * @var array $dispatchedTasks
+     * The anonymous reply queue
+     *
+     * @var AMQPQueue $replyQueue
      */
-    private $dispatchedTasks = [];
+    private $replyQueue;
 
     /**
-     * Method to publish new message/task on queue
+     * Collection of orders
+     *
+     * @var array $order
+     */
+    private $orders;
+
+    /**
+     * Holds a collection of callable handlers to be
+     * executed on defined events
+     *
+     * Only one handler is allowed for each event type
+     *
+     * @var array $handlers
+     */
+    private $eventHandlers;
+
+    protected function resetOrdersQueue()
+    {
+        $this->orders = [];
+        $this->eventHandlers = [];
+        $this->replyQueue = $this->createAnonymousQueue($this->channel);
+    }
+
+    /**
+     * Publish an order
      *
      * @param OrderMessagePayload $messagePayload
-     * @return string TaskId
+     * @param $callback
+     * @return self
      * @throws ChannelFactoryException
      * @throws ChannelNamingException
+     * @throws InvalidCallableException
      */
-    public function publishTask(OrderMessagePayload $messagePayload): string
+    protected function publish(OrderMessagePayload $messagePayload, $callback): self
     {
+        /**
+         * Channel factory must be provided to
+         * construct/validate channel
+         */
         if (!$this->getChannelFactory() instanceof ChannelFactory) {
             throw new ChannelFactoryException('Must provide channel factory {channelFactory} with version and service.');
+        }
+
+        /**
+         * Callback provided should be a callable OR
+         * instance of MessageHandlerInterface
+         *
+         */
+        if (
+            !is_callable($callback)
+            && !$callback instanceof MessageHandlerInterface
+        ) {
+            throw new InvalidCallableException(sprintf('Invalid callable provided for chanel {%s}', $messagePayload->getChannel()));
         }
 
         /**
@@ -45,7 +100,24 @@ trait Manager
         $channel = $this->getChannelName($messagePayload->getChannel());
 
         /**
-         * Push it to the pile of tasks for this queue.
+         * Update headers of order message to add
+         * - correlationId(Order Id)
+         * - reply queue
+         */
+        $orderId =  uuid_create();
+        $messagePayload->setOrderId($orderId);
+        $messagePayload->setReplyQueue($this->replyQueue->getName());
+
+        /**
+         * Add task to collection
+         */
+        $this->addOrderToDispatchedList(
+            $orderId,
+            $callback
+        );
+
+        /**
+         * Publish task on exchange
          */
         $this->exchange->publish(
             json_encode($messagePayload),
@@ -54,77 +126,252 @@ trait Manager
             $messagePayload->getMessageProperties()
         );
 
-        /**
-         * Add task to dispatched task list
-         */
-        $this->addToDispatchedTasks($messagePayload);
-
-        return $messagePayload->getTaskId();
+        return $this;
     }
 
     /**
-     * Create anonymous and uniq queue.
+     * Wait for all orders to reply back
      *
-     * Generally use to have inLive queue callback to wait answer of our worker.
-     *
-     * @param string $indicator
-     * @return AMQPQueue $callback_queue
-     * @throws \AMQPChannelException
-     * @throws \AMQPConnectionException
-     * @throws \AMQPQueueException
+     * @throws AMQPChannelException
+     * @throws AMQPConnectionException
+     * @throws AMQPEnvelopeException
      */
-    public function createAnonymousQueue(string $indicator = ""): AMQPQueue
+    protected function waitForTasksCompletion()
     {
-        $callbackQueue = new AMQPQueue($this->channel);
-        $callbackQueue->setFlags(AMQP_EXCLUSIVE);
-
-        if (!empty($indicator)) {
-            $callbackQueue->setName($indicator);
-        }
-
-        $callbackQueue->declareQueue();
-
-        return $callbackQueue;
-    }
-
-    public function waitForReplies(AMQPQueue $anoQueue, $callback)
-    {
-        /**
-         * If callback instance of MessageHandlerInterface,
-         * automatically bind to method 'on'
-         */
-        if ($callback instanceof MessageHandlerInterface) {
-            $anoQueue->consume([$callback, 'on']);
-
-            return;
-        }
-
-        if (!is_callable($callback)) {
-            throw new InvalidCallableException(sprintf('Invalid callable provided for queue {%s}', $anoQueue));
-        }
-
-        $anoQueue->consume($callback);// callback have to be array as [$this,"nameOfPublicMethod"]
+        $this->replyQueue->consume([$this, 'onReply']);
     }
 
     /**
-     * Get collection of dispatched task
+     * On reply callback from worker
+     *
+     * @param AMQPEnvelope $message
+     * @param AMQPQueue $q
+     * @return bool|void
+     * @throws AMQPChannelException
+     * @throws AMQPConnectionException
+     * @throws MessagePayloadFormatException
+     */
+    public function onReply(AMQPEnvelope $message, AMQPQueue $q)
+    {
+        /**
+         * Re-construct message payload from request body
+         */
+        $messagePayload = ReplyMessagePayload::fromJson($message->getBody());
+
+        /**
+         * Get order from collection
+         */
+        $order = $this->getOrderFromDispatchedList($messagePayload->getOrderId());
+        if (is_null($order)) { return; }
+
+        /**
+         * Update order status on collection
+         */
+        $order = $this->updateOrderStatusInDispatchedList($order, $messagePayload->getStatus());
+
+        /**
+         * Get order callback
+         */
+        $callback = $order->getHandler();
+
+        if ($order->getHandler() instanceof MessageHandlerInterface) {
+            /**
+             * Automatically bind to the on method
+             */
+            $callback->on($messagePayload);
+        } else {
+            $callback($messagePayload);
+        }
+
+        /**
+         * Execute handler for current event if any
+         */
+        $this->executeEventHandler($messagePayload->getStatus(), $messagePayload);
+
+        $q->ack($message->getDeliveryTag());
+
+        /**
+         * End callback if all task has finished
+         */
+        if ($this->isFinished()) {
+            return false;
+        }
+    }
+
+    /**
+     * Bind handler to allowed event
+     *
+     * @param string $event
+     * @param Closure $handler
+     * @return self
+     */
+    public function bind(string $event, Closure $handler) : self
+    {
+        if (in_array($event, MessageHandlerInterface::AVAILABLE_TYPES)) {
+            $this->eventHandlers[$event] = $handler;
+        }
+
+        return $this;
+    }
+
+    /**
+     * Get collection of dispatched orders
      *
      * @return array
      */
-    public function getDispatchedTasks(): array
+    public function getDispatchedOrders(): array
     {
-        return $this->dispatchedTasks;
+        return $this->orders;
     }
 
     /**
-     * Helper to get progression rate
+     * Get collection of completed tasks
      *
-     * @param array $completedTasks
+     * @return array
+     */
+    public function getCompletedOrders(): array
+    {
+        return array_filter($this->orders, function(Order $order) {
+            return $order->getStatus() === MessageHandlerInterface::TYPE_SUCCESS ||
+                $order->getStatus() === MessageHandlerInterface::TYPE_ERROR
+            ;
+        });
+    }
+
+    /**
+     * Get collection of in progress orders
+     *
+     * @return array
+     */
+    public function getInProgressOrders(): array
+    {
+        return array_filter($this->orders, function(Order $order) {
+            return $order->getStatus() === MessageHandlerInterface::TYPE_PROGRESS;
+        });
+    }
+
+    /**
+     * Get collection of successfully completed orders
+     *
+     * @return array
+     */
+    public function getSuccessfulOrders(): array
+    {
+        return array_filter($this->orders, function(Order $order) {
+            return $order->getStatus() === MessageHandlerInterface::TYPE_SUCCESS;
+        });
+    }
+
+    /**
+     * Get collection of completed orders which have failed
+     *
+     * @return array
+     */
+    public function getFailedOrders(): array
+    {
+        return array_filter($this->orders, function (Order $order) {
+            return $order->getStatus() === MessageHandlerInterface::TYPE_ERROR;
+        });
+    }
+
+    /**
+     * Get percentage progression of orders
+     *
      * @return float
      */
-    public function getPercentageCompletedTasks(array $completedTasks): float
+    public function getPercentageProgression(): float
     {
-        return round((count($completedTasks) / count($this->dispatchedTasks)) * 100);
+        $percentage = (count($this->getCompletedOrders()) / count($this->getDispatchedOrders())) * 100;
+
+        return round($percentage, 2);
+    }
+
+    /**
+     * Create anonymous queue
+     *
+     * @param AMQPChannel $channel
+     * @return AMQPQueue
+     * @throws AMQPChannelException
+     * @throws AMQPConnectionException
+     * @throws AMQPQueueException
+     */
+    private function createAnonymousQueue(AMQPChannel $channel): AMQPQueue
+    {
+        $queue = new AMQPQueue($channel);
+        $queue->setFlags(AMQP_EXCLUSIVE);
+        $queue->declareQueue();
+
+        return $queue;
+    }
+
+    /**
+     * Append new order to collection
+     *
+     * @param string $orderId
+     * @param callable $callback
+     */
+    private function addOrderToDispatchedList(string $orderId, $callback)
+    {
+        $this->orders[$orderId] = Order::build(
+            $orderId,
+            MessageHandlerInterface::TYPE_PROGRESS,
+            $callback
+        );
+    }
+
+    /**
+     * Get order from collection
+     *
+     * @param string $orderId
+     * @return Order|null
+     */
+    private function getOrderFromDispatchedList(string $orderId): ?Order
+    {
+        if (isset($this->orders[$orderId])) {
+            return $this->orders[$orderId];
+        }
+
+        return null;
+    }
+
+    /**
+     * Update order status in collection
+     *
+     * @param Order $order
+     * @param string $status
+     * @return Order
+     */
+    private function updateOrderStatusInDispatchedList(Order $order, string $status): Order
+    {
+        $order->transitionTo($status);
+
+        $this->orders[$order->getOrderId()] = $order;
+
+        return $this->orders[$order->getOrderId()];
+    }
+
+    /**
+     * Helper function to execute handlers for event
+     *
+     * @param string $event
+     * @param MessagePayloadInterface $messagePayload
+     */
+    private function executeEventHandler(string $event, MessagePayloadInterface $messagePayload)
+    {
+        if (isset($this->eventHandlers[$event])) {
+            $handler = $this->eventHandlers[$event];
+            $handler($messagePayload);
+        }
+    }
+
+    /**
+     * Check if all orders have replied back
+     *
+     * @return bool
+     */
+    private function isFinished(): bool
+    {
+        return count($this->getInProgressOrders()) === 0;
     }
 
     /**
@@ -152,19 +399,6 @@ trait Manager
 
         // no criteria fulfilled, throw an exception.
         throw new ChannelNamingException('Invalid channel provided.');
-    }
-
-    /**
-     * Add task to dispatched task list
-     *
-     * @param OrderMessagePayload $messagePayload
-     */
-    private function addToDispatchedTasks(OrderMessagePayload $messagePayload)
-    {
-        $this->dispatchedTasks[] = Task::build(
-            $messagePayload->getTaskId(),
-            MessageHandlerInterface::TYPE_PROGRESS
-        );
     }
 
     abstract protected function getExchangeName(): string;

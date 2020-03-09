@@ -157,7 +157,7 @@ trait Worker
                 "queue"  => $this->getQueueName(),
                 "worker" => self::class,
                 "id"     => $this->worker_id,
-                "correlation_id" => $messagePayload->getTaskId()
+                "correlation_id" => $messagePayload->getOrderId()
             ],
             [
                 'status'  => $status,
