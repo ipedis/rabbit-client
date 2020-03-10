@@ -136,7 +136,7 @@ trait Manager
      * @throws AMQPConnectionException
      * @throws AMQPEnvelopeException
      */
-    protected function waitForTasksCompletion()
+    protected function run()
     {
         $this->replyQueue->consume([$this, 'onReply']);
     }

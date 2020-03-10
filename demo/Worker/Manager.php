@@ -87,7 +87,7 @@ class Manager extends ConnectorAbstract
 
         printf("%s messages are published on queue\n\n", count($this->getDispatchedOrders()));
 
-        $this->waitForTasksCompletion();
+        $this->run();
 
         printf("All orders(%s in total) executed with %s orders as success and %s orders as error :). \n",
             count($this->getCompletedOrders()),
