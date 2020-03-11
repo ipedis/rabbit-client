@@ -4,7 +4,10 @@ use Ipedis\Demo\Rabbit\Utils\MessagePayloadValidator\MessagePayloadValidator;
 use Ipedis\Demo\Rabbit\Worker\Binding;
 use Ipedis\Demo\Rabbit\Worker\Dispatcher;
 use Ipedis\Demo\Rabbit\Worker\Manager;
+use Ipedis\Demo\Rabbit\Worker\Step1;
+use Ipedis\Demo\Rabbit\Worker\Step2;
 use Ipedis\Demo\Rabbit\Worker\Worker as WorkerProcess;
+use Ipedis\Demo\Rabbit\Worker\WorkflowManager;
 use Ipedis\Rabbit\Channel\Factory\ChannelFactory;
 
 require __DIR__.'/../vendor/autoload.php';
@@ -50,6 +53,40 @@ if ( !empty($argv[1]) ) {
             ))->main();
             break;
 
+
+        case 'step1':
+            (new Step1(
+                $configEvent['host'],
+                $configEvent['port'],
+                $configEvent['use'],
+                $configEvent['password'],
+                $configEvent['exchange'],
+                $configEvent['type']
+            ))->main();
+            break;
+
+        case 'step2':
+            (new Step2(
+                $configEvent['host'],
+                $configEvent['port'],
+                $configEvent['use'],
+                $configEvent['password'],
+                $configEvent['exchange'],
+                $configEvent['type']
+            ))->main();
+            break;
+
+        case 'workflow':
+            (new WorkflowManager(
+                $configEvent['host'],
+                $configEvent['port'],
+                $configEvent['use'],
+                $configEvent['password'],
+                $configEvent['exchange'],
+                $configEvent['type']
+            ))->main();
+            break;
+
         case 'binding':
             (new Binding(
                 $configEvent['host'],
@@ -73,6 +110,8 @@ if ( !empty($argv[1]) ) {
                 $messagePayloadValidator
             ))->main();
             break;
+        default:
+            printf("no match found \n");
 
     }
 } else {

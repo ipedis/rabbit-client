@@ -3,7 +3,9 @@
 namespace Ipedis\Rabbit\Workflow;
 
 
-class WorkflowGroup
+use Ipedis\Rabbit\MessagePayload\OrderMessagePayload;
+
+class Group
 {
     /**
      * @var string $groupId
@@ -16,7 +18,7 @@ class WorkflowGroup
     private $order;
 
     /**
-     * @var array $tasks
+     * @var Task[] $tasks
      */
     protected $tasks = [];
 
@@ -38,7 +40,7 @@ class WorkflowGroup
      *
      * @param int $order
      * @param callable|null $callback
-     * @return WorkflowGroup
+     * @return Group
      */
     public static function build(int $order, ?callable $callback): self
     {
@@ -48,24 +50,26 @@ class WorkflowGroup
     /**
      * Planify a task in the group
      *
-     * @param array $data
-     * @param callable $callback
-     * @return WorkflowGroup
+     * @param Task $task
+     * @return Group
      */
-    public function planify(array $data, callable $callback): self
+    public function planify(Task $task): self
     {
-        $this->tasks[] = [
-            'data' => $data,
-            'callback' => $callback
-        ];
+        $this->tasks[] = $task;
 
         return $this;
     }
 
+    public function planifyOrder(OrderMessagePayload $order, ?callable $callback = null): self
+    {
+        return $this->planify(Task::build($order, $callback));
+    }
+
+
     /**
      * Get all scheduled tasks
      *
-     * @return array
+     * @return Task[]
      */
     public function getTasks(): array
     {
