@@ -67,24 +67,28 @@ trait Manager
             /**
              * We start to run current group.
              */
-            $this->workflow->call(BindableEventInterface::GROUP_START, $group);
+            $group->call(BindableEventInterface::GROUP_START, $group);
+
             /**
              * we create a reply queue for each group runtime
              */
             $this->resetOrdersQueue();
+
             foreach ($group->getTasks() as $task) {
                 $this->publish($task);
                 $task->call(BindableEventInterface::TASK_START, $task);
             }
-            $this->replyQueue->consume([$this, 'onGroupReply']);
-            if ($group->hasFailure()) {
 
+            $this->replyQueue->consume([$this, 'onGroupReply']);
+
+
+            if ($group->hasFailure()) {
                 $this->workflow->call(BindableEventInterface::WORKFLOW_FAILURE, $group);
 
                 break; // Don't run next group.
             }
 
-            $this->workflow->call(BindableEventInterface::GROUP_FINISH, $group);
+            $group->call(BindableEventInterface::GROUP_FINISH, $group);
         }
         /**
          * run is finish
@@ -98,6 +102,7 @@ trait Manager
          * Re-construct message payload from request body
          */
         $message = ReplyMessagePayload::fromJson($envelope->getBody());
+
         $group = $this->workflow->taskReply($message);
 
         $q->ack($envelope->getDeliveryTag());

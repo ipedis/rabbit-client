@@ -32,10 +32,20 @@ class WorkflowManager extends ConnectorAbstract
                 return $group
                     ->planifyOrder(OrderMessagePayload::build(OrderChannel::fromString('v1.admin.publication.step1')))
                     ->planifyOrder(OrderMessagePayload::build(OrderChannel::fromString('v1.admin.publication.step1')))
+                    ->bind(BindableEventInterface::GROUP_START, function() {
+                        printf("GROUP START \n\n");
+                    })
+                    ->bind(BindableEventInterface::GROUP_FINISH, function() {
+                        printf("GROUP FINISH \n\n");
+                    })
                 ;
             }
         ))->then(function (Group $group) {
-            $group->planifyOrder(OrderMessagePayload::build(OrderChannel::fromString('v1.admin.publication.step2')));
+            $group->planifyOrder(OrderMessagePayload::build(OrderChannel::fromString('v1.admin.publication.step2')), [
+                BindableEventInterface::TASK_START => function() { printf("TASK START \n\n"); },
+                BindableEventInterface::TASK_FINISH => function() { printf("TASK FINISH \n\n"); },
+                BindableEventInterface::TASK_PROGRESS => function() { printf("TASK PROGRESS \n\n"); }
+            ]);
         });
 
         $workflow->bind(BindableEventInterface::WORKFLOW_START, function () {
@@ -43,7 +53,7 @@ class WorkflowManager extends ConnectorAbstract
         });
 
         $workflow->bind(BindableEventInterface::WORKFLOW_FINISH, function () {
-            printf("WORKFLOW START \n\n");
+            printf("WORKFLOW FINISH \n\n");
         });
 
         $this->run($workflow);

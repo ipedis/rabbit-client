@@ -17,11 +17,11 @@ final class Task extends Bindable
      * @var string
      */
     private $status;
+
     /**
      * @var OrderMessagePayload
      */
     private $message;
-
 
     private function __construct(OrderMessagePayload $message, $callbacks = [])
     {
@@ -65,14 +65,6 @@ final class Task extends Bindable
         return $this;
     }
 
-    /**
-     * @deprecated
-     */
-    public function isFinish(): bool
-    {
-        return $this->isFinished();
-    }
-
     protected function getAllowedBindableTypes(): array
     {
         return BindableEventInterface::TASK_ALLOW_TYPES;
@@ -80,7 +72,7 @@ final class Task extends Bindable
 
     public function getStatus(): string
     {
-        return $this->getStatus();
+        return $this->status;
     }
 
     public function isFinished(): bool
@@ -105,20 +97,15 @@ final class Task extends Bindable
 
     private function dispatchInternalEvent()
     {
-        if($this->isSuccess())
-        {
+        if($this->isInProgress()) {
+            $this->call(BindableEventInterface::TASK_PROGRESS, $this);
+        } elseif ($this->isSuccess()) {
             $this->call(BindableEventInterface::TASK_SUCCESS, $this);
-        }
-        if($this->isOnFailure())
-        {
+        } elseif ($this->isOnFailure()) {
             $this->call(BindableEventInterface::TASK_FAILURE, $this);
         }
-        if($this->isInProgress())
-        {
-            $this->call(BindableEventInterface::TASK_PROGRESS, $this);
-        }
-        if($this->isFinished())
-        {
+
+        if($this->isFinished()) {
             $this->call(BindableEventInterface::TASK_FINISH, $this);
         }
     }

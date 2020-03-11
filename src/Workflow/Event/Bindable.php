@@ -38,12 +38,17 @@ abstract class Bindable
 
     public function call(string $eventType, $payload = null): self
     {
-        if(!empty($this->callbacks[$eventType]) && is_callable($this->callbacks[$eventType])) {
-            if( is_null($payload) )
+
+
+        if (!empty($this->callbacks[$eventType]) && is_callable($this->callbacks[$eventType])) {
+            if (is_null($payload)) {
                 $this->callbacks[$eventType]();
-            else
+            } else {
                 $this->callbacks[$eventType]($payload);
+            }
+
         }
+
         return $this;
     }
 

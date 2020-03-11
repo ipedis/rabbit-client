@@ -33,10 +33,12 @@ class Workflow extends Bindable implements \Iterator
          * Initialise collections
          */
         $this->groups = [];
+
         /**
          * initialize iterable variable.
          */
         $this->currentRunnedGroup = 0;
+
         /**
          * $fistStep should be either a Group or a callable :
          * - Group : add group to collection

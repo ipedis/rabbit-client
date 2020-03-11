@@ -82,6 +82,7 @@ class Group extends Bindable
     public function update(ReplyMessagePayload $message): self
     {
         $this->find($message->getOrderId())->update($message);
+
         return $this;
     }
 
@@ -110,7 +111,7 @@ class Group extends Bindable
         $isFinish = true;
 
         foreach ($this->tasks as $task) {
-            if (!$task->isFinish()) {
+            if (!$task->isFinished()) {
                $isFinish = false;
                break;
             }
