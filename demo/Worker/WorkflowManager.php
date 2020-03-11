@@ -1,6 +1,5 @@
 <?php
 
-
 namespace Ipedis\Demo\Rabbit\Worker;
 
 
@@ -18,8 +17,10 @@ class WorkflowManager extends ConnectorAbstract
 
         $build = new Workflow(
             function (Group $group) {
-                $group->planifyOrder(OrderMessagePayload::build(OrderChannel::fromString('v1.admin.publication.step1')));
-                $group->planifyOrder(OrderMessagePayload::build(OrderChannel::fromString('v1.admin.publication.step1')));
+                $group
+                    ->planifyOrder(OrderMessagePayload::build(OrderChannel::fromString('v1.admin.publication.step1')))
+                    ->planifyOrder(OrderMessagePayload::build(OrderChannel::fromString('v1.admin.publication.step1')))
+                ;
             }
         );
 

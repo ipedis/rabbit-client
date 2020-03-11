@@ -13,38 +13,34 @@ class Group
     private $groupId;
 
     /**
-     * @var int $order
-     */
-    private $order;
-
-    /**
      * @var Task[] $tasks
      */
     protected $tasks = [];
 
     /**
-     * @var callable $callback
+     * @var array $callbacks
      */
-    protected $callback;
+    protected $callbacks;
 
-    protected function __construct(string $groupId, int $order, ?callable $callback, array $tasks = [])
+    protected function __construct(string $groupId, ?callable $callback = null, array $tasks = [])
     {
         $this->groupId  = $groupId;
-        $this->order    = $order;
-        $this->callback = $callback;
         $this->tasks    = $tasks;
+
+        if (is_callable($callback)) {
+            $this->callbacks[] = $callback;
+        }
     }
 
     /**
      * Factory method
      *
-     * @param int $order
      * @param callable|null $callback
      * @return Group
      */
-    public static function build(int $order, ?callable $callback): self
+    public static function build(?callable $callback): self
     {
-        return new self(uuid_create(), $order, $callback, []);
+        return new self(uuid_create(), $callback, []);
     }
 
     /**
@@ -60,11 +56,30 @@ class Group
         return $this;
     }
 
+    /**
+     * Planify a task in the group
+     *
+     * @param OrderMessagePayload $order
+     * @param callable|null $callback
+     * @return Group
+     */
     public function planifyOrder(OrderMessagePayload $order, ?callable $callback = null): self
     {
         return $this->planify(Task::build($order, $callback));
     }
 
+    /**
+     * Add global callback to group
+     *
+     * @param callable $callback
+     * @return Group
+     */
+    public function bind(callable $callback): self
+    {
+        $this->callbacks[] = $callback;
+
+        return $this;
+    }
 
     /**
      * Get all scheduled tasks
@@ -85,26 +100,18 @@ class Group
     }
 
     /**
-     * @return int
+     * @return array
      */
-    public function getOrder(): int
+    public function getCallbacks(): array
     {
-        return $this->order;
-    }
-
-    /**
-     * @return callable
-     */
-    public function getCallback(): callable
-    {
-        return $this->callback;
+        return $this->callbacks;
     }
 
     /**
      * @return bool
      */
-    public function hasCallback(): bool
+    public function hasCallbacks(): bool
     {
-        return !is_null($this->callback);
+        return count($this->callbacks) > 0;
     }
 }

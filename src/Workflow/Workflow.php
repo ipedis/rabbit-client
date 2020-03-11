@@ -3,6 +3,8 @@
 namespace Ipedis\Rabbit\Workflow;
 
 
+use Ipedis\Rabbit\Exception\Workflow\InvalidWorkflowArgumentException;
+
 class Workflow
 {
     /**
@@ -15,7 +17,14 @@ class Workflow
      */
     protected $callbacks;
 
-    public function __construct(callable $firstStep, ?callable $groupCallback = null)
+    /**
+     * Workflow constructor.
+     *
+     * @param Group|callable $firstStep
+     * @param callable|null $groupCallback
+     * @throws InvalidWorkflowArgumentException
+     */
+    public function __construct($firstStep, ?callable $groupCallback = null)
     {
         /**
          * Initialise collections
@@ -24,19 +33,11 @@ class Workflow
         $this->callbacks = [];
 
         /**
-         * Create a new workflow group with execution order
+         * $fistStep should be either a Group or a callable :
+         * - Group : add group to collection
+         * - Callable : create and provide new group to callable
          */
-        $workflowGroup = $this->createNewGroup($groupCallback);
-
-        /**
-         * Callable to add tasks in workflow group
-         */
-        $firstStep($workflowGroup);
-
-        /**
-         * Plan/Schedule the workflow group
-         */
-        $this->scheduleGroup($workflowGroup);
+        $this->scheduleGroup($firstStep, $groupCallback);
     }
 
     /**
@@ -53,26 +54,16 @@ class Workflow
     }
 
     /**
-     * @param callable $nextStep
+     * Schedule next group of orders
+     *
+     * @param $nextStep
      * @param callable|null $groupCallback
      * @return Workflow
+     * @throws InvalidWorkflowArgumentException
      */
-    public function then(callable $nextStep, ?callable $groupCallback = null): self
+    public function then($nextStep, ?callable $groupCallback = null): self
     {
-        /**
-         * Create a new workflow group with execution order
-         */
-        $workflowGroup = $this->createNewGroup($groupCallback);
-
-        /**
-         * Callable to add tasks in workflow group
-         */
-        $nextStep($workflowGroup);
-
-        /**
-         * Plan/Schedule the workflow group
-         */
-        $this->scheduleGroup($workflowGroup);
+        $this->scheduleGroup($nextStep, $groupCallback);
 
         return $this;
     }
@@ -89,7 +80,6 @@ class Workflow
 
             foreach ($group->getTasks() as $task) {
                 //TODO : dispatch order.
-
             }
             // TODO : wait for answser.
             //TODO : dispatch global finish.
@@ -97,25 +87,48 @@ class Workflow
     }
 
     /**
-     * Factory method to create new group
+     * Attach group of task to workflow
      *
-     * @param callable|null $callback
-     * @return Group
-     */
-    private function createNewGroup(?callable $callback): Group
-    {
-        $currentOrder = count($this->groups);
-
-        return Group::build(++$currentOrder, $callback);
-    }
-
-    /**
-     * Schedule group using order
+     * - Group provided, add group to collection
+     * - Callable provided, create group and pass it to callable
+     *   (which can add tasks to the group)
      *
-     * @param Group $group
+     * @param $step
+     * @param callable|null $groupCallback
+     * @throws InvalidWorkflowArgumentException
      */
-    private function scheduleGroup(Group $group)
+    private function scheduleGroup($step, ?callable $groupCallback = null)
     {
-        $this->groups[$group->getOrder()] = $group;
+        if (
+            !$step instanceof Group &&
+            !is_callable($step)
+        ) {
+            throw new InvalidWorkflowArgumentException('Argument should be either instance of Group or a callable');
+        }
+
+        if ($step instanceof Group) {
+            /**
+             * Add group to collection
+             */
+            $this->groups[] = $step;
+        } else {
+            /**
+             * Create and provide callable with new group
+             */
+            $workflowGroup = Group::build($groupCallback);
+
+            /**
+             * Callable to add tasks in workflow group
+             */
+            $step($workflowGroup);
+
+            /**
+             * Plan/Schedule the workflow group
+             */
+            /**
+             * Add group to collection
+             */
+            $this->groups[] = $workflowGroup;
+        }
     }
 }
