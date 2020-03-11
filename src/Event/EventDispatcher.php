@@ -38,7 +38,7 @@ trait EventDispatcher
      * @throws \AMQPConnectionException
      * @throws \AMQPExchangeException
      */
-    public function dispatchEvent(EventMessagePayload $messagePayload)
+    public function dispatch(EventMessagePayload $messagePayload)
     {
         if ( $this->channel === null) {
             $this->connect();

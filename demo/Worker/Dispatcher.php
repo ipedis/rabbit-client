@@ -43,7 +43,7 @@ class Dispatcher extends ConnectorAbstract
 
     public function main()
     {
-        $this->dispatchEvent(EventMessagePayload::build(
+        $this->dispatch(EventMessagePayload::build(
             EventChannel::fromString('v1.admin.publication.was-exported'),
             [
                 'publication' => [
@@ -52,7 +52,7 @@ class Dispatcher extends ConnectorAbstract
             ]
         ));
 
-        $this->dispatchEvent(EventMessagePayload::build(
+        $this->dispatch(EventMessagePayload::build(
             EventChannel::fromString('v1.admin.publication.was-deleted'),
             [
                 'publication' => [
