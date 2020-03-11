@@ -4,86 +4,72 @@ namespace Ipedis\Rabbit\Workflow;
 
 
 use Ipedis\Rabbit\Exception\Workflow\InvalidWorkflowArgumentException;
+use Ipedis\Rabbit\MessagePayload\ReplyMessagePayload;
+use Ipedis\Rabbit\Workflow\Event\Bindable;
+use Ipedis\Rabbit\Workflow\Event\BindableEventInterface;
 
-class Workflow
+class Workflow extends Bindable implements \Iterator
 {
     /**
-     * @var array $groups
+     * @var Group[] $groups
      */
     protected $groups;
 
     /**
-     * @var array $callbacks
+     * @var int use for iterator
      */
-    protected $callbacks;
+    protected $currentRunnedGroup;
 
     /**
      * Workflow constructor.
      *
      * @param Group|callable $firstStep
-     * @param callable|null $groupCallback
+     * @param array $groupCallbacks
      * @throws InvalidWorkflowArgumentException
      */
-    public function __construct($firstStep, ?callable $groupCallback = null)
+    public function __construct($firstStep, array $groupCallbacks = [])
     {
         /**
          * Initialise collections
          */
         $this->groups = [];
-        $this->callbacks = [];
-
+        /**
+         * initialize iterable variable.
+         */
+        $this->currentRunnedGroup = 0;
         /**
          * $fistStep should be either a Group or a callable :
          * - Group : add group to collection
          * - Callable : create and provide new group to callable
          */
-        $this->scheduleGroup($firstStep, $groupCallback);
-    }
-
-    /**
-     * Callbacks to run for the complete workflow
-     *
-     * @param callable $callback
-     * @return Workflow
-     */
-    public function bind(callable $callback): self
-    {
-        $this->callbacks[] = $callback;
-
-        return $this;
+        $this->schedule($firstStep, $groupCallbacks);
     }
 
     /**
      * Schedule next group of orders
      *
      * @param $nextStep
-     * @param callable|null $groupCallback
+     * @param array $callbacks
      * @return Workflow
      * @throws InvalidWorkflowArgumentException
      */
-    public function then($nextStep, ?callable $groupCallback = null): self
+    public function then($nextStep,  array $callbacks = []): self
     {
-        $this->scheduleGroup($nextStep, $groupCallback);
+        $this->schedule($nextStep, $callbacks);
 
         return $this;
     }
 
-    public function run()
+    public function taskReply(ReplyMessagePayload $message): Group
     {
-        /**
-         * Each groups will be executed sequencially, we iterate on each group.
-         * call relevant callback if needed.
-         */
-        /** @var Group $group */
         foreach ($this->groups as $group) {
-            // TODO : dispatch event group start.
-
-            foreach ($group->getTasks() as $task) {
-                //TODO : dispatch order.
+            if($group->has($message->getOrderId())) {
+                $currentGroup = $group->update($message);
+                break;
             }
-            // TODO : wait for answser.
-            //TODO : dispatch global finish.
         }
+
+        return $currentGroup;
     }
 
     /**
@@ -94,19 +80,20 @@ class Workflow
      *   (which can add tasks to the group)
      *
      * @param $step
-     * @param callable|null $groupCallback
+     * @param array $callbacks
      * @throws InvalidWorkflowArgumentException
      */
-    private function scheduleGroup($step, ?callable $groupCallback = null)
+    private function schedule($step, array $callbacks = [])
     {
-        if (
-            !$step instanceof Group &&
-            !is_callable($step)
-        ) {
-            throw new InvalidWorkflowArgumentException('Argument should be either instance of Group or a callable');
-        }
+        $this->assertGroup($step);
 
         if ($step instanceof Group) {
+            /**
+             * In case we provide groupCallback, we must bind it.
+             */
+            foreach ($callbacks as $eventType => $callback) {
+                $step->bind($eventType, $callback);
+            }
             /**
              * Add group to collection
              */
@@ -115,20 +102,61 @@ class Workflow
             /**
              * Create and provide callable with new group
              */
-            $workflowGroup = Group::build($groupCallback);
+            $workflowGroup = Group::build($callbacks);
 
             /**
              * Callable to add tasks in workflow group
              */
-            $step($workflowGroup);
+            $returnedGroup = $step($workflowGroup);
 
             /**
              * Plan/Schedule the workflow group
+             * Add group to collection, if Group are returned by callback, then use it in place of the original one.
              */
-            /**
-             * Add group to collection
-             */
-            $this->groups[] = $workflowGroup;
+            $this->groups[] = ($returnedGroup instanceof Group) ? $returnedGroup : $workflowGroup;
         }
+    }
+
+    private function assertGroup($step)
+    {
+        if (
+            !$step instanceof Group &&
+            !is_callable($step)
+        ) {
+            throw new InvalidWorkflowArgumentException(sprintf('Argument should be either instance of "%s" or a callable', Group::class));
+        }
+    }
+
+    protected function getAllowedBindableTypes(): array
+    {
+        return BindableEventInterface::WORKFLOW_ALLOW_TYPES;
+    }
+
+    /**
+     * Section iterator interface, nothing intersting here
+     */
+    public function rewind()
+    {
+        $this->currentRunnedGroup = 0;
+    }
+
+    public function current()
+    {
+        return $this->groups[$this->currentRunnedGroup];
+    }
+
+    public function key()
+    {
+        return $this->currentRunnedGroup;
+    }
+
+    public function next()
+    {
+        ++$this->currentRunnedGroup;
+    }
+
+    public function valid()
+    {
+        return isset($this->groups[$this->currentRunnedGroup]);
     }
 }

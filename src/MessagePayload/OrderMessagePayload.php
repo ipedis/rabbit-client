@@ -26,6 +26,8 @@ class OrderMessagePayload extends MessagePayloadAbstract
 
         if (isset($headers[self::HEADER_CORRELATION_ID])) {
             $this->orderId = $headers[self::HEADER_CORRELATION_ID];
+        } else {
+            $this->setOrderId(uuid_create());
         }
 
         if (isset($headers[self::HEADER_REPLY_QUEUE])) {

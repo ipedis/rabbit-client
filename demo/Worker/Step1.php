@@ -34,7 +34,6 @@ class Step1 extends ConnectorAbstract
              *
              * If everything is ok, reply to manager.
              */
-            sleep(1);
             $this->notifyTo(
                 $message,
                 ReplyMessagePayload::buildFromOrderMessagePayload(

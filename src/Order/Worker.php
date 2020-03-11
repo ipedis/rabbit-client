@@ -192,7 +192,7 @@ trait Worker
     {
         $this->queue = new AMQPQueue($this->channel);
         $this->queue->setName($this->getQueueName());
-        $this->queue->setFlags(AMQP_EXCLUSIVE);
+        $this->queue->setFlags(AMQP_DURABLE);
         $this->queue->declareQueue();
 
         $this->queue->bind($this->getExchangeName(), $this->getQueueName());

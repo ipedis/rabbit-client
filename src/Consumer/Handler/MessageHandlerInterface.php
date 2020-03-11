@@ -7,10 +7,12 @@ use Ipedis\Rabbit\MessagePayload\ReplyMessagePayload;
 
 interface MessageHandlerInterface
 {
+    const TYPE_PLANIFIED = 'planified';
     const TYPE_PROGRESS = 'progress';
     const TYPE_SUCCESS = 'success';
     const TYPE_ERROR = 'error';
-    const AVAILABLE_TYPES = [self::TYPE_ERROR, self::TYPE_PROGRESS, self::TYPE_SUCCESS];
+    const AVAILABLE_TYPES = [self::TYPE_PROGRESS, self::TYPE_SUCCESS, self::TYPE_ERROR, self::TYPE_PLANIFIED];
+    const POSSIBLE_FINISH_TYPES = [self::TYPE_SUCCESS, self::TYPE_ERROR];
     const STATUS_KEY = 'status';
 
     public function on(ReplyMessagePayload $messagePayload);

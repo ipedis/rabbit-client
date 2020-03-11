@@ -55,6 +55,11 @@ trait Manager
      */
     private $eventHandlers;
 
+    /**
+     * @return string
+     */
+    abstract protected function getExchangeName(): string;
+
     protected function resetOrdersQueue()
     {
         $this->orders = [];
@@ -78,21 +83,14 @@ trait Manager
          * Channel factory must be provided to
          * construct/validate channel
          */
-        if (!$this->getChannelFactory() instanceof ChannelFactory) {
-            throw new ChannelFactoryException('Must provide channel factory {channelFactory} with version and service.');
-        }
+        $this->assertChannelFactory();
 
         /**
          * Callback provided should be a callable OR
          * instance of MessageHandlerInterface
          *
          */
-        if (
-            !is_callable($callback)
-            && !$callback instanceof MessageHandlerInterface
-        ) {
-            throw new InvalidCallableException(sprintf('Invalid callable provided for chanel {%s}', $messagePayload->getChannel()));
-        }
+        $this->assertCallback($messagePayload, $callback);
 
         /**
          * Validate channel and return queue name
@@ -104,15 +102,13 @@ trait Manager
          * - correlationId(Order Id)
          * - reply queue
          */
-        $orderId =  uuid_create();
-        $messagePayload->setOrderId($orderId);
         $messagePayload->setReplyQueue($this->replyQueue->getName());
 
         /**
          * Add task to collection
          */
         $this->addOrderToDispatchedList(
-            $orderId,
+            $messagePayload->getOrderId(),
             $callback
         );
 
@@ -401,5 +397,25 @@ trait Manager
         throw new ChannelNamingException('Invalid channel provided.');
     }
 
-    abstract protected function getExchangeName(): string;
+    protected function assertChannelFactory(): void
+    {
+        if (!$this->getChannelFactory() instanceof ChannelFactory) {
+            throw new ChannelFactoryException('Must provide channel factory {channelFactory} with version and service.');
+        }
+    }
+
+    /**
+     * @param OrderMessagePayload $messagePayload
+     * @param $callback
+     * @throws InvalidCallableException
+     */
+    protected function assertCallback(OrderMessagePayload $messagePayload, $callback): void
+    {
+        if (
+            !is_callable($callback)
+            && !$callback instanceof MessageHandlerInterface
+        ) {
+            throw new InvalidCallableException(sprintf('Invalid callable provided for chanel {%s}', $messagePayload->getChannel()));
+        }
+    }
 }

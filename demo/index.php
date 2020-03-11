@@ -56,34 +56,34 @@ if ( !empty($argv[1]) ) {
 
         case 'step1':
             (new Step1(
-                $configEvent['host'],
-                $configEvent['port'],
-                $configEvent['use'],
-                $configEvent['password'],
-                $configEvent['exchange'],
-                $configEvent['type']
-            ))->main();
+                $configOrder['host'],
+                $configOrder['port'],
+                $configOrder['use'],
+                $configOrder['password'],
+                $configOrder['exchange'],
+                $configOrder['type']
+            ))->execute();
             break;
 
         case 'step2':
             (new Step2(
-                $configEvent['host'],
-                $configEvent['port'],
-                $configEvent['use'],
-                $configEvent['password'],
-                $configEvent['exchange'],
-                $configEvent['type']
-            ))->main();
+                $configOrder['host'],
+                $configOrder['port'],
+                $configOrder['use'],
+                $configOrder['password'],
+                $configOrder['exchange'],
+                $configOrder['type']
+            ))->execute();
             break;
 
         case 'workflow':
             (new WorkflowManager(
-                $configEvent['host'],
-                $configEvent['port'],
-                $configEvent['use'],
-                $configEvent['password'],
-                $configEvent['exchange'],
-                $configEvent['type']
+                $configOrder['host'],
+                $configOrder['port'],
+                $configOrder['use'],
+                $configOrder['password'],
+                $configOrder['exchange'],
+                $configOrder['type']
             ))->main();
             break;
 
