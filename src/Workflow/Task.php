@@ -21,12 +21,17 @@ final class Task extends Bindable
     /**
      * @var OrderMessagePayload
      */
-    private $message;
+    private $orderMessage;
 
-    private function __construct(OrderMessagePayload $message, $callbacks = [])
+    /**
+     * @var ReplyMessagePayload[]
+     */
+    private $replyMessages = [];
+
+    private function __construct(OrderMessagePayload $orderMessage, $callbacks = [])
     {
         $this->status = MessageHandlerInterface::TYPE_PLANIFIED;
-        $this->message = $message;
+        $this->orderMessage = $orderMessage;
         $this->assertCallbacks($callbacks);
         $this->callbacks = $callbacks;
     }
@@ -44,12 +49,94 @@ final class Task extends Bindable
     /**
      * @return OrderMessagePayload
      */
-    public function getMessage(): OrderMessagePayload
+    public function getOrderMessage(): OrderMessagePayload
     {
-        return $this->message;
+        return $this->orderMessage;
     }
 
-    public function transitionTo(string $newStatus) {
+    /**
+     * @param ReplyMessagePayload $message
+     * @return $this
+     * @throws InvalidStatusException
+     */
+    public function update(ReplyMessagePayload $message): self
+    {
+        $this->replyMessages[] = $message;
+        $this->transitionTo($message->getStatus());
+
+        return $this;
+    }
+
+    /**
+     * @return array
+     */
+    public function getReplyMessages(): array
+    {
+        return $this->replyMessages;
+    }
+
+    /**
+     * @return ReplyMessagePayload|null
+     */
+    public function getLastReplyMessage(): ?ReplyMessagePayload
+    {
+        return $this->hasReplyMessage() ? $this->replyMessages[count($this->replyMessages) - 1] : null;
+    }
+
+    /**
+     * @return bool
+     */
+    public function hasReplyMessage(): bool
+    {
+        return !empty($this->replyMessages);
+    }
+
+    /**
+     * @return string
+     */
+    public function getStatus(): string
+    {
+        return $this->status;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isFinished(): bool
+    {
+        return $this->isSuccess() || $this->isOnFailure();
+    }
+
+    /**
+     * @return bool
+     */
+    public function isSuccess():  bool
+    {
+        return $this->getStatus() === MessageHandlerInterface::TYPE_SUCCESS;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isOnFailure():  bool
+    {
+        return $this->getStatus() === MessageHandlerInterface::TYPE_ERROR;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isInProgress(): bool
+    {
+        return $this->getStatus() === MessageHandlerInterface::TYPE_PROGRESS;
+    }
+
+    /**
+     * @param string $newStatus
+     * @throws InvalidStatusException
+     */
+    protected function transitionTo(string $newStatus)
+    {
         if (!in_array($newStatus, MessageHandlerInterface::AVAILABLE_TYPES)) {
             throw new InvalidStatusException('type not allowed');
         }
@@ -57,44 +144,17 @@ final class Task extends Bindable
         $this->status = $newStatus;
         $this->dispatchInternalEvent();
     }
-
-    public function update(ReplyMessagePayload $message): self
-    {
-        $this->transitionTo($message->getStatus());
-
-        return $this;
-    }
-
+    /**
+     * @return array
+     */
     protected function getAllowedBindableTypes(): array
     {
         return BindableEventInterface::TASK_ALLOW_TYPES;
     }
 
-    public function getStatus(): string
-    {
-        return $this->status;
-    }
-
-    public function isFinished(): bool
-    {
-        return $this->isSuccess() || $this->isOnFailure();
-    }
-
-    public function isSuccess():  bool
-    {
-        return $this->getStatus() === MessageHandlerInterface::TYPE_SUCCESS;
-    }
-
-    public function isOnFailure():  bool
-    {
-        return $this->getStatus() === MessageHandlerInterface::TYPE_ERROR;
-    }
-
-    public function isInProgress(): bool
-    {
-        return $this->getStatus() === MessageHandlerInterface::TYPE_PROGRESS;
-    }
-
+    /**
+     * internal call for binded event.
+     */
     private function dispatchInternalEvent()
     {
         if($this->isInProgress()) {

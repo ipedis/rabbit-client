@@ -22,8 +22,14 @@ class Group extends Bindable
      */
     protected $tasks = [];
 
-
-    protected function __construct(string $groupId, array $callbacks = [], array $tasks = [])
+    /**
+     * Group constructor.
+     * @param string $groupId
+     * @param array $tasks
+     * @param array $callbacks
+     * @throws InvalidGroupArgumentException
+     */
+    protected function __construct(string $groupId, array $tasks = [], array $callbacks = [])
     {
         $this->groupId  = $groupId;
         $this->prepareTasks($tasks);
@@ -32,15 +38,14 @@ class Group extends Bindable
     }
 
     /**
-     * Factory method
-     *
-     * @param array $callbacks
      * @param array $tasks
-     * @return Group
+     * @param array $callbacks
+     * @return static
+     * @throws InvalidGroupArgumentException
      */
-    public static function build(array $callbacks = [], array $tasks = []): self
+    public static function build(array $tasks = [], array $callbacks = []): self
     {
-        return new self(uuid_create(), $callbacks, $tasks);
+        return new self(uuid_create(), $tasks, $callbacks);
     }
 
     /**
@@ -52,7 +57,7 @@ class Group extends Bindable
     public function planify(Task $task): self
     {
         // TODO : we should probably check if index does not exist, otherwise we will erease another task.
-        $this->tasks[$task->getMessage()->getOrderId()] = $task;
+        $this->tasks[$task->getOrderMessage()->getOrderId()] = $task;
 
         return $this;
     }
@@ -96,13 +101,13 @@ class Group extends Bindable
         return $this->tasks;
     }
 
-    private function prepareTasks($tasks)
+    private function prepareTasks(array $tasks)
     {
         foreach ($tasks as $task) {
             if (!($task instanceof Task)) {
                 throw new InvalidGroupArgumentException(sprintf('list of tasks must have "%s" type', Task::class));
             }
-            $this->tasks[$task->getMessage()->getOrderId()] = $task;
+            $this->tasks[$task->getOrderMessage()->getOrderId()] = $task;
         }
     }
 

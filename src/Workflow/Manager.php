@@ -62,7 +62,7 @@ trait Manager
         $this->workflow->call(BindableEventInterface::WORKFLOW_START);
 
         /** @var Group $group */
-        foreach ($workflow as $group) {
+        foreach ($workflow->getGroups() as $group) {
 
             /**
              * We start to run current group.
@@ -123,7 +123,7 @@ trait Manager
 
     protected function publish(Task $task): self
     {
-        $message = $task->getMessage();
+        $message = $task->getOrderMessage();
         $message->setReplyQueue($this->replyQueue->getName());
         /**
          * Publish task on exchange

@@ -30,11 +30,10 @@ class WorkflowManager extends ConnectorAbstract
     public function main()
     {
         $workflow = (
-            new Workflow(
-                $this->craftFirstStep()
-            ))
+            new Workflow($this->craftFirstStep()))
             ->then($this->craftSecondStep())
         ;
+
         /**
          * We can bind event on workflow layer.
          */
@@ -53,12 +52,12 @@ class WorkflowManager extends ConnectorAbstract
     private function craftFirstStep(): Closure
     {
         return function (Group $group) {
-            return $group
+             $group
                 ->planifyOrder(
                     OrderMessagePayload::build(OrderChannel::fromString('v1.admin.publication.step1')),
                     [
                         BindableEventInterface::TASK_START => function() { printf("---- TASK 1.1 START \n\n"); },
-                        BindableEventInterface::TASK_FINISH => function() { printf("---- TASK 1.1 FINISH \n\n"); },
+                        BindableEventInterface::TASK_FINISH => function(Task $task) { printf("---- TASK 1.1 FINISH \n\n"); },
                         BindableEventInterface::TASK_PROGRESS => function() { printf("---- TASK 1.1 PROGRESS \n\n"); }
                     ]
                 )
@@ -104,11 +103,11 @@ class WorkflowManager extends ConnectorAbstract
              */
             $craftedGroup = (Group::build(
                 [
-                    BindableEventInterface::GROUP_START => function() { printf("-- GROUP 2 START \n\n"); },
-                    BindableEventInterface::GROUP_FINISH => function() { printf("-- GROUP 2 FINISH \n\n"); }
+                    $task1
                 ],
                 [
-                    $task1
+                    BindableEventInterface::GROUP_START => function() { printf("-- GROUP 2 START \n\n"); },
+                    BindableEventInterface::GROUP_FINISH => function() { printf("-- GROUP 2 FINISH \n\n"); }
                 ]
             ));
             /**

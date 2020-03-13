@@ -3,12 +3,13 @@
 namespace Ipedis\Rabbit\Workflow;
 
 
+use Ipedis\Rabbit\Exception\Group\InvalidGroupArgumentException;
 use Ipedis\Rabbit\Exception\Workflow\InvalidWorkflowArgumentException;
 use Ipedis\Rabbit\MessagePayload\ReplyMessagePayload;
 use Ipedis\Rabbit\Workflow\Event\Bindable;
 use Ipedis\Rabbit\Workflow\Event\BindableEventInterface;
 
-class Workflow extends Bindable implements \Iterator
+class Workflow extends Bindable
 {
     /**
      * @var Group[] $groups
@@ -16,16 +17,12 @@ class Workflow extends Bindable implements \Iterator
     protected $groups;
 
     /**
-     * @var int use for iterator
-     */
-    protected $currentRunnedGroup;
-
-    /**
      * Workflow constructor.
      *
      * @param Group|callable $firstStep
      * @param array $groupCallbacks
      * @throws InvalidWorkflowArgumentException
+     * @throws InvalidGroupArgumentException
      */
     public function __construct($firstStep, array $groupCallbacks = [])
     {
@@ -33,11 +30,6 @@ class Workflow extends Bindable implements \Iterator
          * Initialise collections
          */
         $this->groups = [];
-
-        /**
-         * initialize iterable variable.
-         */
-        $this->currentRunnedGroup = 0;
 
         /**
          * $fistStep should be either a Group or a callable :
@@ -54,6 +46,7 @@ class Workflow extends Bindable implements \Iterator
      * @param array $callbacks
      * @return Workflow
      * @throws InvalidWorkflowArgumentException
+     * @throws InvalidGroupArgumentException
      */
     public function then($nextStep,  array $callbacks = []): self
     {
@@ -62,10 +55,19 @@ class Workflow extends Bindable implements \Iterator
         return $this;
     }
 
+    /**
+     * On task reply,
+     * When we receive ReplyMessage from worker.
+     *
+     * @param ReplyMessagePayload $message
+     * @return Group
+     */
     public function taskReply(ReplyMessagePayload $message): Group
     {
+        // Check all existing group if he contain particular order id.
         foreach ($this->groups as $group) {
             if($group->has($message->getOrderId())) {
+                // Ask current group to update task based on received message.
                 $currentGroup = $group->update($message);
                 break;
             }
@@ -76,7 +78,6 @@ class Workflow extends Bindable implements \Iterator
 
     /**
      * Attach group of task to workflow
-     *
      * - Group provided, add group to collection
      * - Callable provided, create group and pass it to callable
      *   (which can add tasks to the group)
@@ -84,6 +85,7 @@ class Workflow extends Bindable implements \Iterator
      * @param $step
      * @param array $callbacks
      * @throws InvalidWorkflowArgumentException
+     * @throws InvalidGroupArgumentException
      */
     private function schedule($step, array $callbacks = [])
     {
@@ -104,7 +106,7 @@ class Workflow extends Bindable implements \Iterator
             /**
              * Create and provide callable with new group
              */
-            $workflowGroup = Group::build($callbacks);
+            $workflowGroup = Group::build([], $callbacks);
 
             /**
              * Callable to add tasks in workflow group
@@ -117,6 +119,14 @@ class Workflow extends Bindable implements \Iterator
              */
             $this->groups[] = ($returnedGroup instanceof Group) ? $returnedGroup : $workflowGroup;
         }
+    }
+
+    /**
+     * @return Group[]
+     */
+    public function getGroups(): array
+    {
+        return $this->groups;
     }
 
     private function assertGroup($step)
@@ -132,33 +142,5 @@ class Workflow extends Bindable implements \Iterator
     protected function getAllowedBindableTypes(): array
     {
         return BindableEventInterface::WORKFLOW_ALLOW_TYPES;
-    }
-
-    /**
-     * Section iterator interface, nothing intersting here
-     */
-    public function rewind()
-    {
-        $this->currentRunnedGroup = 0;
-    }
-
-    public function current()
-    {
-        return $this->groups[$this->currentRunnedGroup];
-    }
-
-    public function key()
-    {
-        return $this->currentRunnedGroup;
-    }
-
-    public function next()
-    {
-        ++$this->currentRunnedGroup;
-    }
-
-    public function valid()
-    {
-        return isset($this->groups[$this->currentRunnedGroup]);
     }
 }
