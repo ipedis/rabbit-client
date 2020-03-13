@@ -81,14 +81,13 @@ trait Manager
 
             $this->replyQueue->consume([$this, 'onGroupReply']);
 
+            $group->call(BindableEventInterface::GROUP_FINISH, $group);
 
             if ($group->hasFailure()) {
                 $this->workflow->call(BindableEventInterface::WORKFLOW_FAILURE, $group);
 
                 break; // Don't run next group.
             }
-
-            $group->call(BindableEventInterface::GROUP_FINISH, $group);
         }
         /**
          * run is finish
