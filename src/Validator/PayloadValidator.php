@@ -79,11 +79,18 @@ class PayloadValidator
         return $this->validationResult;
     }
 
+    /**
+     * @return JsonValidator
+     */
     public function getJsonValidator(): JsonValidator
     {
         return $this->jsonValidator;
     }
-    public function getErrorAsString()
+
+    /**
+     * @return string
+     */
+    public function getErrorAsString(): string
     {
         if (null === $this->validationResult) {
             return '';

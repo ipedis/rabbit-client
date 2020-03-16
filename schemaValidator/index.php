@@ -1,6 +1,5 @@
 <?php
 
-use Opis\JsonSchema\ValidationError;
 use Ipedis\Rabbit\Validator\PayloadValidator;
 
 require '../vendor/autoload.php';
@@ -40,7 +39,6 @@ if ($hasValidation) {
                                 if (!$validator->isInputValid()) {
                                     echo 'Invalid JSON provided. Please check json format for schema and data.', PHP_EOL;
                                 } else {
-                                    /** @var ValidationError $error */
                                     echo '$data is invalid', PHP_EOL;
                                     echo $validator->getErrorAsString();
                                 }
