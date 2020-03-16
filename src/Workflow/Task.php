@@ -141,7 +141,6 @@ final class Task extends Bindable
         }
 
         $this->status = $newStatus;
-        $this->dispatchInternalEvent();
     }
     /**
      * @return array
@@ -149,23 +148,5 @@ final class Task extends Bindable
     protected function getAllowedBindableTypes(): array
     {
         return BindableEventInterface::TASK_ALLOW_TYPES;
-    }
-
-    /**
-     * internal call for binded event.
-     */
-    private function dispatchInternalEvent()
-    {
-        if($this->isInProgress()) {
-            $this->call(BindableEventInterface::TASK_ON_PROGRESS, $this);
-        } elseif ($this->isSuccess()) {
-            $this->call(BindableEventInterface::TASK_ON_SUCCESS, $this);
-        } elseif ($this->isOnFailure()) {
-            $this->call(BindableEventInterface::TASK_ON_FAILURE, $this);
-        }
-
-        if($this->isFinished()) {
-            $this->call(BindableEventInterface::TASK_ON_FINISH, $this);
-        }
     }
 }

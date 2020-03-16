@@ -54,6 +54,7 @@ trait Manager
 
     public function run(Workflow $workflow)
     {
+        $wasAtLeastOneFailure = false;
         $this->workflow = $workflow;
         /**
          * Each groups will be executed sequencially, we iterate on each group.
@@ -81,17 +82,18 @@ trait Manager
 
             $this->replyQueue->consume([$this, 'onGroupReply']);
 
-            $group->call(BindableEventInterface::GROUP_ON_FINISH, $group);
+            $this->onGroupFinish($group);
 
             if ($group->hasFailure()) {
-                $this->workflow->call(BindableEventInterface::WORKFLOW_ON_FAILURE, $group);
+                $wasAtLeastOneFailure = true;
 
                 break; // Don't run next group.
             }
         }
         /**
-         * run is finish
+         * run is finish, let concluing workflow.
          */
+        $this->workflow->call($wasAtLeastOneFailure ? BindableEventInterface::WORKFLOW_ON_FAILURE : BindableEventInterface::WORKFLOW_ON_SUCCESS);
         $this->workflow->call(BindableEventInterface::WORKFLOW_ON_FINISH);
     }
 
@@ -102,18 +104,17 @@ trait Manager
          */
         $message = ReplyMessagePayload::fromJson($envelope->getBody());
 
-        $group = $this->workflow->taskReply($message);
-
-        $q->ack($envelope->getDeliveryTag());
-
         /**
-         * notify callback
+         * Persist current message AND update task status.
+         * It will return current group and current task.
          */
-        if($message->getStatus() === MessageHandlerInterface::TYPE_SUCCESS)
-            $group->call(BindableEventInterface::GROUP_ON_SUCCESS, $group);
-
-        if($message->getStatus() === MessageHandlerInterface::TYPE_ERROR)
-            $group->call(BindableEventInterface::GROUP_ON_FAILURE, $group);
+        [$group, $task] = $this->workflow->taskReply($message);
+        // ACK Current message.
+        $q->ack($envelope->getDeliveryTag());
+        /**
+         * Call event binded on task layer.
+         */
+        $this->onUpdatedTaskStatus($message, $group, $task);
 
         /**
          * wait until entire group is finish.
@@ -121,6 +122,52 @@ trait Manager
         return (!$group->isFinish());
     }
 
+    /**
+     * notify callback
+     *
+     * @param ReplyMessagePayload $message
+     * @param Group $group
+     * @param Task $task
+     */
+    private function onUpdatedTaskStatus(
+        ReplyMessagePayload $message,
+        Group $group,
+        Task $task
+    ) {
+        switch ($message->getStatus())
+        {
+            case MessageHandlerInterface::TYPE_SUCCESS :
+                $task->call(BindableEventInterface::TASK_ON_SUCCESS, $task);
+                $task->call(BindableEventInterface::TASK_ON_FINISH, $task);
+                $group->call(BindableEventInterface::GROUP_ON_TASKS_SUCCESS, $task);
+                $this->workflow->call(BindableEventInterface::WORKFLOW_ON_TASKS_SUCCESS, $task);
+            break;
+            case MessageHandlerInterface::TYPE_ERROR :
+                $task->call(BindableEventInterface::TASK_ON_FAILURE, $task);
+                $task->call(BindableEventInterface::TASK_ON_FINISH, $task);
+                $group->call(BindableEventInterface::GROUP_ON_TASKS_FAILURE, $task);
+                $this->workflow->call(BindableEventInterface::WORKFLOW_ON_TASKS_FAILURE, $task);
+            break;
+            case MessageHandlerInterface::TYPE_PROGRESS :
+                $task->call(BindableEventInterface::TASK_ON_PROGRESS, $task);
+            break;
+        }
+    }
+
+    /**
+     * @param Group $group
+     */
+    private function onGroupFinish(Group $group)
+    {
+        $group->call($group->hasFailure() ? BindableEventInterface::GROUP_ON_FAILURE : BindableEventInterface::GROUP_ON_SUCCESS, $group);
+        $group->call(BindableEventInterface::GROUP_ON_FINISH, $group);
+        $this->workflow->call($group->hasFailure() ? BindableEventInterface::WORKFLOW_ON_GROUPS_FAILURE : BindableEventInterface::WORKFLOW_ON_GROUPS_SUCCESS, $group);
+    }
+
+    /**
+     * @param Task $task
+     * @return $this
+     */
     protected function publish(Task $task): self
     {
         $message = $task->getOrderMessage();

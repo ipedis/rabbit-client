@@ -6,6 +6,7 @@ namespace Ipedis\Rabbit\Workflow;
 use Ipedis\Rabbit\Exception\Group\InvalidGroupArgumentException;
 use Ipedis\Rabbit\Exception\Workflow\InvalidWorkflowArgumentException;
 use Ipedis\Rabbit\MessagePayload\ReplyMessagePayload;
+use Ipedis\Rabbit\Workflow\Config\WorkflowConfig;
 use Ipedis\Rabbit\Workflow\Event\Bindable;
 use Ipedis\Rabbit\Workflow\Event\BindableEventInterface;
 
@@ -17,15 +18,26 @@ class Workflow extends Bindable
     protected $groups;
 
     /**
+     * @var WorkflowConfig
+     */
+    protected $config;
+
+    /**
      * Workflow constructor.
      *
      * @param Group|callable $firstStep
      * @param array $groupCallbacks
-     * @throws InvalidWorkflowArgumentException
+     * @param WorkflowConfig|null $config
      * @throws InvalidGroupArgumentException
+     * @throws InvalidWorkflowArgumentException
      */
-    public function __construct($firstStep, array $groupCallbacks = [])
+    public function __construct($firstStep, array $groupCallbacks = [], ?WorkflowConfig $config = null)
     {
+        /**
+         * define config
+         */
+        $this->config = $config ?? new WorkflowConfig();
+
         /**
          * Initialise collections
          */
@@ -60,9 +72,9 @@ class Workflow extends Bindable
      * When we receive ReplyMessage from worker.
      *
      * @param ReplyMessagePayload $message
-     * @return Group
+     * @return array
      */
-    public function taskReply(ReplyMessagePayload $message): Group
+    public function taskReply(ReplyMessagePayload $message): array
     {
         // Check all existing group if he contain particular order id.
         foreach ($this->groups as $group) {
@@ -74,6 +86,14 @@ class Workflow extends Bindable
         }
 
         return $currentGroup;
+    }
+
+    /**
+     * @return WorkflowConfig
+     */
+    public function getConfig(): WorkflowConfig
+    {
+        return $this->config;
     }
 
     /**
@@ -129,6 +149,10 @@ class Workflow extends Bindable
         return $this->groups;
     }
 
+    /**
+     * @param $step
+     * @throws InvalidWorkflowArgumentException
+     */
     private function assertGroup($step)
     {
         if (
@@ -139,6 +163,9 @@ class Workflow extends Bindable
         }
     }
 
+    /**
+     * @return array
+     */
     protected function getAllowedBindableTypes(): array
     {
         return BindableEventInterface::WORKFLOW_ALLOW_TYPES;

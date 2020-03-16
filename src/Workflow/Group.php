@@ -83,11 +83,13 @@ class Group extends Bindable
         return $this->tasks[$orderId];
     }
 
-    public function update(ReplyMessagePayload $message): self
-    {
-        $this->find($message->getOrderId())->update($message);
 
-        return $this;
+    public function update(ReplyMessagePayload $message): array
+    {
+        $task = $this->find($message->getOrderId());
+        $task->update($message);
+
+        return [$this, $task];
     }
 
     /**
