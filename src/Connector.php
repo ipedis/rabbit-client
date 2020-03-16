@@ -6,6 +6,8 @@ namespace Ipedis\Rabbit;
 use AMQPChannel;
 use AMQPConnection;
 use AMQPExchange;
+use Ipedis\Rabbit\Exception\RabbitClientConnectException;
+use Ipedis\Rabbit\Exception\RabbitClientPublishException;
 
 trait Connector
 {
@@ -44,12 +46,8 @@ trait Connector
              * Create and declare exchange
              */
             $this->setExchange();
-
         } catch (\Exception $exception) {
-            /**
-             * @todo error handling
-             */
-           // var_dump(sprintf('Error:  %s', $exception->getMessage()));
+            throw new RabbitClientConnectException(sprintf('IPEDIS RABBIT CLIENT - Connection to rabbitMQ failed with error { %s }', $exception->getMessage()));
         }
     }
 
@@ -60,6 +58,23 @@ trait Connector
     {
         if($this->channel !== null) $this->channel->close();
         if($this->connection !== null) $this->connection->disconnect();
+    }
+
+    /**
+     * Helper function to publish message on exchange
+     *
+     * @param $message
+     * @param $channel
+     * @param array $messageProperties
+     * @throws RabbitClientPublishException
+     */
+    protected function publishToExchange($message, $channel, array $messageProperties = [])
+    {
+        try {
+            $this->exchange->publish($message, $channel, AMQP_NOPARAM, $messageProperties);
+        } catch (\Exception $exception) {
+            throw new RabbitClientPublishException(sprintf('IPEDIS RABBIT CLIENT - Publishing message on exchange failed with error { %s }', $exception->getMessage()));
+        }
     }
 
     /**
