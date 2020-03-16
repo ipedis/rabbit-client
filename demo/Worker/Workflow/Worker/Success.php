@@ -1,6 +1,6 @@
 <?php
 
-namespace Ipedis\Demo\Rabbit\Worker\Workflow;
+namespace Ipedis\Demo\Rabbit\Worker\Workflow\Worker;
 
 
 use AMQPEnvelope;
@@ -41,21 +41,6 @@ class Success extends ConnectorAbstract
                     MessageHandlerInterface::TYPE_PROGRESS,
                     ['status' => 'PROGRESS', 'step' => 1]
                 )
-            );
-
-            /**
-             * Do some traitment.
-             *
-             * [...]
-             *
-             * If everything is ok, reply to manager.
-             */
-            sleep(1);
-
-            printf("On channel : %s Worker Name : %s (id : %s) \n",
-                self::getQueueName(),
-                self::class,
-                $this->worker_id
             );
 
             return ["step" => "step1 finished"];

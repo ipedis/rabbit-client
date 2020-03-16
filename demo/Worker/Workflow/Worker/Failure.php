@@ -1,6 +1,6 @@
 <?php
 
-namespace Ipedis\Demo\Rabbit\Worker\Workflow;
+namespace Ipedis\Demo\Rabbit\Worker\Workflow\Worker;
 
 
 use AMQPEnvelope;
@@ -26,6 +26,14 @@ class Failure extends ConnectorAbstract
     {
         return function (AMQPEnvelope $message, OrderMessagePayload $messagePayload) {
             $params = $messagePayload->getData();
+            $this->notifyTo(
+                $message,
+                ReplyMessagePayload::buildFromOrderMessagePayload(
+                    $messagePayload,
+                    MessageHandlerInterface::TYPE_PROGRESS,
+                    ['status' => 'PROGRESS', 'step' => 1]
+                )
+            );
 
             throw new \Exception('Lets fail :)');
 

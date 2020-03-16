@@ -4,10 +4,10 @@ use Ipedis\Demo\Rabbit\Utils\MessagePayloadValidator\MessagePayloadValidator;
 use Ipedis\Demo\Rabbit\Worker\Event\Binding;
 use Ipedis\Demo\Rabbit\Worker\Event\Dispatcher;
 use Ipedis\Demo\Rabbit\Worker\Order\Manager as OrderManager;
-use Ipedis\Demo\Rabbit\Worker\Workflow\Success;
-use Ipedis\Demo\Rabbit\Worker\Workflow\Failure;
+use Ipedis\Demo\Rabbit\Worker\Workflow\Worker\Success;
+use Ipedis\Demo\Rabbit\Worker\Workflow\Worker\Failure;
 use Ipedis\Demo\Rabbit\Worker\Order\Worker as WorkerProcess;
-use Ipedis\Demo\Rabbit\Worker\Workflow\Manager as WorkflowManager;
+use Ipedis\Demo\Rabbit\Worker\Workflow\Manager\AllCallbackManager;
 use Ipedis\Rabbit\Channel\Factory\ChannelFactory;
 
 require __DIR__.'/../vendor/autoload.php';
@@ -76,8 +76,8 @@ if ( !empty($argv[1]) ) {
             ))->execute();
             break;
 
-        case 'workflow':
-            (new WorkflowManager(
+        case 'workflow-callback':
+            (new AllCallbackManager(
                 $configOrder['host'],
                 $configOrder['port'],
                 $configOrder['use'],
@@ -120,7 +120,10 @@ if ( !empty($argv[1]) ) {
         'worker',
         'event',
         'binding',
-        'workflow',
+        'workflow-callback',
+        'workflow-progress',
+        'workflow-failure',
+        'workflow-retry',
         'success',
         'failure'
     ]));

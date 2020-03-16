@@ -86,8 +86,10 @@ trait Manager
 
             if ($group->hasFailure()) {
                 $wasAtLeastOneFailure = true;
-
-                break; // Don't run next group.
+                /**
+                 * if workflow is configure to stop execution on first failure, Don't run next group.
+                 */
+                if(!$this->workflow->getConfig()->hasToContinueOnFailure()) break;
             }
         }
         /**
