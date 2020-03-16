@@ -44,6 +44,9 @@ class WorkflowManager extends ConnectorAbstract
             ->bind(BindableEventInterface::WORKFLOW_FINISH, function () {
                 printf("WORKFLOW FINISH \n\n");
             })
+            ->bind(BindableEventInterface::WORKFLOW_FAILURE, function () {
+                printf("WORKFLOW FAILURE \n\n");
+            })
         ;
 
         $this->run($workflow);
@@ -66,12 +69,16 @@ class WorkflowManager extends ConnectorAbstract
                     [
                         BindableEventInterface::TASK_START => function() { printf("---- TASK 1.2 START \n\n"); },
                         BindableEventInterface::TASK_FINISH => function() { printf("---- TASK 1.2 FINISH \n\n"); },
-                        BindableEventInterface::TASK_PROGRESS => function() { printf("---- TASK 1.2 PROGRESS \n\n"); }
+                        BindableEventInterface::TASK_PROGRESS => function() { printf("---- TASK 1.2 PROGRESS \n\n"); },
+                        BindableEventInterface::TASK_FAILURE => function() { printf("---- TASK 1.2 FAILURE \n\n"); }
                     ]
                 )
                 ->bind(BindableEventInterface::GROUP_START, function() {
                     printf("-- GROUP 1 START \n\n");
                 })
+                 ->bind(BindableEventInterface::GROUP_FAILURE, function() {
+                     printf("-- GROUP 1 FAILURE \n\n");
+                 })
                 ->bind(BindableEventInterface::GROUP_FINISH, function() {
                     printf("-- GROUP 1 FINISH \n\n");
                 })

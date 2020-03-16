@@ -32,8 +32,7 @@ final class Task extends Bindable
     {
         $this->status = MessageHandlerInterface::TYPE_PLANIFIED;
         $this->orderMessage = $orderMessage;
-        $this->assertCallbacks($callbacks);
-        $this->callbacks = $callbacks;
+        $this->callbacks = $this->assertCallbacks($callbacks);
     }
 
     /**

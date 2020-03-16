@@ -33,8 +33,7 @@ class Group extends Bindable
     {
         $this->groupId  = $groupId;
         $this->prepareTasks($tasks);
-        $this->assertCallbacks($callbacks);
-        $this->callbacks = $callbacks;
+        $this->callbacks = $this->assertCallbacks($callbacks);
     }
 
     /**

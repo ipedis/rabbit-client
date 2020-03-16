@@ -9,7 +9,7 @@ abstract class Bindable
 {
 
     /**
-     * @var callable[]
+     * @var callable[][]
      */
     protected $callbacks = [];
 
@@ -31,7 +31,9 @@ abstract class Bindable
         if(!is_callable($callback))
             throw new \LogicException(sprintf("event type : %s parameter is not a callable", $eventType));
 
-        $this->callbacks[$eventType] = $callback;
+        if(empty($this->callbacks[$eventType])) $this->callbacks[$eventType] = [];
+
+        $this->callbacks[$eventType][] = $callback;
 
         return $this;
     }
@@ -43,13 +45,22 @@ abstract class Bindable
      */
     public function call(string $eventType, $payload = null): self
     {
-        if (!empty($this->callbacks[$eventType]) && is_callable($this->callbacks[$eventType])) {
-            if (is_null($payload)) {
-                $this->callbacks[$eventType]($eventType);
-            } else {
-                $this->callbacks[$eventType]($payload, $eventType);
-            }
+        // Ignore undefined array.
+        if(empty($this->callbacks[$eventType])) return $this;
+        // If is not array but pur callable, cast it to array.
+        if(is_callable($this->callbacks[$eventType])) $this->callbacks[$eventType] = [$this->callbacks[$eventType]];
 
+        foreach ($this->callbacks[$eventType] as $callback)
+        {
+            // if we have real callable.
+            if (is_callable($callback))
+            {
+                if (is_null($payload)) {
+                    $callback($eventType);
+                } else {
+                    $callback($payload, $eventType);
+                }
+            }
         }
 
         return $this;
@@ -57,15 +68,24 @@ abstract class Bindable
 
     /**
      * @param array $callbacks
+     * @return array
      */
-    protected function assertCallbacks(array $callbacks)
+    protected function assertCallbacks(array $callbacks): array
     {
-        foreach ( $callbacks as $eventType => $callback ) {
+        foreach ( $callbacks as $eventType => $callback )
+        {
             if(!in_array($eventType, $this->getAllowedBindableTypes()))
                 throw new \LogicException(sprintf("event type : %s is not allowed.", $eventType));
 
-            if(!is_callable($callback))
-                throw new \LogicException(sprintf("event type : %s parameter is not a callable", $eventType));
+            /**
+             *  Force plain params as array of params.
+             */
+            if(!is_array($callback)) $callback = [$callback];
+
+            foreach ($callback as $item) {
+                if(!is_callable($item)) throw new \LogicException(sprintf("event type : %s parameter is not a callable or array of callable", $eventType));
+            }
         }
+        return $callbacks;
     }
 }
