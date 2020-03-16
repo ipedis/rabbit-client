@@ -59,7 +59,7 @@ trait Manager
          * Each groups will be executed sequencially, we iterate on each group.
          * call relevant callback if needed.
          */
-        $this->workflow->call(BindableEventInterface::WORKFLOW_START);
+        $this->workflow->call(BindableEventInterface::WORKFLOW_ON_START);
 
         /** @var Group $group */
         foreach ($workflow->getGroups() as $group) {
@@ -67,7 +67,7 @@ trait Manager
             /**
              * We start to run current group.
              */
-            $group->call(BindableEventInterface::GROUP_START, $group);
+            $group->call(BindableEventInterface::GROUP_ON_START, $group);
 
             /**
              * we create a reply queue for each group runtime
@@ -76,15 +76,15 @@ trait Manager
 
             foreach ($group->getTasks() as $task) {
                 $this->publish($task);
-                $task->call(BindableEventInterface::TASK_START, $task);
+                $task->call(BindableEventInterface::TASK_ON_START, $task);
             }
 
             $this->replyQueue->consume([$this, 'onGroupReply']);
 
-            $group->call(BindableEventInterface::GROUP_FINISH, $group);
+            $group->call(BindableEventInterface::GROUP_ON_FINISH, $group);
 
             if ($group->hasFailure()) {
-                $this->workflow->call(BindableEventInterface::WORKFLOW_FAILURE, $group);
+                $this->workflow->call(BindableEventInterface::WORKFLOW_ON_FAILURE, $group);
 
                 break; // Don't run next group.
             }
@@ -92,7 +92,7 @@ trait Manager
         /**
          * run is finish
          */
-        $this->workflow->call(BindableEventInterface::WORKFLOW_FINISH);
+        $this->workflow->call(BindableEventInterface::WORKFLOW_ON_FINISH);
     }
 
     public function onGroupReply(\AMQPEnvelope $envelope, AMQPQueue $q)
@@ -110,10 +110,10 @@ trait Manager
          * notify callback
          */
         if($message->getStatus() === MessageHandlerInterface::TYPE_SUCCESS)
-            $group->call(BindableEventInterface::GROUP_SUCCESS, $group);
+            $group->call(BindableEventInterface::GROUP_ON_SUCCESS, $group);
 
         if($message->getStatus() === MessageHandlerInterface::TYPE_ERROR)
-            $group->call(BindableEventInterface::GROUP_FAILURE, $group);
+            $group->call(BindableEventInterface::GROUP_ON_FAILURE, $group);
 
         /**
          * wait until entire group is finish.

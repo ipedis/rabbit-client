@@ -38,13 +38,13 @@ class WorkflowManager extends ConnectorAbstract
          * We can bind event on workflow layer.
          */
         $workflow
-            ->bind(BindableEventInterface::WORKFLOW_START, function () {
+            ->bind(BindableEventInterface::WORKFLOW_ON_START, function () {
                 printf("WORKFLOW START \n\n");
             })
-            ->bind(BindableEventInterface::WORKFLOW_FINISH, function () {
+            ->bind(BindableEventInterface::WORKFLOW_ON_FINISH, function () {
                 printf("WORKFLOW FINISH \n\n");
             })
-            ->bind(BindableEventInterface::WORKFLOW_FAILURE, function () {
+            ->bind(BindableEventInterface::WORKFLOW_ON_FAILURE, function () {
                 printf("WORKFLOW FAILURE \n\n");
             })
         ;
@@ -59,27 +59,27 @@ class WorkflowManager extends ConnectorAbstract
                 ->planifyOrder(
                     OrderMessagePayload::build(OrderChannel::fromString('v1.admin.publication.step1')),
                     [
-                        BindableEventInterface::TASK_START => function() { printf("---- TASK 1.1 START \n\n"); },
-                        BindableEventInterface::TASK_FINISH => function(Task $task) { printf("---- TASK 1.1 FINISH \n\n"); },
-                        BindableEventInterface::TASK_PROGRESS => function() { printf("---- TASK 1.1 PROGRESS \n\n"); }
+                        BindableEventInterface::TASK_ON_START => function() { printf("---- TASK 1.1 START \n\n"); },
+                        BindableEventInterface::TASK_ON_FINISH => function(Task $task) { printf("---- TASK 1.1 FINISH \n\n"); },
+                        BindableEventInterface::TASK_ON_PROGRESS => function() { printf("---- TASK 1.1 PROGRESS \n\n"); }
                     ]
                 )
                 ->planifyOrder(
                     OrderMessagePayload::build(OrderChannel::fromString('v1.admin.publication.step2')),
                     [
-                        BindableEventInterface::TASK_START => function() { printf("---- TASK 1.2 START \n\n"); },
-                        BindableEventInterface::TASK_FINISH => function() { printf("---- TASK 1.2 FINISH \n\n"); },
-                        BindableEventInterface::TASK_PROGRESS => function() { printf("---- TASK 1.2 PROGRESS \n\n"); },
-                        BindableEventInterface::TASK_FAILURE => function() { printf("---- TASK 1.2 FAILURE \n\n"); }
+                        BindableEventInterface::TASK_ON_START => function() { printf("---- TASK 1.2 START \n\n"); },
+                        BindableEventInterface::TASK_ON_FINISH => function() { printf("---- TASK 1.2 FINISH \n\n"); },
+                        BindableEventInterface::TASK_ON_PROGRESS => function() { printf("---- TASK 1.2 PROGRESS \n\n"); },
+                        BindableEventInterface::TASK_ON_FAILURE => function() { printf("---- TASK 1.2 FAILURE \n\n"); }
                     ]
                 )
-                ->bind(BindableEventInterface::GROUP_START, function() {
+                ->bind(BindableEventInterface::GROUP_ON_START, function() {
                     printf("-- GROUP 1 START \n\n");
                 })
-                 ->bind(BindableEventInterface::GROUP_FAILURE, function() {
+                 ->bind(BindableEventInterface::GROUP_ON_FAILURE, function() {
                      printf("-- GROUP 1 FAILURE \n\n");
                  })
-                ->bind(BindableEventInterface::GROUP_FINISH, function() {
+                ->bind(BindableEventInterface::GROUP_ON_FINISH, function() {
                     printf("-- GROUP 1 FINISH \n\n");
                 })
             ;
@@ -101,9 +101,9 @@ class WorkflowManager extends ConnectorAbstract
              * It is useful for conditional and programmatic creation.
              */
             $task1 = (Task::build(OrderMessagePayload::build(OrderChannel::fromString('v1.admin.publication.step1'))))
-                ->bind(BindableEventInterface::TASK_START, function() { printf("---- TASK 2.1 START \n\n"); })
-                ->bind(BindableEventInterface::TASK_FINISH, function() { printf("---- TASK 2.1 FINISH \n\n"); })
-                ->bind(BindableEventInterface::TASK_PROGRESS, function() { printf("---- TASK 2.1 PROGRESS \n\n"); })
+                ->bind(BindableEventInterface::TASK_ON_START, function() { printf("---- TASK 2.1 START \n\n"); })
+                ->bind(BindableEventInterface::TASK_ON_FINISH, function() { printf("---- TASK 2.1 FINISH \n\n"); })
+                ->bind(BindableEventInterface::TASK_ON_PROGRESS, function() { printf("---- TASK 2.1 PROGRESS \n\n"); })
             ;
             /**
              * On your convenance you can use array of callbacks or bind method to attach callback to a specific business moment of the runned workflow.
@@ -113,8 +113,8 @@ class WorkflowManager extends ConnectorAbstract
                     $task1
                 ],
                 [
-                    BindableEventInterface::GROUP_START => function() { printf("-- GROUP 2 START \n\n"); },
-                    BindableEventInterface::GROUP_FINISH => function() { printf("-- GROUP 2 FINISH \n\n"); }
+                    BindableEventInterface::GROUP_ON_START => function() { printf("-- GROUP 2 START \n\n"); },
+                    BindableEventInterface::GROUP_ON_FINISH => function() { printf("-- GROUP 2 FINISH \n\n"); }
                 ]
             ));
             /**
@@ -122,9 +122,9 @@ class WorkflowManager extends ConnectorAbstract
              */
             if (true) {
                 $task2 = (Task::build(OrderMessagePayload::build(OrderChannel::fromString('v1.admin.publication.step1'))))
-                    ->bind(BindableEventInterface::TASK_START, function() { printf("---- TASK 2.2 START \n\n"); })
-                    ->bind(BindableEventInterface::TASK_FINISH, function() { printf("---- TASK 2.2 FINISH \n\n"); })
-                    ->bind(BindableEventInterface::TASK_PROGRESS, function() { printf("---- TASK 2.2 PROGRESS \n\n"); })
+                    ->bind(BindableEventInterface::TASK_ON_START, function() { printf("---- TASK 2.2 START \n\n"); })
+                    ->bind(BindableEventInterface::TASK_ON_FINISH, function() { printf("---- TASK 2.2 FINISH \n\n"); })
+                    ->bind(BindableEventInterface::TASK_ON_PROGRESS, function() { printf("---- TASK 2.2 PROGRESS \n\n"); })
                 ;
 
                 $craftedGroup->planify($task2);

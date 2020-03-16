@@ -157,15 +157,15 @@ final class Task extends Bindable
     private function dispatchInternalEvent()
     {
         if($this->isInProgress()) {
-            $this->call(BindableEventInterface::TASK_PROGRESS, $this);
+            $this->call(BindableEventInterface::TASK_ON_PROGRESS, $this);
         } elseif ($this->isSuccess()) {
-            $this->call(BindableEventInterface::TASK_SUCCESS, $this);
+            $this->call(BindableEventInterface::TASK_ON_SUCCESS, $this);
         } elseif ($this->isOnFailure()) {
-            $this->call(BindableEventInterface::TASK_FAILURE, $this);
+            $this->call(BindableEventInterface::TASK_ON_FAILURE, $this);
         }
 
         if($this->isFinished()) {
-            $this->call(BindableEventInterface::TASK_FINISH, $this);
+            $this->call(BindableEventInterface::TASK_ON_FINISH, $this);
         }
     }
 }
