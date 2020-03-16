@@ -1,6 +1,6 @@
 <?php
 
-namespace Ipedis\Demo\Rabbit\Worker;
+namespace Ipedis\Demo\Rabbit\Worker\Workflow;
 
 
 use Closure;
@@ -12,7 +12,7 @@ use Ipedis\Rabbit\Workflow\Task;
 use Ipedis\Rabbit\Workflow\Workflow;
 use Ipedis\Rabbit\Workflow\Group;
 
-class WorkflowManager extends ConnectorAbstract
+class Manager extends ConnectorAbstract
 {
     use \Ipedis\Rabbit\Workflow\Manager;
 
@@ -57,7 +57,7 @@ class WorkflowManager extends ConnectorAbstract
         return function (Group $group) {
              $group
                 ->planifyOrder(
-                    OrderMessagePayload::build(OrderChannel::fromString('v1.admin.publication.step1')),
+                    OrderMessagePayload::build(OrderChannel::fromString('v1.admin.publication.success')),
                     [
                         BindableEventInterface::TASK_ON_START => function() { printf("---- TASK 1.1 START \n\n"); },
                         BindableEventInterface::TASK_ON_FINISH => function(Task $task) { printf("---- TASK 1.1 FINISH \n\n"); },
@@ -65,7 +65,7 @@ class WorkflowManager extends ConnectorAbstract
                     ]
                 )
                 ->planifyOrder(
-                    OrderMessagePayload::build(OrderChannel::fromString('v1.admin.publication.step2')),
+                    OrderMessagePayload::build(OrderChannel::fromString('v1.admin.publication.failure')),
                     [
                         BindableEventInterface::TASK_ON_START => function() { printf("---- TASK 1.2 START \n\n"); },
                         BindableEventInterface::TASK_ON_FINISH => function() { printf("---- TASK 1.2 FINISH \n\n"); },
@@ -100,7 +100,7 @@ class WorkflowManager extends ConnectorAbstract
              * You can create your own task from scratch, bind manually your callback.
              * It is useful for conditional and programmatic creation.
              */
-            $task1 = (Task::build(OrderMessagePayload::build(OrderChannel::fromString('v1.admin.publication.step1'))))
+            $task1 = (Task::build(OrderMessagePayload::build(OrderChannel::fromString('v1.admin.publication.success'))))
                 ->bind(BindableEventInterface::TASK_ON_START, function() { printf("---- TASK 2.1 START \n\n"); })
                 ->bind(BindableEventInterface::TASK_ON_FINISH, function() { printf("---- TASK 2.1 FINISH \n\n"); })
                 ->bind(BindableEventInterface::TASK_ON_PROGRESS, function() { printf("---- TASK 2.1 PROGRESS \n\n"); })
@@ -121,7 +121,7 @@ class WorkflowManager extends ConnectorAbstract
              * you can easilly bind, and planify some task base on your own logic.
              */
             if (true) {
-                $task2 = (Task::build(OrderMessagePayload::build(OrderChannel::fromString('v1.admin.publication.step1'))))
+                $task2 = (Task::build(OrderMessagePayload::build(OrderChannel::fromString('v1.admin.publication.success'))))
                     ->bind(BindableEventInterface::TASK_ON_START, function() { printf("---- TASK 2.2 START \n\n"); })
                     ->bind(BindableEventInterface::TASK_ON_FINISH, function() { printf("---- TASK 2.2 FINISH \n\n"); })
                     ->bind(BindableEventInterface::TASK_ON_PROGRESS, function() { printf("---- TASK 2.2 PROGRESS \n\n"); })

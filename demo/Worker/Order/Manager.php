@@ -1,7 +1,7 @@
 <?php
 
 
-namespace Ipedis\Demo\Rabbit\Worker;
+namespace Ipedis\Demo\Rabbit\Worker\Order;
 
 
 use Ipedis\Demo\Rabbit\Utils\ConnectorAbstract;
@@ -22,6 +22,7 @@ class Manager extends ConnectorAbstract
      */
 
     private $channelFactory;
+
     /**
      * Manager constructor.
      * @param string $host
@@ -31,6 +32,7 @@ class Manager extends ConnectorAbstract
      * @param string $exchange
      * @param string $type
      * @param ChannelFactory $channelFactory
+     * @throws \Ipedis\Rabbit\Exception\RabbitClientConnectException
      */
     public function __construct(
         string $host,

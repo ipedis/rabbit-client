@@ -1,6 +1,6 @@
 <?php
 
-namespace Ipedis\Demo\Rabbit\Worker;
+namespace Ipedis\Demo\Rabbit\Worker\Event;
 
 
 use Ipedis\Demo\Rabbit\Utils\ConnectorAbstract;

@@ -1,13 +1,13 @@
 <?php
 
 use Ipedis\Demo\Rabbit\Utils\MessagePayloadValidator\MessagePayloadValidator;
-use Ipedis\Demo\Rabbit\Worker\Binding;
-use Ipedis\Demo\Rabbit\Worker\Dispatcher;
-use Ipedis\Demo\Rabbit\Worker\Manager;
-use Ipedis\Demo\Rabbit\Worker\Step1;
-use Ipedis\Demo\Rabbit\Worker\Step2;
-use Ipedis\Demo\Rabbit\Worker\Worker as WorkerProcess;
-use Ipedis\Demo\Rabbit\Worker\WorkflowManager;
+use Ipedis\Demo\Rabbit\Worker\Event\Binding;
+use Ipedis\Demo\Rabbit\Worker\Event\Dispatcher;
+use Ipedis\Demo\Rabbit\Worker\Order\Manager as OrderManager;
+use Ipedis\Demo\Rabbit\Worker\Workflow\Success;
+use Ipedis\Demo\Rabbit\Worker\Workflow\Failure;
+use Ipedis\Demo\Rabbit\Worker\Order\Worker as WorkerProcess;
+use Ipedis\Demo\Rabbit\Worker\Workflow\Manager as WorkflowManager;
 use Ipedis\Rabbit\Channel\Factory\ChannelFactory;
 
 require __DIR__.'/../vendor/autoload.php';
@@ -42,7 +42,7 @@ if ( !empty($argv[1]) ) {
         break;
 
         case 'manager':
-            (new Manager(
+            (new OrderManager(
                 $configOrder['host'],
                 $configOrder['port'],
                 $configOrder['use'],
@@ -54,8 +54,8 @@ if ( !empty($argv[1]) ) {
             break;
 
 
-        case 'step1':
-            (new Step1(
+        case 'success':
+            (new Success(
                 $configOrder['host'],
                 $configOrder['port'],
                 $configOrder['use'],
@@ -65,8 +65,8 @@ if ( !empty($argv[1]) ) {
             ))->execute();
             break;
 
-        case 'step2':
-            (new Step2(
+        case 'failure':
+            (new Failure(
                 $configOrder['host'],
                 $configOrder['port'],
                 $configOrder['use'],
@@ -119,6 +119,9 @@ if ( !empty($argv[1]) ) {
         'manager',
         'worker',
         'event',
-        'binding'
+        'binding',
+        'workflow',
+        'success',
+        'failure'
     ]));
 }

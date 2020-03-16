@@ -1,6 +1,6 @@
 <?php
 
-namespace Ipedis\Demo\Rabbit\Worker;
+namespace Ipedis\Demo\Rabbit\Worker\Workflow;
 
 
 use AMQPEnvelope;
@@ -12,14 +12,14 @@ use Ipedis\Rabbit\MessagePayload\ReplyMessagePayload;
 use Ipedis\Rabbit\Order\Worker as WorkerTrait;
 
 
-class Step1 extends ConnectorAbstract
+class Success extends ConnectorAbstract
 {
     use WorkerTrait;
 
 
     public static function getQueueName(): string
     {
-        return OrderChannel::fromString('v1.admin.publication.step1');
+        return OrderChannel::fromString('v1.admin.publication.success');
     }
 
     protected function makeMessageHandler(): \Closure
