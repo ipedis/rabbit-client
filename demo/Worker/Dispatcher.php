@@ -82,8 +82,8 @@ class Dispatcher extends ConnectorAbstract
      *
      * @return string
      */
-    public function getRecoveryBaseUri(): string
+    public function getRecoveryEventStoreEndpoint(): string
     {
-        return 'http://backup.publispeak.local/api/';
+        return 'http://backup.publispeak.local/api/event/store';
     }
 }

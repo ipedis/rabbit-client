@@ -114,23 +114,13 @@ trait EventDispatcher
      */
     private function storeEventOnRecovery(EventMessagePayload $payload)
     {
-        (new Client(['base_uri' => $this->getRecoveryBaseUri()]))
-            ->post($this->getStoreEventRecoveryEndpoint(), [
+        (new Client())
+            ->post($this->getRecoveryEventStoreEndpoint(), [
                 'body' => json_encode($payload),
                 'headers' => [
                     'Accept' => 'application/json'
                 ]
             ])
         ;
-    }
-
-    /**
-     * Endpoint for storing event on recovery
-     *
-     * @return string
-     */
-    private function getStoreEventRecoveryEndpoint(): string
-    {
-        return 'event/store';
     }
 }
