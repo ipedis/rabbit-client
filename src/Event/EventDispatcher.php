@@ -114,6 +114,9 @@ trait EventDispatcher
      */
     private function storeEventOnRecovery(EventMessagePayload $payload)
     {
+        /**
+         * @todo add signature to request
+         */
         (new Client())
             ->post($this->getRecoveryEventStoreEndpoint(), [
                 'body' => json_encode($payload),
