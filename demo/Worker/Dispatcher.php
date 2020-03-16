@@ -38,7 +38,6 @@ class Dispatcher extends ConnectorAbstract
 
         $this->channelFactory = $channelFactory;
         $this->messagePayloadValidator = $messagePayloadValidator;
-        $this->connect();
     }
 
     public function main()
@@ -76,5 +75,15 @@ class Dispatcher extends ConnectorAbstract
     public function getMessagePayloadValidator(): ValidatorInterface
     {
         return $this->messagePayloadValidator;
+    }
+
+    /**
+     * Url of recovery project
+     *
+     * @return string
+     */
+    public function getRecoveryBaseUri(): string
+    {
+        return 'http://backup.publispeak.local/api/';
     }
 }

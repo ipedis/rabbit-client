@@ -3,6 +3,7 @@
 namespace Ipedis\Rabbit\Event;
 
 
+use GuzzleHttp\Client;
 use Ipedis\Rabbit\Channel\EventChannel;
 use Ipedis\Rabbit\Channel\Factory\ChannelFactory;
 use Ipedis\Rabbit\Connector;
@@ -37,37 +38,43 @@ trait EventDispatcher
      * @throws ChannelFactoryException
      * @throws ChannelNamingException
      * @throws MessagePayloadValidatorException
-     * @throws RabbitClientConnectException
-     * @throws RabbitClientPublishException
      */
     public function dispatch(EventMessagePayload $messagePayload)
     {
-        if ( $this->channel === null) {
-            $this->connect();
+        try {
+            if ( $this->channel === null) {
+                $this->connect();
+            }
+
+            if (!$this->getChannelFactory() instanceof ChannelFactory) {
+                throw new ChannelFactoryException('Must provide channel factory {channelFactory} with version and service.');
+            }
+
+            if (!$this->getMessagePayloadValidator() instanceof ValidatorInterface) {
+                throw new MessagePayloadValidatorException("Must provide message payload validator {messagePayloadValidator}");
+            }
+
+            /**
+             * Validate channel naming and return event name
+             */
+            $eventName = $this->getEventName($messagePayload->getChannel());
+
+            /**
+             * Validate message payload data schema
+             */
+            $this->getMessagePayloadValidator()->validate($messagePayload);
+
+            /**
+             * Publish message on exchange
+             */
+            $this->publishToExchange(json_encode($messagePayload), $eventName);
+        } catch (RabbitClientConnectException | RabbitClientPublishException $exception) {
+            /**
+             * Error occured while connecting to RabbitMQ OR
+             * publishing to exchange : event is stored on recovery
+             */
+            $this->storeEventOnRecovery($messagePayload);
         }
-
-        if (!$this->getChannelFactory() instanceof ChannelFactory) {
-            throw new ChannelFactoryException('Must provide channel factory {channelFactory} with version and service.');
-        }
-
-        if (!$this->getMessagePayloadValidator() instanceof ValidatorInterface) {
-            throw new MessagePayloadValidatorException("Must provide message payload validator {messagePayloadValidator}");
-        }
-
-        /**
-         * Validate channel naming and return event name
-         */
-        $eventName = $this->getEventName($messagePayload->getChannel());
-
-        /**
-         * Validate message payload data schema
-         */
-        $this->getMessagePayloadValidator()->validate($messagePayload);
-
-        /**
-         * Publish message on exchange
-         */
-        $this->publishToExchange(json_encode($messagePayload), $eventName);
     }
 
     /**
@@ -98,5 +105,32 @@ trait EventDispatcher
 
         // no criteria fulfilled, throw an exception.
         throw new ChannelNamingException('Invalid channel provided.');
+    }
+
+    /**
+     * Store event on recovery
+     *
+     * @param EventMessagePayload $payload
+     */
+    private function storeEventOnRecovery(EventMessagePayload $payload)
+    {
+        (new Client(['base_uri' => $this->getRecoveryBaseUri()]))
+            ->post($this->getStoreEventRecoveryEndpoint(), [
+                'body' => json_encode($payload),
+                'headers' => [
+                    'Accept' => 'application/json'
+                ]
+            ])
+        ;
+    }
+
+    /**
+     * Endpoint for storing event on recovery
+     *
+     * @return string
+     */
+    private function getStoreEventRecoveryEndpoint(): string
+    {
+        return 'event/store';
     }
 }
