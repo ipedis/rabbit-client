@@ -5,8 +5,10 @@ namespace Ipedis\Rabbit\Workflow;
 
 use Ipedis\Rabbit\Consumer\Handler\MessageHandlerInterface;
 use Ipedis\Rabbit\Exception\Group\InvalidGroupArgumentException;
+use Ipedis\Rabbit\Exception\Task\InvalidStatusException;
 use Ipedis\Rabbit\MessagePayload\OrderMessagePayload;
 use Ipedis\Rabbit\MessagePayload\ReplyMessagePayload;
+use Ipedis\Rabbit\Workflow\Config\GroupConfig;
 use Ipedis\Rabbit\Workflow\Event\Bindable;
 use Ipedis\Rabbit\Workflow\Event\BindableEventInterface;
 
@@ -23,28 +25,36 @@ class Group extends Bindable
     protected $tasks = [];
 
     /**
+     * @var GroupConfig
+     */
+    protected $config;
+
+    /**
      * Group constructor.
      * @param string $groupId
      * @param array $tasks
      * @param array $callbacks
+     * @param GroupConfig|null $config
      * @throws InvalidGroupArgumentException
      */
-    protected function __construct(string $groupId, array $tasks = [], array $callbacks = [])
+    protected function __construct(string $groupId, array $tasks = [], array $callbacks = [], ?GroupConfig $config = null)
     {
         $this->groupId  = $groupId;
         $this->prepareTasks($tasks);
         $this->callbacks = $this->assertCallbacks($callbacks);
+        $this->config = $config;
     }
 
     /**
      * @param array $tasks
      * @param array $callbacks
+     * @param GroupConfig|null $config
      * @return static
      * @throws InvalidGroupArgumentException
      */
-    public static function build(array $tasks = [], array $callbacks = []): self
+    public static function build(array $tasks = [], array $callbacks = [], ?GroupConfig $config = null): self
     {
-        return new self(uuid_create(), $tasks, $callbacks);
+        return new self(uuid_create(), $tasks, $callbacks, $config);
     }
 
     /**
@@ -73,17 +83,29 @@ class Group extends Bindable
         return $this->planify(Task::build($order, $callbacks));
     }
 
+    /**
+     * @param string $orderId
+     * @return bool
+     */
     public function has(string $orderId): bool
     {
         return (!empty($this->tasks[$orderId]));
     }
 
+    /**
+     * @param string $orderId
+     * @return Task
+     */
     public function find(string $orderId): Task
     {
         return $this->tasks[$orderId];
     }
 
-
+    /**
+     * @param ReplyMessagePayload $message
+     * @return array
+     * @throws InvalidStatusException
+     */
     public function update(ReplyMessagePayload $message): array
     {
         $task = $this->find($message->getOrderId());
@@ -102,16 +124,9 @@ class Group extends Bindable
         return $this->tasks;
     }
 
-    private function prepareTasks(array $tasks)
-    {
-        foreach ($tasks as $task) {
-            if (!($task instanceof Task)) {
-                throw new InvalidGroupArgumentException(sprintf('list of tasks must have "%s" type', Task::class));
-            }
-            $this->tasks[$task->getOrderMessage()->getOrderId()] = $task;
-        }
-    }
-
+    /**
+     * @return bool
+     */
     public function isFinish(): bool
     {
         $isFinish = true;
@@ -124,6 +139,14 @@ class Group extends Bindable
         }
 
         return $isFinish;
+    }
+
+    /**
+     * @return GroupConfig
+     */
+    public function getConfig(): GroupConfig
+    {
+        return $this->config;
     }
 
     /**
@@ -191,6 +214,23 @@ class Group extends Bindable
         return round($percentage, 2);
     }
 
+    /**
+     * @param array $tasks
+     * @throws InvalidGroupArgumentException
+     */
+    private function prepareTasks(array $tasks)
+    {
+        foreach ($tasks as $task) {
+            if (!($task instanceof Task)) {
+                throw new InvalidGroupArgumentException(sprintf('list of tasks must have "%s" type', Task::class));
+            }
+            $this->tasks[$task->getOrderMessage()->getOrderId()] = $task;
+        }
+    }
+
+    /**
+     * @return array
+     */
     protected function getAllowedBindableTypes(): array
     {
         return BindableEventInterface::GROUP_ALLOW_TYPES;

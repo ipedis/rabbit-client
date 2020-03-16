@@ -31,7 +31,7 @@ class Manager extends ConnectorAbstract
     {
         $workflow = (
             new Workflow($this->craftFirstStep()))
-            //->then($this->craftSecondStep())
+            ->then($this->craftSecondStep())
         ;
 
         /**
@@ -39,28 +39,28 @@ class Manager extends ConnectorAbstract
          */
         $workflow
             ->bind(BindableEventInterface::WORKFLOW_ON_START, function () {
-                $this->print("WORKFLOW START \n\n");
+                $this->print("WORKFLOW START \n");
             })
             ->bind(BindableEventInterface::WORKFLOW_ON_FINISH, function () {
-                $this->print("WORKFLOW FINISH \n\n");
+                $this->print("WORKFLOW FINISH \n");
             })
             ->bind(BindableEventInterface::WORKFLOW_ON_FAILURE, function () {
-                $this->print("WORKFLOW FAILURE \n\n");
+                $this->print("WORKFLOW FAILURE \n");
             })
             ->bind(BindableEventInterface::WORKFLOW_ON_SUCCESS, function () {
-                $this->print("WORKFLOW SUCCESS \n\n");
+                $this->print("WORKFLOW SUCCESS \n");
             })
             ->bind(BindableEventInterface::WORKFLOW_ON_GROUPS_SUCCESS, function () {
-                $this->print("WORKFLOW GROUPS SUCCESS \n\n");
+                $this->print("WORKFLOW GROUPS SUCCESS \n");
             })
             ->bind(BindableEventInterface::WORKFLOW_ON_GROUPS_FAILURE, function () {
-                $this->print("WORKFLOW GROUPS FAILURE \n\n");
+                $this->print("WORKFLOW GROUPS FAILURE \n");
             })
             ->bind(BindableEventInterface::WORKFLOW_ON_TASKS_FAILURE, function () {
-                $this->print("WORKFLOW TASKS FAILURE \n\n");
+                $this->print("WORKFLOW TASKS FAILURE \n");
             })
             ->bind(BindableEventInterface::WORKFLOW_ON_TASKS_SUCCESS, function () {
-                $this->print("WORKFLOW TASKS SUCCESS \n\n");
+                $this->print("WORKFLOW TASKS SUCCESS \n");
             })
         ;
 
@@ -74,37 +74,40 @@ class Manager extends ConnectorAbstract
                 ->planifyOrder(
                     OrderMessagePayload::build(OrderChannel::fromString('v1.admin.publication.success')),
                     [
-                        BindableEventInterface::TASK_ON_START => function() { $this->print("---- TASK 1.1 START \n\n"); },
-                        BindableEventInterface::TASK_ON_PROGRESS => function() { $this->print("---- TASK 1.1 PROGRESS \n\n"); },
-                        BindableEventInterface::TASK_ON_FAILURE => function() { $this->print("---- TASK 1.1 FAILURE \n\n"); },
-                        BindableEventInterface::TASK_ON_SUCCESS => function() { $this->print("---- TASK 1.1 SUCCESS \n\n"); },
-                        BindableEventInterface::TASK_ON_FINISH => function(Task $task) { $this->print("---- TASK 1.1 FINISH \n\n"); },
+                        BindableEventInterface::TASK_ON_START => function() { $this->print("---- TASK 1.1 START \n"); },
+                        BindableEventInterface::TASK_ON_PROGRESS => function() { $this->print("---- TASK 1.1 PROGRESS \n"); },
+                        BindableEventInterface::TASK_ON_FAILURE => function() { $this->print("---- TASK 1.1 FAILURE \n"); },
+                        BindableEventInterface::TASK_ON_SUCCESS => function() { $this->print("---- TASK 1.1 SUCCESS \n"); },
+                        BindableEventInterface::TASK_ON_FINISH => function(Task $task) { $this->print("---- TASK 1.1 FINISH \n"); },
                     ]
                 )
                 ->planifyOrder(
                     OrderMessagePayload::build(OrderChannel::fromString('v1.admin.publication.success')),
                     [
-                        BindableEventInterface::TASK_ON_START => function() { $this->print("---- TASK 1.2 START \n\n"); },
-                        BindableEventInterface::TASK_ON_PROGRESS => function() { $this->print("---- TASK 1.2 PROGRESS \n\n"); },
-                        BindableEventInterface::TASK_ON_FAILURE => function() { $this->print("---- TASK 1.2 FAILURE \n\n"); },
-                        BindableEventInterface::TASK_ON_SUCCESS => function() { $this->print("---- TASK 1.2 SUCCESS \n\n"); },
-                        BindableEventInterface::TASK_ON_FINISH => function() { $this->print("---- TASK 1.2 FINISH \n\n"); },
+                        BindableEventInterface::TASK_ON_START => function() { $this->print("---- TASK 1.2 START \n"); },
+                        BindableEventInterface::TASK_ON_PROGRESS => function() { $this->print("---- TASK 1.2 PROGRESS \n"); },
+                        BindableEventInterface::TASK_ON_FAILURE => function() { $this->print("---- TASK 1.2 FAILURE \n"); },
+                        BindableEventInterface::TASK_ON_SUCCESS => function() { $this->print("---- TASK 1.2 SUCCESS \n"); },
+                        BindableEventInterface::TASK_ON_FINISH => function() { $this->print("---- TASK 1.2 FINISH \n"); },
                     ]
                 )
                 ->bind(BindableEventInterface::GROUP_ON_START, function() {
-                    $this->print("-- GROUP 1 START \n\n");
+                    $this->print("-- GROUP 1 START \n");
                 })
                  ->bind(BindableEventInterface::GROUP_ON_TASKS_SUCCESS, function() {
-                     $this->print("-- GROUP TASKS 1 SUCCESS \n\n");
+                     $this->print("-- GROUP TASKS 1 SUCCESS \n");
                  })
                  ->bind(BindableEventInterface::GROUP_ON_TASKS_FAILURE, function() {
-                     $this->print("-- GROUP TASKS 1 FAILURE \n\n");
+                     $this->print("-- GROUP TASKS 1 FAILURE \n");
                  })
                  ->bind(BindableEventInterface::GROUP_ON_FAILURE, function() {
-                     $this->print("-- GROUP 1 FAILURE \n\n");
+                     $this->print("-- GROUP 1 FAILURE \n");
+                 })
+                 ->bind(BindableEventInterface::GROUP_ON_SUCCESS, function() {
+                     $this->print("-- GROUP 1 SUCCESS \n");
                  })
                 ->bind(BindableEventInterface::GROUP_ON_FINISH, function() {
-                    $this->print("-- GROUP 1 FINISH \n\n");
+                    $this->print("-- GROUP 1 FINISH \n");
                 })
             ;
         };
@@ -125,9 +128,11 @@ class Manager extends ConnectorAbstract
              * It is useful for conditional and programmatic creation.
              */
             $task1 = (Task::build(OrderMessagePayload::build(OrderChannel::fromString('v1.admin.publication.success'))))
-                ->bind(BindableEventInterface::TASK_ON_START, function() { $this->print("---- TASK 2.1 START \n\n"); })
-                ->bind(BindableEventInterface::TASK_ON_FINISH, function() { $this->print("---- TASK 2.1 FINISH \n\n"); })
-                ->bind(BindableEventInterface::TASK_ON_PROGRESS, function() { $this->print("---- TASK 2.1 PROGRESS \n\n"); })
+                ->bind(BindableEventInterface::TASK_ON_START, function() { $this->print("---- TASK 2.1 START \n"); })
+                ->bind(BindableEventInterface::TASK_ON_PROGRESS, function() { $this->print("---- TASK 2.1 PROGRESS \n"); })
+                ->bind(BindableEventInterface::TASK_ON_FAILURE, function() { $this->print("---- TASK 2.1 FAILURE \n"); })
+                ->bind(BindableEventInterface::TASK_ON_SUCCESS, function() { $this->print("---- TASK 2.1 SUCCESS \n"); })
+                ->bind(BindableEventInterface::TASK_ON_FINISH, function() { $this->print("---- TASK 2.1 FINISH \n"); })
             ;
             /**
              * On your convenance you can use array of callbacks or bind method to attach callback to a specific business moment of the runned workflow.
@@ -137,18 +142,25 @@ class Manager extends ConnectorAbstract
                     $task1
                 ],
                 [
-                    BindableEventInterface::GROUP_ON_START => function() { $this->print("-- GROUP 2 START \n\n"); },
-                    BindableEventInterface::GROUP_ON_FINISH => function() { $this->print("-- GROUP 2 FINISH \n\n"); }
+                    BindableEventInterface::GROUP_ON_START => function() { $this->print("-- GROUP 2 START \n"); },
+                    BindableEventInterface::GROUP_ON_TASKS_SUCCESS => function() { $this->print("-- GROUP TASKS 2 SUCCESS \n"); },
+                    BindableEventInterface::GROUP_ON_TASKS_FAILURE => function() { $this->print("-- GROUP TASKS 2 FAILURE \n"); },
+                    BindableEventInterface::GROUP_ON_FAILURE => function() { $this->print("-- GROUP 2 FAILURE \n"); },
+                    BindableEventInterface::GROUP_ON_SUCCESS => function() { $this->print("-- GROUP 2 SUCCESS \n"); },
+                    BindableEventInterface::GROUP_ON_FINISH => function() { $this->print("-- GROUP 2 FINISH \n"); },
                 ]
             ));
+
             /**
              * you can easilly bind, and planify some task base on your own logic.
              */
             if (true) {
-                $task2 = (Task::build(OrderMessagePayload::build(OrderChannel::fromString('v1.admin.publication.success'))))
-                    ->bind(BindableEventInterface::TASK_ON_START, function() { $this->print("---- TASK 2.2 START \n\n"); })
-                    ->bind(BindableEventInterface::TASK_ON_FINISH, function() { $this->print("---- TASK 2.2 FINISH \n\n"); })
-                    ->bind(BindableEventInterface::TASK_ON_PROGRESS, function() { $this->print("---- TASK 2.2 PROGRESS \n\n"); })
+                $task2 = (Task::build(OrderMessagePayload::build(OrderChannel::fromString('v1.admin.publication.failure'))))
+                    ->bind(BindableEventInterface::TASK_ON_START, function() { $this->print("---- TASK 2.2 START \n"); })
+                    ->bind(BindableEventInterface::TASK_ON_PROGRESS, function() { $this->print("---- TASK 2.2 PROGRESS \n"); })
+                    ->bind(BindableEventInterface::TASK_ON_FAILURE, function() { $this->print("---- TASK 2.2 FAILURE \n"); })
+                    ->bind(BindableEventInterface::TASK_ON_SUCCESS, function() { $this->print("---- TASK 2.2 SUCCESS \n"); })
+                    ->bind(BindableEventInterface::TASK_ON_FINISH, function() { $this->print("---- TASK 2.2 FINISH \n"); })
                 ;
 
                 $craftedGroup->planify($task2);
