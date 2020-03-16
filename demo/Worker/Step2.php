@@ -27,37 +27,8 @@ class Step2 extends ConnectorAbstract
         return function (AMQPEnvelope $message, OrderMessagePayload $messagePayload) {
             $params = $messagePayload->getData();
 
-            /**
-             * Do some traitment.
-             *
-             * [...]
-             *
-             * If everything is ok, reply to manager.
-             */
-            sleep(1);
-            $this->notifyTo(
-                $message,
-                ReplyMessagePayload::buildFromOrderMessagePayload(
-                    $messagePayload,
-                    MessageHandlerInterface::TYPE_PROGRESS,
-                    ['status' => 'PROGRESS', 'step' => 2]
-                )
-            );
+            throw new \Exception('Lets fail :)');
 
-            /**
-             * Do some traitment.
-             *
-             * [...]
-             *
-             * If everything is ok, reply to manager.
-             */
-            sleep(1);
-
-            printf("On channel : %s Worker Name : %s (id : %s) \n",
-                self::getQueueName(),
-                self::class,
-                $this->worker_id
-            );
 
             return ["step" => "step2 finished"];
         };

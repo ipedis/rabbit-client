@@ -62,7 +62,7 @@ class WorkflowManager extends ConnectorAbstract
                     ]
                 )
                 ->planifyOrder(
-                    OrderMessagePayload::build(OrderChannel::fromString('v1.admin.publication.step1')),
+                    OrderMessagePayload::build(OrderChannel::fromString('v1.admin.publication.step2')),
                     [
                         BindableEventInterface::TASK_START => function() { printf("---- TASK 1.2 START \n\n"); },
                         BindableEventInterface::TASK_FINISH => function() { printf("---- TASK 1.2 FINISH \n\n"); },
