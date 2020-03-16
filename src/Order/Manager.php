@@ -72,7 +72,9 @@ trait Manager
      *
      * @param OrderMessagePayload $messagePayload
      * @param $callback
+     *
      * @return self
+     *
      * @throws ChannelFactoryException
      * @throws ChannelNamingException
      * @throws InvalidCallableException
@@ -115,10 +117,9 @@ trait Manager
         /**
          * Publish task on exchange
          */
-        $this->exchange->publish(
+        $this->publishToExchange(
             json_encode($messagePayload),
             $channel,
-            AMQP_NOPARAM,
             $messagePayload->getMessageProperties()
         );
 

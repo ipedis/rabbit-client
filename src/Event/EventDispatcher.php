@@ -9,6 +9,8 @@ use Ipedis\Rabbit\Connector;
 use Ipedis\Rabbit\Exception\Channel\ChannelFactoryException;
 use Ipedis\Rabbit\Exception\Channel\ChannelNamingException;
 use Ipedis\Rabbit\Exception\MessagePayload\MessagePayloadValidatorException;
+use Ipedis\Rabbit\Exception\RabbitClientConnectException;
+use Ipedis\Rabbit\Exception\RabbitClientPublishException;
 use Ipedis\Rabbit\MessagePayload\EventMessagePayload;
 use Ipedis\Rabbit\MessagePayload\Validator\ValidatorInterface;
 
@@ -31,12 +33,12 @@ trait EventDispatcher
      * Publish event on exchange
      *
      * @param EventMessagePayload $messagePayload
+     *
      * @throws ChannelFactoryException
      * @throws ChannelNamingException
      * @throws MessagePayloadValidatorException
-     * @throws \AMQPChannelException
-     * @throws \AMQPConnectionException
-     * @throws \AMQPExchangeException
+     * @throws RabbitClientConnectException
+     * @throws RabbitClientPublishException
      */
     public function dispatch(EventMessagePayload $messagePayload)
     {
@@ -65,7 +67,7 @@ trait EventDispatcher
         /**
          * Publish message on exchange
          */
-        $this->exchange->publish(json_encode($messagePayload), $eventName);
+        $this->publishToExchange(json_encode($messagePayload), $eventName);
     }
 
     /**
