@@ -111,11 +111,6 @@ class AllCallbackManager extends ConnectorAbstract
         };
     }
 
-    private function print(string $message)
-    {
-        print_r($message);
-    }
-
     /**
      * @param Workflow $workflow
      * @return Workflow
@@ -124,7 +119,7 @@ class AllCallbackManager extends ConnectorAbstract
     {
         $workflow = $workflow
             /**
-             * Once on workflow.
+             * Once on workflow. you will receive as parameter the event name.
              */
             ->bind(BindableEventInterface::WORKFLOW_ON_START, function (string $eventName) {
                 $this->print("WORKFLOW START \n");
@@ -139,7 +134,7 @@ class AllCallbackManager extends ConnectorAbstract
                 $this->print("WORKFLOW SUCCESS \n");
             })
             /**
-             * On each groups failure or success.
+             * On each groups failure or success. you will receive as parameter the actual group and event name.
              */
             ->bind(BindableEventInterface::WORKFLOW_ON_GROUPS_SUCCESS, function (Group $group, string $eventName) {
                 $this->print("WORKFLOW GROUPS SUCCESS \n");
@@ -148,7 +143,7 @@ class AllCallbackManager extends ConnectorAbstract
                 $this->print("WORKFLOW GROUPS FAILURE \n");
             })
             /**
-             * On each tasks failure or success.
+             * On each tasks failure or success. you will receive as parameter the actual task and the eventName.
              */
             ->bind(BindableEventInterface::WORKFLOW_ON_TASKS_FAILURE, function (Task $task, string $eventName) {
                 $this->print("WORKFLOW TASKS FAILURE \n");
@@ -167,14 +162,14 @@ class AllCallbackManager extends ConnectorAbstract
     {
         return [
             /**
-             * once, on group layer
+             * once, on group layer, you will receive as parameter the actual group and event name.
              */
             BindableEventInterface::GROUP_ON_START => function(Group $group, string $eventName) use ($id) {$this->print("-- GROUP $id START \n");},
             BindableEventInterface::GROUP_ON_FAILURE => function(Group $group, string $eventName) use ($id) {$this->print("-- GROUP $id FAILURE \n");},
             BindableEventInterface::GROUP_ON_SUCCESS => function(Group $group, string $eventName) use ($id) {$this->print("-- GROUP $id SUCCESS \n");},
             BindableEventInterface::GROUP_ON_FINISH => function(Group $group, string $eventName) use ($id) {$this->print("-- GROUP $id FINISH \n");},
             /**
-             * On each tasks failure or success.
+             * On each tasks failure or success, you will receive as parameter the actual task and the eventName.
              */
             BindableEventInterface::GROUP_ON_TASKS_SUCCESS => function(Task $task, string $eventName) use ($id) {$this->print("-- GROUP TASKS $id SUCCESS \n");},
             BindableEventInterface::GROUP_ON_TASKS_FAILURE => function(Task $task, string $eventName) use ($id) {$this->print("-- GROUP TASKS $id FAILURE \n");},
@@ -187,6 +182,9 @@ class AllCallbackManager extends ConnectorAbstract
      */
     private function getTaskEvents(string $id): array
     {
+        /**
+         * On task layer, you will receive as parameter the actual task and the eventName.
+         */
         return [
             BindableEventInterface::TASK_ON_START => function(Task $task, string $eventName) use ($id) { $this->print("---- TASK $id START \n"); },
             BindableEventInterface::TASK_ON_PROGRESS => function(Task $task, string $eventName) use ($id) { $this->print("---- TASK $id PROGRESS \n"); },
@@ -194,5 +192,13 @@ class AllCallbackManager extends ConnectorAbstract
             BindableEventInterface::TASK_ON_SUCCESS => function(Task $task, string $eventName) use ($id) { $this->print("---- TASK $id SUCCESS \n"); },
             BindableEventInterface::TASK_ON_FINISH => function(Task $task, string $eventName) use ($id) { $this->print("---- TASK $id FINISH \n"); },
         ];
+    }
+
+    /**
+     * @param string $message
+     */
+    private function print(string $message)
+    {
+        print_r($message);
     }
 }
