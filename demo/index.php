@@ -4,6 +4,7 @@ use Ipedis\Demo\Rabbit\Utils\MessagePayloadValidator\MessagePayloadValidator;
 use Ipedis\Demo\Rabbit\Worker\Event\Binding;
 use Ipedis\Demo\Rabbit\Worker\Event\Dispatcher;
 use Ipedis\Demo\Rabbit\Worker\Order\Manager as OrderManager;
+use Ipedis\Demo\Rabbit\Worker\Workflow\Manager\NoFailureManager;
 use Ipedis\Demo\Rabbit\Worker\Workflow\Worker\Success;
 use Ipedis\Demo\Rabbit\Worker\Workflow\Worker\Failure;
 use Ipedis\Demo\Rabbit\Worker\Order\Worker as WorkerProcess;
@@ -86,7 +87,16 @@ if ( !empty($argv[1]) ) {
                 $configOrder['type']
             ))->main();
             break;
-
+        case 'workflow-failure':
+            (new NoFailureManager(
+                $configOrder['host'],
+                $configOrder['port'],
+                $configOrder['use'],
+                $configOrder['password'],
+                $configOrder['exchange'],
+                $configOrder['type']
+            ))->main();
+            break;
         case 'binding':
             (new Binding(
                 $configEvent['host'],
