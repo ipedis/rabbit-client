@@ -150,6 +150,9 @@ class AllCallbackManager extends ConnectorAbstract
             })
             ->bind(BindableEventInterface::WORKFLOW_ON_TASKS_SUCCESS, function (Task $task, string $eventName) {
                 $this->print("WORKFLOW TASKS SUCCESS \n");
+            })
+            ->bind(BindableEventInterface::WORKFLOW_ON_TASKS_FINISH, function (Task $task, string $eventName) {
+                $this->print("WORKFLOW TASKS FINISH \n");
             });
         return $workflow;
     }

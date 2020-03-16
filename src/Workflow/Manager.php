@@ -141,8 +141,13 @@ trait Manager
             case MessageHandlerInterface::TYPE_SUCCESS :
                 $task->call(BindableEventInterface::TASK_ON_SUCCESS, $task);
                 $task->call(BindableEventInterface::TASK_ON_FINISH, $task);
+
                 $group->call(BindableEventInterface::GROUP_ON_TASKS_SUCCESS, $task);
+                $group->call(BindableEventInterface::GROUP_ON_TASKS_FINISH, $task);
+
                 $this->workflow->call(BindableEventInterface::WORKFLOW_ON_TASKS_SUCCESS, $task);
+                $this->workflow->call(BindableEventInterface::WORKFLOW_ON_TASKS_FINISH, $task);
+
             break;
             case MessageHandlerInterface::TYPE_ERROR :
                 $task->call(BindableEventInterface::TASK_ON_FAILURE, $task);

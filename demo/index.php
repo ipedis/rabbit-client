@@ -5,10 +5,12 @@ use Ipedis\Demo\Rabbit\Worker\Event\Binding;
 use Ipedis\Demo\Rabbit\Worker\Event\Dispatcher;
 use Ipedis\Demo\Rabbit\Worker\Order\Manager as OrderManager;
 use Ipedis\Demo\Rabbit\Worker\Workflow\Manager\NoFailureManager;
+use Ipedis\Demo\Rabbit\Worker\Workflow\Manager\ProgressManager;
 use Ipedis\Demo\Rabbit\Worker\Workflow\Worker\Success;
 use Ipedis\Demo\Rabbit\Worker\Workflow\Worker\Failure;
 use Ipedis\Demo\Rabbit\Worker\Order\Worker as WorkerProcess;
 use Ipedis\Demo\Rabbit\Worker\Workflow\Manager\AllCallbackManager;
+use Ipedis\Demo\Rabbit\Worker\Workflow\Worker\Waiter;
 use Ipedis\Rabbit\Channel\Factory\ChannelFactory;
 
 require __DIR__.'/../vendor/autoload.php';
@@ -77,6 +79,17 @@ if ( !empty($argv[1]) ) {
             ))->execute();
             break;
 
+        case 'waiter':
+            (new Waiter(
+                $configOrder['host'],
+                $configOrder['port'],
+                $configOrder['use'],
+                $configOrder['password'],
+                $configOrder['exchange'],
+                $configOrder['type']
+            ))->execute();
+            break;
+
         case 'workflow-callback':
             (new AllCallbackManager(
                 $configOrder['host'],
@@ -89,6 +102,16 @@ if ( !empty($argv[1]) ) {
             break;
         case 'workflow-failure':
             (new NoFailureManager(
+                $configOrder['host'],
+                $configOrder['port'],
+                $configOrder['use'],
+                $configOrder['password'],
+                $configOrder['exchange'],
+                $configOrder['type']
+            ))->main();
+            break;
+        case 'workflow-progress':
+            (new ProgressManager(
                 $configOrder['host'],
                 $configOrder['port'],
                 $configOrder['use'],
@@ -135,6 +158,7 @@ if ( !empty($argv[1]) ) {
         'workflow-failure',
         'workflow-retry',
         'success',
-        'failure'
+        'failure',
+        'waiter'
     ]));
 }

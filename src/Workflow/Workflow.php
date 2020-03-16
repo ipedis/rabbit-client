@@ -150,6 +150,34 @@ class Workflow extends Bindable
     }
 
     /**
+     * @return float
+     */
+    public function getPourcentage(): float
+    {
+        $progression = 0;
+        $countGroups = count($this->getGroups());
+        foreach ($this->getGroups() as $group) {
+            $progression += ( $group->getPercentageProgression() / $countGroups);
+        }
+        return $progression;
+    }
+
+    /**
+     * @return ProgressBag
+     */
+    public function getPourcentageBag(): ProgressBag
+    {
+        $total = $done = 0;
+        foreach ($this->getGroups() as $group)
+        {
+            $total += count($group->getTasks());
+            $done += count($group->getCompletedOrders());
+        }
+
+        return new ProgressBag($total, $done);
+    }
+
+    /**
      * @param $step
      * @throws InvalidWorkflowArgumentException
      */
