@@ -126,4 +126,5 @@ trait EventDispatcher
             ])
         ;
     }
+    abstract public function getRecoveryEventStoreEndpoint(): string;
 }
