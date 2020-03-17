@@ -127,4 +127,5 @@ trait Connector
     abstract public function getPassword(): string;
     abstract public function getExchangeName(): string;
     abstract public function getExchangeType(): string;
+    abstract public function getRecoveryEventStoreEndpoint(): string;
 }
