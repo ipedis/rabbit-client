@@ -15,7 +15,10 @@ use Ipedis\Rabbit\Order\Worker as WorkerTrait;
 class Success extends ConnectorAbstract
 {
     use WorkerTrait;
-
+    public function getRecoveryEventStoreEndpoint(): string
+    {
+        return '';
+    }
 
     public static function getQueueName(): string
     {

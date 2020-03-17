@@ -163,6 +163,10 @@ class NoFailureManager extends ConnectorAbstract
         ] : [];
     }
 
+    public function getRecoveryEventStoreEndpoint(): string
+    {
+        return '';
+    }
     /**
      * @param string $message
      */

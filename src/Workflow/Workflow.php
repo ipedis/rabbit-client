@@ -4,6 +4,7 @@ namespace Ipedis\Rabbit\Workflow;
 
 
 use Ipedis\Rabbit\Exception\Group\InvalidGroupArgumentException;
+use Ipedis\Rabbit\Exception\Task\InvalidStatusException;
 use Ipedis\Rabbit\Exception\Workflow\InvalidWorkflowArgumentException;
 use Ipedis\Rabbit\MessagePayload\ReplyMessagePayload;
 use Ipedis\Rabbit\Workflow\Config\WorkflowConfig;
@@ -73,6 +74,7 @@ class Workflow extends Bindable
      *
      * @param ReplyMessagePayload $message
      * @return array
+     * @throws InvalidStatusException
      */
     public function taskReply(ReplyMessagePayload $message): array
     {
@@ -149,18 +151,6 @@ class Workflow extends Bindable
         return $this->groups;
     }
 
-    /**
-     * @return float
-     */
-    public function getPourcentage(): float
-    {
-        $progression = 0;
-        $countGroups = count($this->getGroups());
-        foreach ($this->getGroups() as $group) {
-            $progression += ( $group->getPercentageProgression() / $countGroups);
-        }
-        return $progression;
-    }
 
     /**
      * @return ProgressBag

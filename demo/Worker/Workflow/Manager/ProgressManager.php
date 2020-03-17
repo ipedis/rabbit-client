@@ -58,6 +58,11 @@ class ProgressManager extends ConnectorAbstract
         $this->run($workflow);
     }
 
+    public function getRecoveryEventStoreEndpoint(): string
+    {
+        return '';
+    }
+
     public function print($done, $total) {
         $perc = floor(($done / $total) * 100);
         $left = 100 - $perc;
