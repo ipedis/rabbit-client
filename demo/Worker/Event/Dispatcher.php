@@ -86,4 +86,19 @@ class Dispatcher extends ConnectorAbstract
     {
         return 'http://backup.publispeak.local/api/event/store';
     }
+
+    public function getSecretKey(): string
+    {
+        return 'ThisIsNotASecretKey';
+    }
+
+    public function getHashingAlgorithm(): string
+    {
+        return 'hmac-sha256';
+    }
+
+    public function getHeadersList(): array
+    {
+        return ['(request-target)', 'accept', 'user-agent'];
+    }
 }
