@@ -15,12 +15,32 @@ use HttpSignatures\GuzzleHttpSignatures;
 
 trait RequestSigner
 {
+    /**
+     * Secret key used for signing request.
+     *
+     * @return string
+     */
     abstract public function getSecretKey(): string ;
+
+    /**
+     * Hashing algorithm used for signing request.
+     *
+     * @return string
+     */
     abstract public function getHashingAlgorithm(): string ;
+
+    /**
+     * List of headers to include in signature.
+     *
+     * @return array
+     */
     abstract public function getHeadersList(): array ;
 
     /**
+     * Get GuzzleHttp Client object with handler that will sign all the requests.
+     *
      * @return Client
+     * @throws \HttpSignatures\Exception
      */
     public function getClientWithSignHandler(): Client
     {
@@ -30,6 +50,8 @@ trait RequestSigner
     }
 
     /**
+     * Get GuzzleHttp Client object without any handler. I'm sure you have pretty secure setup.
+     *
      * @return Client
      */
     public function getClient(): Client
@@ -37,6 +59,12 @@ trait RequestSigner
         return new Client();
     }
 
+    /**
+     * Prepare the context required to sign requests.
+     *
+     * @return Context
+     * @throws \HttpSignatures\Exception
+     */
     protected function buildContext(): Context
     {
         return new Context([
