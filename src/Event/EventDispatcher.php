@@ -14,6 +14,7 @@ use Ipedis\Rabbit\Exception\RabbitClientConnectException;
 use Ipedis\Rabbit\Exception\RabbitClientPublishException;
 use Ipedis\Rabbit\MessagePayload\EventMessagePayload;
 use Ipedis\Rabbit\MessagePayload\Validator\ValidatorInterface;
+use Ipedis\Rabbit\Signer\RequestSigner;
 
 /**
  * Trait EventDispatcher
@@ -24,6 +25,7 @@ use Ipedis\Rabbit\MessagePayload\Validator\ValidatorInterface;
 trait EventDispatcher
 {
     use Connector;
+    use RequestSigner;
 
     public function __destruct()
     {
@@ -114,10 +116,7 @@ trait EventDispatcher
      */
     private function storeEventOnRecovery(EventMessagePayload $payload)
     {
-        /**
-         * @todo add signature to request
-         */
-        (new Client())
+        $this->getClientWithSignHandler()
             ->post($this->getRecoveryEventStoreEndpoint(), [
                 'body' => json_encode($payload),
                 'headers' => [

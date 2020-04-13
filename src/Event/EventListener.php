@@ -88,5 +88,6 @@ trait EventListener
 
     abstract protected function makeMessageHandler(): Closure;
     abstract protected function makeExceptionHandler(): Closure;
+    /** @deprecated */
     abstract protected function getBindingKey(): string;
 }
