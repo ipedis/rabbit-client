@@ -55,19 +55,48 @@ trait EventListener
      */
     public function main(AMQPEnvelope $message, AMQPQueue $q)
     {
-        $messagePayload = EventMessagePayload::fromJson($message->getBody());
-
         try {
-            if ($this->isEventOnWhitelist($messagePayload->getChannel())) {
-                $this->makeMessageHandler()($messagePayload);
+            $messagePayload = EventMessagePayload::fromJson($message->getBody());
+
+            if ($this->isSubscribed($messagePayload->getChannel())) {
+                $this->handleReceivedMessage($messagePayload);
             }
         } catch (Exception $exception) {
+            if( $exception instanceof MessagePayloadFormatException) {
+                $messagePayload = null;
+            } else {
+                $messagePayload = EventMessagePayload::fromJson($message->getBody());
+            }
             $this->makeExceptionHandler()($exception, $messagePayload);
         }
 
         $q->ack($message->getDeliveryTag());
     }
 
+    private function handleReceivedMessage(EventMessagePayload $message)
+    {
+        $wasCalled = false;
+        foreach ($this->getHandledMessages() as $channelName => $handledMessage) {
+            if (
+                !empty($handledMessage['method']) &&
+                $message->getChannel() === $channelName
+            ) {
+                $this->callHandler($handledMessage, $message);
+                $wasCalled = true;
+            }
+        }
+        // If nobody was call, fallback to makeMessageHandler
+        if(!$wasCalled) $this->callHandler(['method' => 'makeMessageHandler'], $message);
+
+    }
+
+    private function callHandler(array $handler, EventMessagePayload $message)
+    {
+        $result = $this->{$handler['method']}($message);
+        if(is_callable($result)) {
+            $result($message);
+        }
+    }
     /**
      * Declare Queue and bind with exchange
      */
@@ -114,8 +143,16 @@ trait EventListener
      * @param string $eventName
      * @return bool
      */
-    protected function isEventOnWhitelist(string $eventName): bool
+    protected function isSubscribed(string $eventName): bool
     {
         return true;
+    }
+
+    /**
+     * By default there is no dedicated handler
+     */
+    protected function getHandledMessages(): iterable
+    {
+        return [];
     }
 }

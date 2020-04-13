@@ -21,7 +21,19 @@ class Binding extends ConnectorAbstract
     protected function makeMessageHandler(): Closure
     {
         return function (EventMessagePayload $messagePayload) {
-            var_dump($messagePayload->getChannel(), $messagePayload->getData());
+            var_dump($messagePayload->getChannel(), 'default handler');
+        };
+    }
+
+    protected function onExportedPublication(EventMessagePayload $messagePayload)
+    {
+        var_dump($messagePayload->getChannel(), 'dedicated handler');
+    }
+
+    protected function onUpdatedPublication() : Closure
+    {
+        return function (EventMessagePayload $messagePayload) {
+            var_dump($messagePayload->getChannel(), 'dedicated handler with Closure');
         };
     }
 
@@ -32,7 +44,7 @@ class Binding extends ConnectorAbstract
      */
     protected function makeExceptionHandler(): Closure
     {
-        return function (Exception $exception, EventMessagePayload $messagePayload) {
+        return function (Exception $exception, ?EventMessagePayload $messagePayload) {
             var_dump($exception->getMessage());
         };
     }
@@ -45,6 +57,7 @@ class Binding extends ConnectorAbstract
      */
     protected function getBindingKey()
     {
+
 //        return 'v1.preview.admin.publication.was-updated';
         return ['v1.admin.publication.*', 'v1.preview.publication.was-updated'];
     }
@@ -54,12 +67,18 @@ class Binding extends ConnectorAbstract
      * @param string $eventName
      * @return bool
      */
-    protected function isEventOnWhitelist(string $eventName): bool
+    protected function isSubscribed(string $eventName): bool
     {
         return in_array($eventName, [
             'v1.admin.publication.was-exported',
             'v1.preview.publication.was-updated',
             'v1.admin.publication.was-deleted',
         ]);
+    }
+
+    protected function getHandledMessages(): iterable
+    {
+        yield 'v1.admin.publication.was-exported' => ['method' => 'onExportedPublication'];
+        yield 'v1.preview.publication.was-updated' => ['method' => 'onUpdatedPublication'];
     }
 }
