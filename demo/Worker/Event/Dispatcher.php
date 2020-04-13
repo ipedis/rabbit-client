@@ -43,10 +43,28 @@ class Dispatcher extends ConnectorAbstract
     public function main()
     {
         $this->dispatch(EventMessagePayload::build(
+            EventChannel::fromString('v1.admin.publication.was-created'),
+            [
+                'publication' => [
+                    'sid' => 1
+                ]
+            ]
+        ));
+
+        $this->dispatch(EventMessagePayload::build(
             EventChannel::fromString('v1.admin.publication.was-exported'),
             [
                 'publication' => [
-                    'sid' => 12
+                    'sid' => 1
+                ]
+            ]
+        ));
+
+        $this->dispatch(EventMessagePayload::build(
+            EventChannel::fromString('v1.preview.publication.was-updated'),
+            [
+                'publication' => [
+                    'sid' => 2
                 ]
             ]
         ));

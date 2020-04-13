@@ -21,7 +21,19 @@ class Binding extends ConnectorAbstract
     protected function makeMessageHandler(): Closure
     {
         return function (EventMessagePayload $messagePayload) {
-            print_r($messagePayload->getData(), $messagePayload->getChannel());
+            var_dump($messagePayload->getChannel(), 'default handler');
+        };
+    }
+
+    protected function onExportedPublication(EventMessagePayload $messagePayload)
+    {
+        var_dump($messagePayload->getChannel(), 'dedicated handler');
+    }
+
+    protected function onUpdatedPublication() : Closure
+    {
+        return function (EventMessagePayload $messagePayload) {
+            var_dump($messagePayload->getChannel(), 'dedicated handler with Closure');
         };
     }
 
@@ -32,13 +44,41 @@ class Binding extends ConnectorAbstract
      */
     protected function makeExceptionHandler(): Closure
     {
-        return function (Exception $exception, EventMessagePayload $messagePayload) {
+        return function (Exception $exception, ?EventMessagePayload $messagePayload) {
             var_dump($exception->getMessage());
         };
     }
 
-    protected function getBindingKey(): string
+    /**
+     *  Accepted return value:
+     * - string
+     * - Array of string
+     * - RouteKeyResolverInterface
+     */
+    protected function getBindingKey()
     {
-        return '#';
+
+//        return 'v1.preview.admin.publication.was-updated';
+        return ['v1.admin.publication.*', 'v1.preview.publication.was-updated'];
+    }
+
+    /**
+     * Optional method to have more filtering on what it will be handle by MakeMessageHandler closure.
+     * @param string $eventName
+     * @return bool
+     */
+    protected function isSubscribed(string $eventName): bool
+    {
+        return in_array($eventName, [
+            'v1.admin.publication.was-exported',
+            'v1.preview.publication.was-updated',
+            'v1.admin.publication.was-deleted',
+        ]);
+    }
+
+    protected function getHandledMessages(): iterable
+    {
+        yield 'v1.admin.publication.was-exported' => ['method' => 'onExportedPublication'];
+        yield 'v1.preview.publication.was-updated' => ['method' => 'onUpdatedPublication'];
     }
 }

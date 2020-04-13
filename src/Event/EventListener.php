@@ -55,17 +55,48 @@ trait EventListener
      */
     public function main(AMQPEnvelope $message, AMQPQueue $q)
     {
-        $messagePayload = EventMessagePayload::fromJson($message->getBody());
-
         try {
-            $this->makeMessageHandler()($messagePayload);
+            $messagePayload = EventMessagePayload::fromJson($message->getBody());
+
+            if ($this->isSubscribed($messagePayload->getChannel())) {
+                $this->handleReceivedMessage($messagePayload);
+            }
         } catch (Exception $exception) {
+            if( $exception instanceof MessagePayloadFormatException) {
+                $messagePayload = null;
+            } else {
+                $messagePayload = EventMessagePayload::fromJson($message->getBody());
+            }
             $this->makeExceptionHandler()($exception, $messagePayload);
         }
 
         $q->ack($message->getDeliveryTag());
     }
 
+    private function handleReceivedMessage(EventMessagePayload $message)
+    {
+        $wasCalled = false;
+        foreach ($this->getHandledMessages() as $channelName => $handledMessage) {
+            if (
+                !empty($handledMessage['method']) &&
+                $message->getChannel() === $channelName
+            ) {
+                $this->callHandler($handledMessage, $message);
+                $wasCalled = true;
+            }
+        }
+        // If nobody was call, fallback to makeMessageHandler
+        if(!$wasCalled) $this->callHandler(['method' => 'makeMessageHandler'], $message);
+
+    }
+
+    private function callHandler(array $handler, EventMessagePayload $message)
+    {
+        $result = $this->{$handler['method']}($message);
+        if(is_callable($result)) {
+            $result($message);
+        }
+    }
     /**
      * Declare Queue and bind with exchange
      */
@@ -74,7 +105,24 @@ trait EventListener
         $this->queue = new AMQPQueue($this->channel);
         $this->queue->setFlags(AMQP_EXCLUSIVE);
         $this->queue->declareQueue();
-        $this->queue->bind($this->exchange->getName(), $this->getBindingKey());
+        $this->resolveRoutingKeys();
+    }
+
+    private function resolveRoutingKeys()
+    {
+        $routingKey = $this->getBindingKey();
+        // If is string, we cast it to array.
+        if(is_string($routingKey)) $routingKey = [$routingKey];
+
+
+        if(is_array($routingKey)) {
+            foreach ($routingKey as $key) {
+                if(is_string($key)) {
+                    $this->queue->bind($this->exchange->getName(), $key);
+                }
+            }
+        }
+
     }
 
     /**
@@ -88,6 +136,23 @@ trait EventListener
 
     abstract protected function makeMessageHandler(): Closure;
     abstract protected function makeExceptionHandler(): Closure;
-    /** @deprecated */
-    abstract protected function getBindingKey(): string;
+    abstract protected function getBindingKey();
+
+    /**
+     * If you want to limit the call of callback for each message, you can filter by white list here.
+     * @param string $eventName
+     * @return bool
+     */
+    protected function isSubscribed(string $eventName): bool
+    {
+        return true;
+    }
+
+    /**
+     * By default there is no dedicated handler
+     */
+    protected function getHandledMessages(): iterable
+    {
+        return [];
+    }
 }
