@@ -21,7 +21,7 @@ class Binding extends ConnectorAbstract
     protected function makeMessageHandler(): Closure
     {
         return function (EventMessagePayload $messagePayload) {
-            print_r($messagePayload->getData());
+            print_r($messagePayload->getData(), $messagePayload->getChannel());
         };
     }
 
@@ -39,6 +39,6 @@ class Binding extends ConnectorAbstract
 
     protected function getBindingKey(): string
     {
-        return 'v1.admin.publication.*';
+        return '#';
     }
 }
