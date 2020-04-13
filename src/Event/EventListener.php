@@ -58,7 +58,9 @@ trait EventListener
         $messagePayload = EventMessagePayload::fromJson($message->getBody());
 
         try {
-            $this->makeMessageHandler()($messagePayload);
+            if ($this->isEventOnWhitelist($messagePayload->getChannel())) {
+                $this->makeMessageHandler()($messagePayload);
+            }
         } catch (Exception $exception) {
             $this->makeExceptionHandler()($exception, $messagePayload);
         }
@@ -74,7 +76,24 @@ trait EventListener
         $this->queue = new AMQPQueue($this->channel);
         $this->queue->setFlags(AMQP_EXCLUSIVE);
         $this->queue->declareQueue();
-        $this->queue->bind($this->exchange->getName(), $this->getBindingKey());
+        $this->resolveRoutingKeys();
+    }
+
+    private function resolveRoutingKeys()
+    {
+        $routingKey = $this->getBindingKey();
+        // If is string, we cast it to array.
+        if(is_string($routingKey)) $routingKey = [$routingKey];
+
+
+        if(is_array($routingKey)) {
+            foreach ($routingKey as $key) {
+                if(is_string($key)) {
+                    $this->queue->bind($this->exchange->getName(), $key);
+                }
+            }
+        }
+
     }
 
     /**
@@ -88,6 +107,15 @@ trait EventListener
 
     abstract protected function makeMessageHandler(): Closure;
     abstract protected function makeExceptionHandler(): Closure;
-    /** @deprecated */
-    abstract protected function getBindingKey(): string;
+    abstract protected function getBindingKey();
+
+    /**
+     * If you want to limit the call of callback for each message, you can filter by white list here.
+     * @param string $eventName
+     * @return bool
+     */
+    protected function isEventOnWhitelist(string $eventName): bool
+    {
+        return true;
+    }
 }

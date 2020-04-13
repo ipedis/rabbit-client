@@ -21,7 +21,7 @@ class Binding extends ConnectorAbstract
     protected function makeMessageHandler(): Closure
     {
         return function (EventMessagePayload $messagePayload) {
-            print_r($messagePayload->getData());
+            var_dump($messagePayload->getChannel(), $messagePayload->getData());
         };
     }
 
@@ -37,8 +37,29 @@ class Binding extends ConnectorAbstract
         };
     }
 
-    protected function getBindingKey(): string
+    /**
+     *  Accepted return value:
+     * - string
+     * - Array of string
+     * - RouteKeyResolverInterface
+     */
+    protected function getBindingKey()
     {
-        return 'v1.admin.publication.*';
+//        return 'v1.preview.admin.publication.was-updated';
+        return ['v1.admin.publication.*', 'v1.preview.publication.was-updated'];
+    }
+
+    /**
+     * Optional method to have more filtering on what it will be handle by MakeMessageHandler closure.
+     * @param string $eventName
+     * @return bool
+     */
+    protected function isEventOnWhitelist(string $eventName): bool
+    {
+        return in_array($eventName, [
+            'v1.admin.publication.was-exported',
+            'v1.preview.publication.was-updated',
+            'v1.admin.publication.was-deleted',
+        ]);
     }
 }
