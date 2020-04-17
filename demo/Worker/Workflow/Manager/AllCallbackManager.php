@@ -43,8 +43,9 @@ class AllCallbackManager extends ConnectorAbstract
 
         $group = $workflow->getGroups()[0];
 
-        var_dump(json_encode($workflow->findGroup($group->getGroupId())->getProgressBag()->getSummary()));exit;
         $this->run($workflow);
+
+        print_r(sprintf("Summary : %s", json_encode($workflow->getProgressBag()->getSummary())));
     }
 
     private function craftFirstStep(): Closure

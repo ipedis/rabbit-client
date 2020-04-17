@@ -48,6 +48,8 @@ class NoFailureManager extends ConnectorAbstract
         ;
 
         $this->run($workflow);
+
+        print_r(sprintf("Summary : %s", json_encode($workflow->getProgressBag()->getSummary())));
     }
 
     private function craftFirstStep(): Closure
