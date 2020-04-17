@@ -39,7 +39,7 @@ class GroupProgressBag implements ProgressBagInterface
     public function getDispatchedOrders(): array
     {
         return array_filter($this->tasks, function(Task $task) {
-            return $task->isPlanified();
+            return $task->isDispatched();
         });
     }
 
@@ -87,7 +87,7 @@ class GroupProgressBag implements ProgressBagInterface
     public function getCompletedOrders(): array
     {
         return array_filter($this->tasks, function(Task $task) {
-            return $task->isFinished();
+            return $task->isCompleted();
         });
     }
 

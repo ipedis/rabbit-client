@@ -153,6 +153,26 @@ class Workflow extends Bindable
     }
 
     /**
+     * Find group
+     *
+     * @param string $groupId
+     * @return Group
+     * @throws \Exception
+     */
+    public function findGroup(string $groupId): Group
+    {
+        $group = array_filter($this->getGroups(), function(Group $group) use ($groupId) {
+            return $group->getGroupId() === $groupId;
+        });
+
+        if (count($group) === 0) {
+            throw new \Exception('Group not found');
+        }
+
+        return $group[0];
+    }
+
+    /**
      * @return WorkflowProgressBag
      */
     public function getProgressBag(): WorkflowProgressBag

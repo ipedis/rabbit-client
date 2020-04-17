@@ -41,6 +41,9 @@ class AllCallbackManager extends ConnectorAbstract
          */
         $workflow = $this->bindWorkflowEvents($workflow);
 
+        $group = $workflow->getGroups()[0];
+
+        var_dump(json_encode($workflow->findGroup($group->getGroupId())->getProgressBag()->getSummary()));exit;
         $this->run($workflow);
     }
 

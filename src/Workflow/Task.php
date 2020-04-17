@@ -123,7 +123,7 @@ final class Task extends Bindable
      *
      * @return bool
      */
-    public function isFinished(): bool
+    public function isCompleted(): bool
     {
         return $this->isSuccess() || $this->isOnFailure();
     }
@@ -209,8 +209,8 @@ final class Task extends Bindable
          */
         if ($this->isInProgress() && $this->timeStart === 0) {
             $this->taskExecutionStarted();
-        } elseif ($this->isFinished()) {
-            $this->taskExecutionFinished();
+        } elseif ($this->isCompleted()) {
+            $this->taskExecutionCompleted();
         }
     }
 
@@ -233,7 +233,7 @@ final class Task extends Bindable
     /**
      * Called when task execution completes
      */
-    private function taskExecutionFinished(): void
+    private function taskExecutionCompleted(): void
     {
         $this->timeFinished = microtime(true);
     }

@@ -134,6 +134,14 @@ class Group extends Bindable
     }
 
     /**
+     * @return string
+     */
+    public function getGroupId(): string
+    {
+        return $this->groupId;
+    }
+
+    /**
      * @return GroupConfig
      */
     public function getConfig(): GroupConfig
