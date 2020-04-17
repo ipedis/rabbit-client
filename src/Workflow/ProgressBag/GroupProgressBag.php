@@ -253,4 +253,23 @@ class GroupProgressBag implements ProgressBagInterface
 
         return round($percentage, 2);
     }
+
+    /**
+     * @return array
+     */
+    public function getSummary(): array
+    {
+        return [
+            'status' => $this->getStatus(),
+            'percentage_progression' => sprintf('%s %%', $this->getPercentageProgression()),
+            'tasks' => [
+                'total'         => $this->countOrdersInGroup(),
+                'pending'       => $this->countPlanifiedOrders(),
+                'dispatched'    => $this->countDispatchedOrders(),
+                'completed'     => $this->countCompletedOrders(),
+                'successful'    => $this->countSuccessfulOrders(),
+                'failed'        => $this->countFailedOrders(),
+            ]
+        ];
+    }
 }

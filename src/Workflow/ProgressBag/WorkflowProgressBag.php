@@ -344,6 +344,9 @@ class WorkflowProgressBag implements ProgressBagInterface
         return round($percentage, 2);
     }
 
+    /**
+     * @return array
+     */
     public function getSummary(): array
     {
         return [
