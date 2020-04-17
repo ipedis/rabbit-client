@@ -190,7 +190,7 @@ trait Manager
         /**
          * End callback if all task has finished
          */
-        if ($this->isFinished()) {
+        if ($this->isCompleted()) {
             return false;
         }
     }
@@ -366,7 +366,7 @@ trait Manager
      *
      * @return bool
      */
-    private function isFinished(): bool
+    private function isCompleted(): bool
     {
         return count($this->getInProgressOrders()) === 0;
     }

@@ -22,7 +22,7 @@ interface ProgressBagInterface
     /**
      * @return bool
      */
-    public function isFinished(): bool;
+    public function isCompleted(): bool;
 
     /**
      * @return bool

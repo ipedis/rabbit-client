@@ -184,7 +184,7 @@ class GroupProgressBag implements ProgressBagInterface
      *
      * @return bool
      */
-    public function isFinished(): bool
+    public function isCompleted(): bool
     {
         return $this->countOrdersInGroup() === $this->countCompletedOrders();
     }
@@ -210,7 +210,7 @@ class GroupProgressBag implements ProgressBagInterface
      */
     public function getStatus(): string
     {
-        if ($this->isFinished()) {
+        if ($this->isCompleted()) {
             return self::STATUS_FINISHED;
         } elseif ($this->isRunning()) {
             return self::STATUS_RUNNING;

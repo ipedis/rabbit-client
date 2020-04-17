@@ -49,7 +49,7 @@ class WorkflowProgressBag implements ProgressBagInterface
     public function getCompletedGroups(): array
     {
         return array_filter($this->groups, function (Group $group) {
-            return $group->getProgressBag()->isFinished();
+            return $group->getProgressBag()->isCompleted();
         });
     }
 
@@ -73,7 +73,7 @@ class WorkflowProgressBag implements ProgressBagInterface
     public function getSuccessfulGroups(): array
     {
         return array_filter($this->groups, function (Group $group) {
-            return ($group->getProgressBag()->isFinished() && !$group->getProgressBag()->hasFailure());
+            return ($group->getProgressBag()->isCompleted() && !$group->getProgressBag()->hasFailure());
         });
     }
 
@@ -275,7 +275,7 @@ class WorkflowProgressBag implements ProgressBagInterface
      *
      * @return bool
      */
-    public function isFinished(): bool
+    public function isCompleted(): bool
     {
         return $this->countGroupsInWorkflow() === $this->countCompletedGroups();
     }
@@ -300,7 +300,7 @@ class WorkflowProgressBag implements ProgressBagInterface
      */
     public function getStatus(): string
     {
-        if ($this->isFinished()) {
+        if ($this->isCompleted()) {
             return self::STATUS_FINISHED;
         } elseif ($this->isRunning()) {
             return self::STATUS_RUNNING;

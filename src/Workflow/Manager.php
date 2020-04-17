@@ -124,7 +124,7 @@ trait Manager
         /**
          * wait until entire group is finish.
          */
-        return (!$group->getProgressBag()->isFinished());
+        return (!$group->getProgressBag()->isCompleted());
     }
 
     /**
