@@ -166,7 +166,7 @@ class GroupProgressBag implements ProgressBagInterface
      */
     public function isPending(): bool
     {
-        return $this->countDispatchedOrders() === 0;
+        return !$this->isCompleted() && $this->countDispatchedOrders() === 0;
     }
 
     /**
@@ -261,7 +261,8 @@ class GroupProgressBag implements ProgressBagInterface
     {
         return [
             'status' => $this->getStatus(),
-            'percentage_progression' => sprintf('%s %%', $this->getPercentageProgression()),
+            'percentageProgression' => sprintf('%s %%', $this->getPercentageProgression()),
+            'executionTime' => sprintf('%fs', $this->getExecutionTime()),
             'tasks' => [
                 'total'         => $this->countOrdersInGroup(),
                 'pending'       => $this->countPlanifiedOrders(),

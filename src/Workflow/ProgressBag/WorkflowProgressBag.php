@@ -257,7 +257,7 @@ class WorkflowProgressBag implements ProgressBagInterface
      */
     public function isPending(): bool
     {
-        return $this->countRunningGroups() === 0;
+        return $this->isCompleted() && $this->countRunningGroups() === 0;
     }
 
     /**
@@ -351,15 +351,8 @@ class WorkflowProgressBag implements ProgressBagInterface
     {
         return [
             'status' => $this->getStatus(),
-            'percentage_progression' => sprintf('%s %%', $this->getPercentageProgression()),
-            'tasks' => [
-                'total'         => $this->countTotalOrders(),
-                'pending'       => $this->countTotalPlanifiedOrders(),
-                'dispatched'    => $this->countTotalDispatchedOrders(),
-                'completed'     => $this->countTotalCompletedOrders(),
-                'successful'    => $this->countTotalSuccessfulOrders(),
-                'failed'        => $this->countTotalFailedOrders(),
-            ],
+            'percentageProgression' => sprintf('%s %%', $this->getPercentageProgression()),
+            'executionTime' => sprintf('%fs', $this->getExecutionTime()),
             'groups' => [
                 'total'         => $this->countGroupsInWorkflow(),
                 'pending'       => $this->countPendingGroups(),
@@ -367,6 +360,14 @@ class WorkflowProgressBag implements ProgressBagInterface
                 'completed'     => $this->countCompletedGroups(),
                 'successful'    => $this->countSuccessfulGroups(),
                 'failed'        => $this->countFailedGroups(),
+            ],
+            'tasks' => [
+                'total'         => $this->countTotalOrders(),
+                'pending'       => $this->countTotalPlanifiedOrders(),
+                'dispatched'    => $this->countTotalDispatchedOrders(),
+                'completed'     => $this->countTotalCompletedOrders(),
+                'successful'    => $this->countTotalSuccessfulOrders(),
+                'failed'        => $this->countTotalFailedOrders(),
             ]
         ];
     }
