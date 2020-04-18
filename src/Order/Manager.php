@@ -60,8 +60,12 @@ trait Manager
      */
     abstract protected function getExchangeName(): string;
 
-    protected function resetOrdersQueue()
+    public function resetOrdersQueue()
     {
+        if ( $this->channel === null) {
+            $this->connect();
+        }
+
         $this->orders = [];
         $this->eventHandlers = [];
         $this->replyQueue = $this->createAnonymousQueue($this->channel);
@@ -133,7 +137,7 @@ trait Manager
      * @throws AMQPConnectionException
      * @throws AMQPEnvelopeException
      */
-    protected function run()
+    public function run()
     {
         $this->replyQueue->consume([$this, 'onReply']);
     }
