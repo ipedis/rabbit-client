@@ -79,7 +79,7 @@ trait Manager
      * @throws ChannelNamingException
      * @throws InvalidCallableException
      */
-    protected function publish(OrderMessagePayload $messagePayload, $callback): self
+    public function publish(OrderMessagePayload $messagePayload, $callback): self
     {
         /**
          * Channel factory must be provided to
