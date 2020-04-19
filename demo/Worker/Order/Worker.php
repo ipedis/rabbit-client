@@ -51,8 +51,7 @@ class Worker extends ConnectorAbstract
              * If everything is ok, reply to manager.
              */
 
-            printf("On channel : %s Worker Name : %s (id : %s) as done task with id %s - Fail ? %s \n",
-                self::getQueueName(),
+            printf("Worker Name : %s (id : %s) as done task with id %s - Fail ? %s \n",
                 self::class,
                 $this->worker_id,
                 $messagePayload->getOrderId(),

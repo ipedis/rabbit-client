@@ -154,7 +154,6 @@ trait Worker
 
             $answer = array_merge(
             [
-                "queue"  => $this->getQueueName(),
                 "worker" => self::class,
                 "id"     => $this->worker_id,
                 "correlation_id" => $messagePayload->getOrderId()
