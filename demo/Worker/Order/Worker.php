@@ -5,7 +5,6 @@ namespace Ipedis\Demo\Rabbit\Worker\Order;
 
 use AMQPEnvelope;
 use Ipedis\Demo\Rabbit\Utils\ConnectorAbstract;
-use Ipedis\Rabbit\Channel\OrderChannel;
 use Ipedis\Rabbit\Consumer\Handler\MessageHandlerInterface;
 use Ipedis\Rabbit\MessagePayload\OrderMessagePayload;
 use Ipedis\Rabbit\MessagePayload\ReplyMessagePayload;
@@ -16,10 +15,11 @@ class Worker extends ConnectorAbstract
 {
     use WorkerTrait;
 
-
-    public static function getQueueName(): string
+    protected function getBindingKey()
     {
-        return OrderChannel::fromString('v1.admin.publication.generate');
+        return [
+            'v1.admin.publication.generate',
+        ];
     }
 
     protected function makeMessageHandler(): \Closure
@@ -51,8 +51,7 @@ class Worker extends ConnectorAbstract
              * If everything is ok, reply to manager.
              */
 
-            printf("On channel : %s Worker Name : %s (id : %s) as done task with id %s - Fail ? %s \n",
-                self::getQueueName(),
+            printf("Worker Name : %s (id : %s) as done task with id %s - Fail ? %s \n",
                 self::class,
                 $this->worker_id,
                 $messagePayload->getOrderId(),

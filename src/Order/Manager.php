@@ -60,8 +60,12 @@ trait Manager
      */
     abstract protected function getExchangeName(): string;
 
-    protected function resetOrdersQueue()
+    public function resetOrdersQueue()
     {
+        if ( $this->channel === null) {
+            $this->connect();
+        }
+
         $this->orders = [];
         $this->eventHandlers = [];
         $this->replyQueue = $this->createAnonymousQueue($this->channel);
@@ -79,7 +83,7 @@ trait Manager
      * @throws ChannelNamingException
      * @throws InvalidCallableException
      */
-    protected function publish(OrderMessagePayload $messagePayload, $callback): self
+    public function publish(OrderMessagePayload $messagePayload, $callback): self
     {
         /**
          * Channel factory must be provided to
@@ -133,7 +137,7 @@ trait Manager
      * @throws AMQPConnectionException
      * @throws AMQPEnvelopeException
      */
-    protected function run()
+    public function run()
     {
         $this->replyQueue->consume([$this, 'onReply']);
     }

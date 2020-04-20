@@ -163,7 +163,6 @@ trait Worker
 
             $answer = array_merge(
             [
-                "queue"  => $this->getQueueName(),
                 "worker" => self::class,
                 "id"     => $this->worker_id,
                 "correlation_id" => $messagePayload->getOrderId()
@@ -200,11 +199,29 @@ trait Worker
     protected function queueDeclare()
     {
         $this->queue = new AMQPQueue($this->channel);
-        $this->queue->setName($this->getQueueName());
         $this->queue->setFlags(AMQP_DURABLE);
         $this->queue->declareQueue();
+        $this->resolveRoutingKeys();
+    }
 
-        $this->queue->bind($this->getExchangeName(), $this->getQueueName());
+    /**
+     * @throws \AMQPChannelException
+     * @throws \AMQPConnectionException
+     */
+    private function resolveRoutingKeys()
+    {
+        $routingKey = $this->getBindingKey();
+        // If is string, we cast it to array.
+        if(is_string($routingKey)) $routingKey = [$routingKey];
+
+        if(is_array($routingKey)) {
+            foreach ($routingKey as $key) {
+                if(is_string($key)) {
+                    $this->queue->bind($this->exchange->getName(), $key);
+                }
+            }
+        }
+
     }
 
     /**
@@ -217,11 +234,11 @@ trait Worker
     }
 
     /**
-     * The queue name to be used by the worker
+     * Can be string or array of keys
      *
-     * @return string
+     * @return mixed
      */
-    abstract public function getQueueName(): string;
+    abstract protected function getBindingKey();
 
     /**
      * The exchange to be used to bind worker's queue
