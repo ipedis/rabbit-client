@@ -333,6 +333,85 @@ class WorkflowProgressBag implements ProgressBagInterface
     }
 
     /**
+     * Iterate through groups and find
+     * first started group
+     *
+     * @return \DateTime|null
+     */
+    public function getStartedAt(): ?\DateTime
+    {
+        $startTime = null;
+
+        /**
+         * No tasks of current workflow yet dispatched
+         */
+        if ($this->isPending()) {
+            return $startTime;
+        }
+
+        /**
+         * @var Group $group
+         */
+        foreach ($this->groups as $group) {
+            /**
+             * Ignore group not yet started
+             */
+            if (
+                $group->getProgressBag()->isPending() ||
+                is_null($group->getProgressBag()->getStartedAt())
+            ) {
+                continue;
+            }
+
+            if (is_null($startTime)) {
+                $startTime = $group->getProgressBag()->getStartedAt();
+            } else if($group->getProgressBag()->getStartedAt() < $startTime) {
+                $startTime = $group->getProgressBag()->getStartedAt();
+            }
+        }
+
+        return $startTime;
+    }
+
+    /**
+     * Iterate through groups and find
+     * last completed group
+     *
+     * @return \DateTime|null
+     */
+    public function getFinishedAt(): ?\DateTime
+    {
+        $finishTime = null;
+
+        /**
+         * Tasks are still pending in group
+         */
+        if (!$this->isCompleted()) {
+            return $finishTime;
+        }
+
+        /**
+         * @var Group $group
+         */
+        foreach ($this->groups as $group) {
+            /**
+             * If for any reason grou[ does not have finish time
+             */
+            if (is_null($group->getProgressBag()->getFinishedAt())) {
+                continue;
+            }
+
+            if (is_null($finishTime)) {
+                $finishTime = $group->getProgressBag()->getFinishedAt();
+            } else if($group->getProgressBag()->getFinishedAt() > $finishTime) {
+                $finishTime = $group->getProgressBag()->getFinishedAt();
+            }
+        }
+
+        return $finishTime;
+    }
+
+    /**
      * Get percentage progression of workflow
      *
      * @return float
@@ -353,6 +432,8 @@ class WorkflowProgressBag implements ProgressBagInterface
             'status' => $this->getStatus(),
             'percentageProgression' => sprintf('%s %%', $this->getPercentageProgression()),
             'executionTime' => sprintf('%fs', $this->getExecutionTime()),
+            'startedAt'     => (!is_null($this->getStartedAt())) ? $this->getStartedAt()->getTimestamp() : null,
+            'finishedAt'    => (!is_null($this->getFinishedAt())) ? $this->getFinishedAt()->getTimestamp() : null,
             'groups' => [
                 'total'         => $this->countGroupsInWorkflow(),
                 'pending'       => $this->countPendingGroups(),

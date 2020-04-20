@@ -18,14 +18,14 @@ final class Task extends Bindable
     private $status;
 
     /**
-     * @var float $timeStart
+     * @var \DateTime $timeStart
      */
-    private $timeStart = 0;
+    private $timeStart;
 
     /**
-     * @var float $timeFinished
+     * @var \DateTime $timeFinished
      */
-    private $timeFinished = 0;
+    private $timeFinished;
 
     /**
      * @var OrderMessagePayload
@@ -185,11 +185,27 @@ final class Task extends Bindable
      */
     public function getExecutionTime(): float
     {
-        if ($this->timeStart === 0 || $this->timeFinished === 0) {
+        if (is_null($this->timeStart) || is_null($this->timeFinished)){
             return 0;
         }
 
-        return $this->timeFinished - $this->timeStart;
+        return $this->timeStart->getTimestamp() - $this->timeFinished->getTimestamp();
+    }
+
+    /**
+     * @return \DateTime|null
+     */
+    public function getStartTime(): ?\DateTime
+    {
+        return $this->timeStart;
+    }
+
+    /**
+     * @return \DateTime|null
+     */
+    public function getFinishedTime(): ?\DateTime
+    {
+        return $this->timeFinished;
     }
 
     /**
@@ -207,7 +223,7 @@ final class Task extends Bindable
         /**
          * Track execution start and execution complete
          */
-        if ($this->isInProgress() && $this->timeStart === 0) {
+        if ($this->isInProgress() && is_null($this->timeStart)) {
             $this->taskExecutionStarted();
         } elseif ($this->isCompleted()) {
             $this->taskExecutionCompleted();
@@ -227,7 +243,7 @@ final class Task extends Bindable
      */
     private function taskExecutionStarted(): void
     {
-        $this->timeStart = microtime(true);
+        $this->timeStart = new \DateTime();
     }
 
     /**
@@ -235,7 +251,7 @@ final class Task extends Bindable
      */
     private function taskExecutionCompleted(): void
     {
-        $this->timeFinished = microtime(true);
+        $this->timeFinished = new \DateTime();
     }
 
 }

@@ -243,6 +243,86 @@ class GroupProgressBag implements ProgressBagInterface
     }
 
     /**
+     * Iterate through tasks and find
+     * first started task
+     *
+     * @return \DateTime|null
+     */
+    public function getStartedAt(): ?\DateTime
+    {
+        $startTime = null;
+
+        /**
+         * No tasks of group yet dispatched
+         */
+        if ($this->isPending()) {
+            return $startTime;
+        }
+
+        /**
+         * @var Task $task
+         */
+        foreach ($this->tasks as $task) {
+            /**
+             * Ignore task not yet started
+             */
+            if ($task->isPlanified() ||
+                $task->isDispatched() ||
+                is_null($task->getStartTime())
+            ) {
+                continue;
+            }
+
+            if (is_null($startTime)) {
+                $startTime = $task->getStartTime();
+            } else if($task->getStartTime() < $startTime) {
+                $startTime = $task->getStartTime();
+            }
+        }
+
+        return $startTime;
+    }
+
+    /**
+     * Iterate through tasks and find
+     * last completed task
+     *
+     * @return \DateTime|null
+     */
+    public function getFinishedAt(): ?\DateTime
+    {
+        $finishTime = null;
+
+        /**
+         * Tasks are still pending in group
+         */
+        if (!$this->isCompleted()) {
+            return $finishTime;
+        }
+
+        /**
+         * @var Task $task
+         */
+        foreach ($this->tasks as $task) {
+            /**
+             * If for any reason task does not have finish time
+             */
+            if (is_null($task->getFinishedTime())) {
+                continue;
+            }
+
+            if (is_null($finishTime)) {
+                $finishTime = $task->getFinishedTime();
+            } else if($task->getFinishedTime() > $finishTime) {
+                $finishTime = $task->getFinishedTime();
+            }
+        }
+
+        return $finishTime;
+
+    }
+
+    /**
      * Get percentage progression of group
      *
      * @return float
@@ -263,7 +343,9 @@ class GroupProgressBag implements ProgressBagInterface
             'status' => $this->getStatus(),
             'percentageProgression' => sprintf('%s %%', $this->getPercentageProgression()),
             'executionTime' => sprintf('%fs', $this->getExecutionTime()),
-            'tasks' => [
+            'startedAt'     => (!is_null($this->getStartedAt())) ? $this->getStartedAt()->getTimestamp() : null,
+            'finishedAt'    => (!is_null($this->getFinishedAt())) ? $this->getFinishedAt()->getTimestamp() : null,
+            'tasks'         => [
                 'total'         => $this->countOrdersInGroup(),
                 'pending'       => $this->countPlanifiedOrders(),
                 'dispatched'    => $this->countDispatchedOrders(),
