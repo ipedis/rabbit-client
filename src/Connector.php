@@ -73,7 +73,6 @@ trait Connector
      */
     protected function publishToExchange($message, $channel, array $messageProperties = [], $persistQueue = false)
     {
-//        array_merge($messageProperties, ['delivery_mode' => 2]);
         try {
             if($persistQueue) $this->declareQueueBindingIfNecessary($channel);
             $this->exchange->publish($message, $channel, AMQP_NOPARAM, $messageProperties);
@@ -83,8 +82,9 @@ trait Connector
     }
     protected function declareQueueBindingIfNecessary(string $queueName)
     {
+        if($this->exchange === null) $this->connect();
         if(!in_array($queueName, $this->declaredQueues)) {
-            $queue = new \AMQPQueue($this->channel);
+            $queue = new \AMQPQueue(new AMQPChannel($this->connection));
             $queue->setFlags(AMQP_DURABLE);
             $queue->setName($queueName);
             $queue->declareQueue();
