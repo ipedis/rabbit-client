@@ -45,7 +45,7 @@ class Failure extends ConnectorAbstract
      * @return mixed
      * @throws ChannelNamingException
      */
-    protected function getBindingKey()
+    protected function getQueueName()
     {
         return OrderChannel::fromString('v1.admin.publication.failure');
     }

@@ -20,15 +20,15 @@ $configOrder = [
     'port' => 5672,
     'use' => 'guest',
     'password' => 'guest',
-    'exchange' => 'publispeak_orders',
+    'exchange' => 'rabbit-client_orders',
     'type' => 'topic'
 ];
 
 $configEvent = array_merge($configOrder, [
-    'exchange' => 'publispeak_events',
+    'exchange' => 'rabbit-client_events',
 ]);
 
-$channelFactory = new ChannelFactory('v1', 'admin');
+$channelFactory = new ChannelFactory('v1', 'rabbitclient');
 $messagePayloadValidator = new MessagePayloadValidator();
 
 if ( !empty($argv[1]) ) {

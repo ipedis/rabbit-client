@@ -15,11 +15,9 @@ class Worker extends ConnectorAbstract
 {
     use WorkerTrait;
 
-    protected function getBindingKey()
+    protected function getQueueName()
     {
-        return [
-            'v1.admin.publication.generate',
-        ];
+        return 'v1.admin.publication.generate';
     }
 
     protected function makeMessageHandler(): \Closure

@@ -124,7 +124,8 @@ trait Manager
         $this->publishToExchange(
             json_encode($messagePayload),
             $channel,
-            $messagePayload->getMessageProperties()
+            $messagePayload->getMessageProperties(),
+            true
         );
 
         return $this;

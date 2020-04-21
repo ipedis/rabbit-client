@@ -27,7 +27,7 @@ trait Worker
     /**
      * @var AMQPQueue $queue
      */
-    protected $queue = null;
+    protected $queue;
 
     /**
      * Method to initialise worker by
@@ -41,12 +41,12 @@ trait Worker
         $this->connect();
         $this->queueDeclare();
         $this->queueConsume();
-
         $this->disconnect();
     }
 
     public function __destruct()
     {
+        $this->queue->delete();
         $this->disconnect();
     }
 
@@ -138,7 +138,6 @@ trait Worker
          * Re-construct message payload objectValue from request body
          */
         $messagePayload = OrderMessagePayload::fromJson($message->getBody());
-
         /**
          * let try to run the client callback. Otherwise catch the error.
          */
@@ -191,28 +190,9 @@ trait Worker
     {
         $this->queue = new AMQPQueue($this->channel);
         $this->queue->setFlags(AMQP_DURABLE);
+        $this->queue->setName($this->getQueueName());
         $this->queue->declareQueue();
-        $this->resolveRoutingKeys();
-    }
-
-    /**
-     * @throws \AMQPChannelException
-     * @throws \AMQPConnectionException
-     */
-    private function resolveRoutingKeys()
-    {
-        $routingKey = $this->getBindingKey();
-        // If is string, we cast it to array.
-        if(is_string($routingKey)) $routingKey = [$routingKey];
-
-        if(is_array($routingKey)) {
-            foreach ($routingKey as $key) {
-                if(is_string($key)) {
-                    $this->queue->bind($this->exchange->getName(), $key);
-                }
-            }
-        }
-
+        $this->queue->bind($this->getExchangeName(), $this->getQueueName());
     }
 
     /**
@@ -229,7 +209,7 @@ trait Worker
      *
      * @return mixed
      */
-    abstract protected function getBindingKey();
+    abstract protected function getQueueName();
 
     /**
      * The exchange to be used to bind worker's queue

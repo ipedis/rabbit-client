@@ -26,6 +26,8 @@ trait Connector
      */
     protected $exchange = null;
 
+    protected $declaredQueues = [];
+
     /**
      * Connection to rabbitMQ
      */
@@ -66,14 +68,27 @@ trait Connector
      * @param $message
      * @param $channel
      * @param array $messageProperties
+     * @param bool $persistQueue
      * @throws RabbitClientPublishException
      */
-    protected function publishToExchange($message, $channel, array $messageProperties = [])
+    protected function publishToExchange($message, $channel, array $messageProperties = [], $persistQueue = false)
     {
+//        array_merge($messageProperties, ['delivery_mode' => 2]);
         try {
+            if($persistQueue) $this->declareQueueBindingIfNecessary($channel);
             $this->exchange->publish($message, $channel, AMQP_NOPARAM, $messageProperties);
         } catch (\Exception $exception) {
             throw new RabbitClientPublishException(sprintf('IPEDIS RABBIT CLIENT - Publishing message on exchange failed with error { %s }', $exception->getMessage()));
+        }
+    }
+    protected function declareQueueBindingIfNecessary(string $queueName)
+    {
+        if(!in_array($queueName, $this->declaredQueues)) {
+            $queue = new \AMQPQueue($this->channel);
+            $queue->setFlags(AMQP_DURABLE);
+            $queue->setName($queueName);
+            $queue->declareQueue();
+            $queue->bind($this->getExchangeName(), $queueName);
         }
     }
 
@@ -87,9 +102,10 @@ trait Connector
      */
     private function setExchange()
     {
-        $this->exchange = new AMQPExchange( $this->channel);
+        $this->exchange = new AMQPExchange($this->channel);
         $this->exchange->setType($this->getExchangeType());
         $this->exchange->setName($this->getExchangeName());
+        $this->exchange->setFlags(AMQP_DURABLE);
         $this->exchange->declareExchange();
     }
 

@@ -35,7 +35,7 @@ trait EventListener
     {
         $this->worker_id = uniqid("worker_id_");
         $this->connect();
-        $this->queueDeclare();
+        $this->declareQueueIfNecessary();
         $this->queueConsume();
 
         $this->disconnect();
@@ -100,7 +100,7 @@ trait EventListener
     /**
      * Declare Queue and bind with exchange
      */
-    protected function queueDeclare()
+    protected function declareQueueIfNecessary()
     {
         $this->queue = new AMQPQueue($this->channel);
         $this->queue->setFlags(AMQP_EXCLUSIVE);
