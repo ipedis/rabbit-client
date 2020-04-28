@@ -46,7 +46,7 @@ trait Worker
 
     public function __destruct()
     {
-        $this->queue->delete();
+        if($this->queue) $this->queue->delete();
         $this->disconnect();
     }
 
