@@ -10,6 +10,7 @@ use Ipedis\Rabbit\MessagePayload\ReplyMessagePayload;
 use Ipedis\Rabbit\Workflow\Config\WorkflowConfig;
 use Ipedis\Rabbit\Workflow\Event\Bindable;
 use Ipedis\Rabbit\Workflow\Event\BindableEventInterface;
+use Ipedis\Rabbit\Workflow\ProgressBag\WorkflowProgressBag;
 
 class Workflow extends Bindable
 {
@@ -151,20 +152,32 @@ class Workflow extends Bindable
         return $this->groups;
     }
 
-
     /**
-     * @return ProgressBag
+     * Find group
+     *
+     * @param string $groupId
+     * @return Group
+     * @throws \Exception
      */
-    public function getPourcentageBag(): ProgressBag
+    public function findGroup(string $groupId): Group
     {
-        $total = $done = 0;
-        foreach ($this->getGroups() as $group)
-        {
-            $total += count($group->getTasks());
-            $done += count($group->getCompletedOrders());
+        $group = array_filter($this->getGroups(), function(Group $group) use ($groupId) {
+            return $group->getGroupId() === $groupId;
+        });
+
+        if (count($group) === 0) {
+            throw new \Exception('Group not found');
         }
 
-        return new ProgressBag($total, $done);
+        return $group[0];
+    }
+
+    /**
+     * @return WorkflowProgressBag
+     */
+    public function getProgressBag(): WorkflowProgressBag
+    {
+        return new WorkflowProgressBag($this->getGroups());
     }
 
     /**

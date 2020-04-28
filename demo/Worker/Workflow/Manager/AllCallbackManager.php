@@ -42,6 +42,8 @@ class AllCallbackManager extends ConnectorAbstract
         $workflow = $this->bindWorkflowEvents($workflow);
 
         $this->run($workflow);
+
+        print_r(sprintf("Summary : %s", json_encode($workflow->getProgressBag()->getSummary())));
     }
 
     private function craftFirstStep(): Closure

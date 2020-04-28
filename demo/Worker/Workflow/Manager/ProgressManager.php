@@ -7,10 +7,9 @@ use Closure;
 use Ipedis\Demo\Rabbit\Utils\ConnectorAbstract;
 use Ipedis\Rabbit\Channel\OrderChannel;
 use Ipedis\Rabbit\MessagePayload\OrderMessagePayload;
-use Ipedis\Rabbit\Workflow\Config\WorkflowConfig;
 use Ipedis\Rabbit\Workflow\Event\BindableEventInterface;
 use Ipedis\Rabbit\Workflow\Manager;
-use Ipedis\Rabbit\Workflow\Task;
+use Ipedis\Rabbit\Workflow\ProgressBag\WorkflowProgressBag;
 use Ipedis\Rabbit\Workflow\Workflow;
 use Ipedis\Rabbit\Workflow\Group;
 
@@ -49,16 +48,19 @@ class ProgressManager extends ConnectorAbstract
         $workflow->bind(BindableEventInterface::WORKFLOW_ON_TASKS_FINISH, function () use ($workflow) {
             /**
              * You can print the actual % like this.
-             * print_r($workflow->getPourcentage()."% \n\n");
+             * print_r($workflow->getProgressBag()->getPercentageProgression()."% \n\n");
              */
-            $progress = $workflow->getPourcentageBag();
-            $this->print($progress->getDone(), $progress->getTotal());
+            $this->print($workflow->getProgressBag());
         });
 
         $this->run($workflow);
     }
 
-    public function print($done, $total) {
+    public function print(WorkflowProgressBag $progressBag)
+    {
+        $done = $progressBag->countTotalCompletedOrders();
+        $total = $progressBag->countTotalOrders();
+
         $perc = floor(($done / $total) * 100);
         $left = 100 - $perc;
         $write = sprintf("\033[0G\033[2K[%'={$perc}s>%-{$left}s] - $perc%% - $done/$total", "", "");

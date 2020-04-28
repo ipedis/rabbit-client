@@ -139,6 +139,15 @@ trait Worker
          */
         $messagePayload = OrderMessagePayload::fromJson($message->getBody());
         /**
+         * Notify manager of start consuming & task status change
+         */
+        $this->notifyTo($message, ReplyMessagePayload::buildFromOrderMessagePayload(
+            $messagePayload,
+            MessageHandlerInterface::TYPE_PROGRESS,
+            []
+        ));
+
+        /**
          * let try to run the client callback. Otherwise catch the error.
          */
         try {

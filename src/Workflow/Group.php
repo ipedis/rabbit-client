@@ -3,7 +3,6 @@
 namespace Ipedis\Rabbit\Workflow;
 
 
-use Ipedis\Rabbit\Consumer\Handler\MessageHandlerInterface;
 use Ipedis\Rabbit\Exception\Group\InvalidGroupArgumentException;
 use Ipedis\Rabbit\Exception\Task\InvalidStatusException;
 use Ipedis\Rabbit\MessagePayload\OrderMessagePayload;
@@ -11,15 +10,20 @@ use Ipedis\Rabbit\MessagePayload\ReplyMessagePayload;
 use Ipedis\Rabbit\Workflow\Config\GroupConfig;
 use Ipedis\Rabbit\Workflow\Event\Bindable;
 use Ipedis\Rabbit\Workflow\Event\BindableEventInterface;
+use Ipedis\Rabbit\Workflow\ProgressBag\GroupProgressBag;
 
 class Group extends Bindable
 {
     /**
+     * Group Identifier
+     *
      * @var string $groupId
      */
     private $groupId;
 
     /**
+     * Group orders
+     *
      * @var Task[] $tasks
      */
     protected $tasks = [];
@@ -46,8 +50,11 @@ class Group extends Bindable
     }
 
     /**
-     * @param array $tasks
-     * @param array $callbacks
+     * Factory constructor
+     *
+     * @param array $tasks Array of tasks
+     * @param array $callbacks Key/value array of callbacks
+     * where key correspond to event name and value list of callbacks for event
      * @param GroupConfig|null $config
      * @return static
      * @throws InvalidGroupArgumentException
@@ -84,6 +91,8 @@ class Group extends Bindable
     }
 
     /**
+     * Group has order matching orderId
+     *
      * @param string $orderId
      * @return bool
      */
@@ -125,20 +134,11 @@ class Group extends Bindable
     }
 
     /**
-     * @return bool
+     * @return string
      */
-    public function isFinish(): bool
+    public function getGroupId(): string
     {
-        $isFinish = true;
-
-        foreach ($this->tasks as $task) {
-            if (!$task->isFinished()) {
-               $isFinish = false;
-               break;
-            }
-        }
-
-        return $isFinish;
+        return $this->groupId;
     }
 
     /**
@@ -150,68 +150,13 @@ class Group extends Bindable
     }
 
     /**
-     * Get collection of completed tasks
+     * Get progress bag for tasks
      *
-     * @return array
+     * @return GroupProgressBag
      */
-    public function getCompletedOrders(): array
+    public function getProgressBag(): GroupProgressBag
     {
-        return array_filter($this->tasks, function(Task $task) {
-            return $task->isFinished();
-        });
-    }
-
-    /**
-     * Get collection of in progress orders
-     *
-     * @return array
-     */
-    public function getInProgressOrders(): array
-    {
-        return array_filter($this->tasks, function(Task $task) {
-            return $task->isInProgress();
-        });
-    }
-
-    /**
-     * Get collection of successfully completed orders
-     *
-     * @return array
-     */
-    public function getSuccessfulOrders(): array
-    {
-        return array_filter($this->tasks, function(Task $task) {
-            return $task->isSuccess();
-        });
-    }
-
-    /**
-     * Get collection of completed orders which have failed
-     *
-     * @return array
-     */
-    public function getFailedOrders(): array
-    {
-        return array_filter($this->tasks, function (Task $task) {
-            return $task->isOnFailure();
-        });
-    }
-
-    public function hasFailure(): bool
-    {
-        return count($this->getFailedOrders()) > 0;
-    }
-
-    /**
-     * Get percentage progression of orders
-     *
-     * @return float
-     */
-    public function getPercentageProgression(): float
-    {
-        $percentage = (count($this->getCompletedOrders()) / count($this->getTasks())) * 100;
-
-        return round($percentage, 2);
+        return new GroupProgressBag($this->getTasks());
     }
 
     /**

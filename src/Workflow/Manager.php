@@ -77,6 +77,7 @@ trait Manager
 
             foreach ($group->getTasks() as $task) {
                 $this->publish($task);
+                $task->setTaskAsDispatched();
                 $task->call(BindableEventInterface::TASK_ON_START, $task);
             }
 
@@ -84,7 +85,7 @@ trait Manager
 
             $this->onGroupFinish($group);
 
-            if ($group->hasFailure()) {
+            if ($group->getProgressBag()->hasFailure()) {
                 $wasAtLeastOneFailure = true;
                 /**
                  * if workflow is configure to stop execution on first failure, Don't run next group.
@@ -107,6 +108,8 @@ trait Manager
         $message = ReplyMessagePayload::fromJson($envelope->getBody());
 
         /**
+         * @var Group $group
+         *
          * Persist current message AND update task status.
          * It will return current group and current task.
          */
@@ -121,7 +124,7 @@ trait Manager
         /**
          * wait until entire group is finish.
          */
-        return (!$group->isFinish());
+        return (!$group->getProgressBag()->isCompleted());
     }
 
     /**
@@ -166,9 +169,9 @@ trait Manager
      */
     private function onGroupFinish(Group $group)
     {
-        $group->call($group->hasFailure() ? BindableEventInterface::GROUP_ON_FAILURE : BindableEventInterface::GROUP_ON_SUCCESS, $group);
+        $group->call($group->getProgressBag()->hasFailure() ? BindableEventInterface::GROUP_ON_FAILURE : BindableEventInterface::GROUP_ON_SUCCESS, $group);
         $group->call(BindableEventInterface::GROUP_ON_FINISH, $group);
-        $this->workflow->call($group->hasFailure() ? BindableEventInterface::WORKFLOW_ON_GROUPS_FAILURE : BindableEventInterface::WORKFLOW_ON_GROUPS_SUCCESS, $group);
+        $this->workflow->call($group->getProgressBag()->hasFailure() ? BindableEventInterface::WORKFLOW_ON_GROUPS_FAILURE : BindableEventInterface::WORKFLOW_ON_GROUPS_SUCCESS, $group);
     }
 
     /**

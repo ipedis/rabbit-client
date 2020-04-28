@@ -1,6 +1,5 @@
 <?php
 
-
 namespace Ipedis\Rabbit\Workflow;
 
 
@@ -17,6 +16,16 @@ final class Task extends Bindable
      * @var string
      */
     private $status;
+
+    /**
+     * @var \DateTime $timeStart
+     */
+    private $timeStart;
+
+    /**
+     * @var \DateTime $timeFinished
+     */
+    private $timeFinished;
 
     /**
      * @var OrderMessagePayload
@@ -67,6 +76,16 @@ final class Task extends Bindable
     }
 
     /**
+     * Task status changed to DISPATCHED
+     */
+    public function setTaskAsDispatched()
+    {
+        if ($this->isPlanified()) {
+            $this->transitionTo(MessageHandlerInterface::TYPE_DISPATCHED);
+        }
+    }
+
+    /**
      * @return array
      */
     public function getReplyMessages(): array
@@ -99,14 +118,19 @@ final class Task extends Bindable
     }
 
     /**
+     * The task has completed either with success
+     * or falure
+     *
      * @return bool
      */
-    public function isFinished(): bool
+    public function isCompleted(): bool
     {
         return $this->isSuccess() || $this->isOnFailure();
     }
 
     /**
+     * The task has completed successfully
+     *
      * @return bool
      */
     public function isSuccess():  bool
@@ -115,6 +139,8 @@ final class Task extends Bindable
     }
 
     /**
+     * The task has failed
+     *
      * @return bool
      */
     public function isOnFailure():  bool
@@ -123,11 +149,63 @@ final class Task extends Bindable
     }
 
     /**
+     * The task is in progress
+     *
      * @return bool
      */
     public function isInProgress(): bool
     {
         return $this->getStatus() === MessageHandlerInterface::TYPE_PROGRESS;
+    }
+
+    /**
+     * The task has been dispatched
+     *
+     * @return bool
+     */
+    public function isDispatched(): bool
+    {
+        return $this->getStatus() === MessageHandlerInterface::TYPE_DISPATCHED;
+    }
+
+    /**
+     * The task has been planified and
+     * not yet dispatched
+     *
+     * @return bool
+     */
+    public function isPlanified(): bool
+    {
+        return $this->getStatus() === MessageHandlerInterface::TYPE_PLANIFIED;
+    }
+
+    /**
+     * Get task execution time
+     * @return float
+     */
+    public function getExecutionTime(): float
+    {
+        if (is_null($this->timeStart) || is_null($this->timeFinished)){
+            return 0;
+        }
+
+        return $this->timeStart->getTimestamp() - $this->timeFinished->getTimestamp();
+    }
+
+    /**
+     * @return \DateTime|null
+     */
+    public function getStartTime(): ?\DateTime
+    {
+        return $this->timeStart;
+    }
+
+    /**
+     * @return \DateTime|null
+     */
+    public function getFinishedTime(): ?\DateTime
+    {
+        return $this->timeFinished;
     }
 
     /**
@@ -141,7 +219,17 @@ final class Task extends Bindable
         }
 
         $this->status = $newStatus;
+
+        /**
+         * Track execution start and execution complete
+         */
+        if ($this->isInProgress() && is_null($this->timeStart)) {
+            $this->taskExecutionStarted();
+        } elseif ($this->isCompleted()) {
+            $this->taskExecutionCompleted();
+        }
     }
+
     /**
      * @return array
      */
@@ -149,4 +237,21 @@ final class Task extends Bindable
     {
         return BindableEventInterface::TASK_ALLOW_TYPES;
     }
+
+    /**
+     * Called when task execution starts
+     */
+    private function taskExecutionStarted(): void
+    {
+        $this->timeStart = new \DateTime();
+    }
+
+    /**
+     * Called when task execution completes
+     */
+    private function taskExecutionCompleted(): void
+    {
+        $this->timeFinished = new \DateTime();
+    }
+
 }
