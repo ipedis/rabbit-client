@@ -61,4 +61,16 @@ class Worker extends ConnectorAbstract
             return ["foo" => "bar"];
         };
     }
+
+    /**
+     * Handle errors during processing of message
+     *
+     * @return \Closure
+     */
+    protected function makeExceptionHandler(): \Closure
+    {
+        return function (\Exception $exception, OrderMessagePayload $messagePayload) {
+            printf('Inside exception handler================'.$exception->getMessage());
+        };
+    }
 }
