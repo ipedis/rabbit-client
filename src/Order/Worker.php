@@ -158,6 +158,7 @@ trait Worker
                 'status' => $status
             ]);
         } catch (Exception $exception) {
+            $this->makeExceptionHandler()($exception, $messagePayload);
             $status = MessageHandlerInterface::TYPE_ERROR;
 
             $answer = array_merge(
@@ -234,4 +235,12 @@ trait Worker
      * @return Closure
      */
     abstract protected function makeMessageHandler(): Closure;
+
+    /**
+     * The client callback to be executed
+     * if there is an exception while handling a message
+     *
+     * @return Closure
+     */
+    abstract protected function makeExceptionHandler(): Closure;
 }

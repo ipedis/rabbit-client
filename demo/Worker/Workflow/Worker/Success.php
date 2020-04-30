@@ -40,6 +40,13 @@ class Success extends ConnectorAbstract
         };
     }
 
+    protected function makeExceptionHandler(): Closure
+    {
+        return function (Exception $exception, OrderMessagePayload $payload) {
+            printf('In Exception Handler');
+        };
+    }
+
     /**
      * Can be string or array of keys
      *
