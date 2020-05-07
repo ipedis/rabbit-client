@@ -37,11 +37,17 @@ final class Task extends Bindable
      */
     private $replyMessages = [];
 
+    /**
+     * @var int
+     */
+    private $retryCount;
+
     private function __construct(OrderMessagePayload $orderMessage, $callbacks = [])
     {
-        $this->status = MessageHandlerInterface::TYPE_PLANIFIED;
+        $this->status       = MessageHandlerInterface::TYPE_PLANIFIED;
+        $this->retryCount   = 0;
         $this->orderMessage = $orderMessage;
-        $this->callbacks = $this->assertCallbacks($callbacks);
+        $this->callbacks    = $this->assertCallbacks($callbacks);
     }
 
     /**
@@ -71,6 +77,22 @@ final class Task extends Bindable
     {
         $this->replyMessages[] = $message;
         $this->transitionTo($message->getStatus());
+
+        return $this;
+    }
+
+    /**
+     * Retry dispatching task
+     * - revert status to planified
+     * - increment retry count
+     *
+     * @return Task
+     * @throws InvalidStatusException
+     */
+    public function retry(): self
+    {
+        $this->transitionTo(MessageHandlerInterface::TYPE_PLANIFIED);
+        $this->retryCount ++;
 
         return $this;
     }
@@ -206,6 +228,14 @@ final class Task extends Bindable
     public function getFinishedTime(): ?\DateTime
     {
         return $this->timeFinished;
+    }
+
+    /**
+     * @return int
+     */
+    public function getRetryCount(): int
+    {
+        return $this->retryCount;
     }
 
     /**

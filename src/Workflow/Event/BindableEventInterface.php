@@ -57,12 +57,14 @@ interface BindableEventInterface
     const TASK_ON_FAILURE = 'task.failed';
     const TASK_ON_SUCCESS = 'task.successed';
     const TASK_ON_FINISH = 'task.finished';
+    const TASK_ON_RETRY = 'task.retried';
 
     const TASK_ALLOW_TYPES = [
         self::TASK_ON_START,
         self::TASK_ON_PROGRESS,
         self::TASK_ON_FAILURE,
         self::TASK_ON_SUCCESS,
-        self::TASK_ON_FINISH
+        self::TASK_ON_FINISH,
+        self::TASK_ON_RETRY
     ];
 }

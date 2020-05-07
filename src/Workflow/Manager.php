@@ -51,7 +51,6 @@ trait Manager
         return $queue;
     }
 
-
     public function run(Workflow $workflow)
     {
         $wasAtLeastOneFailure = false;
@@ -109,6 +108,7 @@ trait Manager
 
         /**
          * @var Group $group
+         * @var Task $task
          *
          * Persist current message AND update task status.
          * It will return current group and current task.
@@ -116,6 +116,22 @@ trait Manager
         [$group, $task] = $this->workflow->taskReply($message);
         // ACK Current message.
         $q->ack($envelope->getDeliveryTag());
+
+
+        /**
+         * If task failed, check if retry is possible
+         */
+        if (
+            $task->isOnFailure() &&
+            ($group->canRetryTask($task) || $this->workflow->canRetryTask($task, $group))
+        ) {
+            $this->workflow->retryGroupTask($message);
+            $this->publish($task);
+
+            $task->call(BindableEventInterface::TASK_ON_RETRY, $task);
+            return true;
+        }
+
         /**
          * Call event binded on task layer.
          */
