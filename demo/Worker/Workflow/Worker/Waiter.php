@@ -5,11 +5,11 @@ namespace Ipedis\Demo\Rabbit\Worker\Workflow\Worker;
 
 use AMQPEnvelope;
 use Ipedis\Demo\Rabbit\Utils\ConnectorAbstract;
+use Ipedis\Rabbit\Lifecyle\Hook\OnBeforeMessage;
 use Ipedis\Rabbit\MessagePayload\OrderMessagePayload;
 use Ipedis\Rabbit\Order\Worker as WorkerTrait;
 
-
-class Waiter extends ConnectorAbstract
+class Waiter extends ConnectorAbstract implements OnBeforeMessage
 {
     use WorkerTrait;
 
@@ -39,5 +39,13 @@ class Waiter extends ConnectorAbstract
     protected function getQueueName()
     {
         return 'v1.admin.publication.waiter';
+    }
+
+    /**
+     * Hook to call before worker handle message
+     */
+    public function beforeMessageHandled()
+    {
+        printf("WORKER LIFECYCLE HOOK : BEFORE HANDLING MESSAGE..."."\n\n");
     }
 }

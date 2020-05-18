@@ -7,9 +7,11 @@ use Closure;
 use Exception;
 use Ipedis\Demo\Rabbit\Utils\ConnectorAbstract;
 use Ipedis\Rabbit\Event\EventListener;
+use Ipedis\Rabbit\Lifecyle\Hook\OnAfterMessage;
+use Ipedis\Rabbit\Lifecyle\Hook\OnBeforeMessage;
 use Ipedis\Rabbit\MessagePayload\EventMessagePayload;
 
-class Binding extends ConnectorAbstract
+class Binding extends ConnectorAbstract implements OnBeforeMessage, OnAfterMessage
 {
     use EventListener;
 
@@ -45,7 +47,7 @@ class Binding extends ConnectorAbstract
     protected function makeExceptionHandler(): Closure
     {
         return function (Exception $exception, ?EventMessagePayload $messagePayload) {
-            var_dump($exception->getMessage());
+            printf($exception->getMessage()."\n\n");
         };
     }
 
@@ -80,5 +82,21 @@ class Binding extends ConnectorAbstract
     {
         yield 'v1.admin.publication.was-exported' => ['method' => 'onExportedPublication'];
         yield 'v1.preview.publication.was-updated' => ['method' => 'onUpdatedPublication'];
+    }
+
+    /**
+     * Hook to run before worker handles message
+     */
+    public function beforeMessageHandled()
+    {
+        printf("WORKER LIFECYCLE HOOK : BEFORE HANDLING MESSAGE..."."\n\n");
+    }
+
+    /**
+     * Hook to run after worker handles message
+     */
+    public function afterMessageHandled()
+    {
+        printf("WORKER LIFECYCLE HOOK : AFTER HANDLING MESSAGE..."."\n\n");
     }
 }

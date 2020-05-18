@@ -9,6 +9,8 @@ use Closure;
 use Exception;
 use Ipedis\Rabbit\Connector;
 use Ipedis\Rabbit\Exception\MessagePayload\MessagePayloadFormatException;
+use Ipedis\Rabbit\Lifecyle\Hook\OnAfterMessage;
+use Ipedis\Rabbit\Lifecyle\Hook\OnBeforeMessage;
 use Ipedis\Rabbit\MessagePayload\EventMessagePayload;
 
 trait EventListener
@@ -49,30 +51,62 @@ trait EventListener
     /**
      * @param AMQPEnvelope $message
      * @param AMQPQueue $q
-     * @throws MessagePayloadFormatException
+     *
      * @throws \AMQPChannelException
      * @throws \AMQPConnectionException
      */
     public function main(AMQPEnvelope $message, AMQPQueue $q)
     {
         try {
-            $messagePayload = EventMessagePayload::fromJson($message->getBody());
+            /**
+             * We have before message hook to run
+             */
+            if ( $this instanceOf OnBeforeMessage) $this->beforeMessageHandled();
 
-            if ($this->isSubscribed($messagePayload->getChannel())) {
-                $this->handleReceivedMessage($messagePayload);
-            }
-        } catch (Exception $exception) {
-            if( $exception instanceof MessagePayloadFormatException) {
-                $messagePayload = null;
-            } else {
-                $messagePayload = EventMessagePayload::fromJson($message->getBody());
-            }
-            $this->makeExceptionHandler()($exception, $messagePayload);
+            $this->consumeReceivedMessage($message);
+
+            /**
+             * We have after message hook to run
+             */
+            if ( $this instanceOf OnAfterMessage) $this->afterMessageHandled();
+        } catch (\Exception $exception) {
+            /**
+             * Handle exception from the hooks
+             */
+            $this->handleException($exception);
         }
 
         $q->ack($message->getDeliveryTag());
     }
 
+    /**
+     * Consume the received message
+     *
+     * Message will be handled ONLY if
+     * listener is subscribed to the event
+     *
+     * @param AMQPEnvelope $message
+     * @throws MessagePayloadFormatException
+     */
+    private function consumeReceivedMessage(AMQPEnvelope $message)
+    {
+        $messagePayload = EventMessagePayload::fromJson($message->getBody());
+
+        try {
+            if ($this->isSubscribed($messagePayload->getChannel())) {
+                $this->handleReceivedMessage($messagePayload);
+            }
+        } catch (Exception $exception) {
+            $this->handleException($exception, $messagePayload);
+        }
+    }
+
+    /**
+     * Handle the message by calling dedicated callback handler
+     * or the general callback handler
+     *
+     * @param EventMessagePayload $message
+     */
     private function handleReceivedMessage(EventMessagePayload $message)
     {
         $wasCalled = false;
@@ -85,11 +119,31 @@ trait EventListener
                 $wasCalled = true;
             }
         }
+
         // If nobody was call, fallback to makeMessageHandler
         if(!$wasCalled) $this->callHandler(['method' => 'makeMessageHandler'], $message);
-
     }
 
+    /**
+     * Handle exception by calling
+     * client exception callback
+     *
+     * @param $exception
+     * @param EventMessagePayload|null $messagePayload
+     */
+    private function handleException($exception, ?EventMessagePayload $messagePayload = null)
+    {
+        try {
+            $this->makeExceptionHandler()($exception, $messagePayload);
+        } catch (\Exception $exception) {}
+    }
+
+    /**
+     * Helper to execute proper callback
+     *
+     * @param array $handler
+     * @param EventMessagePayload $message
+     */
     private function callHandler(array $handler, EventMessagePayload $message)
     {
         $result = $this->{$handler['method']}($message);
@@ -97,6 +151,7 @@ trait EventListener
             $result($message);
         }
     }
+
     /**
      * Declare Queue and bind with exchange
      */
@@ -108,12 +163,18 @@ trait EventListener
         $this->resolveRoutingKeys();
     }
 
+    /**
+     * Bind listener to multiple events
+     *
+     * @throws \AMQPChannelException
+     * @throws \AMQPConnectionException
+     */
     private function resolveRoutingKeys()
     {
         $routingKey = $this->getBindingKey();
+
         // If is string, we cast it to array.
         if(is_string($routingKey)) $routingKey = [$routingKey];
-
 
         if(is_array($routingKey)) {
             foreach ($routingKey as $key) {
@@ -122,7 +183,6 @@ trait EventListener
                 }
             }
         }
-
     }
 
     /**
