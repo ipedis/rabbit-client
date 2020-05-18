@@ -92,6 +92,25 @@ class Workflow extends Bindable
     }
 
     /**
+     * @param ReplyMessagePayload $message
+     * @return array
+     * @throws InvalidStatusException
+     */
+    public function retryGroupTask(ReplyMessagePayload $message): array
+    {
+        // Check all existing group if he contain particular order id.
+        foreach ($this->groups as $group) {
+            if($group->has($message->getOrderId())) {
+                // Ask current group to update task based on received message.
+                $currentGroup = $group->retryTask($message);
+                break;
+            }
+        }
+
+        return $currentGroup;
+    }
+
+    /**
      * @return WorkflowConfig
      */
     public function getConfig(): WorkflowConfig
@@ -170,6 +189,22 @@ class Workflow extends Bindable
         }
 
         return $group[0];
+    }
+
+    /**
+     * Check if retry is allowed for task
+     *
+     * @param Task $task
+     * @param Group $group
+     * @return bool
+     */
+    public function canRetryTask(Task $task, Group $group): bool
+    {
+        return
+            !$group->hasConfig() &&
+            $this->getConfig()->hasToRetry() &&
+            $task->getRetryCount() < $this->getConfig()->getMaxRetry()
+            ;
     }
 
     /**

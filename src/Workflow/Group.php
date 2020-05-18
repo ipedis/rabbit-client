@@ -93,21 +93,21 @@ class Group extends Bindable
     /**
      * Group has order matching orderId
      *
-     * @param string $orderId
+     * @param string $taskId
      * @return bool
      */
-    public function has(string $orderId): bool
+    public function has(string $taskId): bool
     {
-        return (!empty($this->tasks[$orderId]));
+        return (!empty($this->tasks[$taskId]));
     }
 
     /**
-     * @param string $orderId
+     * @param string $taskId
      * @return Task
      */
-    public function find(string $orderId): Task
+    public function find(string $taskId): Task
     {
-        return $this->tasks[$orderId];
+        return $this->tasks[$taskId];
     }
 
     /**
@@ -119,6 +119,19 @@ class Group extends Bindable
     {
         $task = $this->find($message->getOrderId());
         $task->update($message);
+
+        return [$this, $task];
+    }
+
+    /**
+     * @param ReplyMessagePayload $message
+     * @return array
+     * @throws InvalidStatusException
+     */
+    public function retryTask(ReplyMessagePayload $message): array
+    {
+        $task = $this->find($message->getOrderId());
+        $task->retry();
 
         return [$this, $task];
     }
@@ -142,11 +155,34 @@ class Group extends Bindable
     }
 
     /**
+     * @return bool
+     */
+    public function hasConfig(): bool
+    {
+        return !is_null($this->config);
+    }
+
+    /**
      * @return GroupConfig
      */
     public function getConfig(): GroupConfig
     {
         return $this->config;
+    }
+
+    /**
+     * Check if retry is allowed for task
+     *
+     * @param Task $task
+     * @return bool
+     */
+    public function canRetryTask(Task $task): bool
+    {
+        return
+            $this->hasConfig() &&
+            $this->getConfig()->hasToRetry() &&
+            $task->getRetryCount() < $this->getConfig()->getMaxRetry()
+        ;
     }
 
     /**
