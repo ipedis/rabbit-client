@@ -135,7 +135,9 @@ trait EventListener
     {
         try {
             $this->makeExceptionHandler()($exception, $messagePayload);
-        } catch (\Exception $exception) {}
+        } catch (\Exception $exception) {
+            $this->logException($exception);
+        }
     }
 
     /**
@@ -215,4 +217,12 @@ trait EventListener
     {
         return [];
     }
+
+    /**
+     * Prototype method
+     * Child can overide this function to log exceptions
+     *
+     * @param Exception $exception
+     */
+    protected function logException(\Exception $exception){}
 }
