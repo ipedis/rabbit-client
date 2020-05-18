@@ -10,6 +10,8 @@ use Closure;
 use Exception;
 use Ipedis\Rabbit\Consumer\Handler\MessageHandlerInterface;
 use Ipedis\Rabbit\Exception\MessagePayload\MessagePayloadFormatException;
+use Ipedis\Rabbit\Lifecyle\Hook\OnAfterMessage;
+use Ipedis\Rabbit\Lifecyle\Hook\OnBeforeMessage;
 use Ipedis\Rabbit\MessagePayload\OrderMessagePayload;
 use Ipedis\Rabbit\MessagePayload\ReplyMessagePayload;
 
@@ -55,14 +57,28 @@ trait Worker
      *
      * @param AMQPEnvelope $message
      * @param AMQPQueue $q
-     * @throws MessagePayloadFormatException
-     * @throws \AMQPChannelException
-     * @throws \AMQPConnectionException
-     * @throws \AMQPExchangeException
      */
     public function main(AMQPEnvelope $message, AMQPQueue $q)
     {
-        $this->ackEngine($message, $q, $this->makeMessageHandler());
+        try {
+            /**
+             * We have before message hook to run
+             */
+            if ( $this instanceOf OnBeforeMessage) $this->beforeMessageHandled();
+
+            $this->consumeReceivedMessage($message, $q);
+
+            /**
+             * We have after message hook to run
+             */
+            if ( $this instanceOf OnAfterMessage) $this->afterMessageHandled();
+        } catch (\Exception $exception) {
+            /**
+             * Handle exception from hook and
+             * message payload creation
+             */
+            $this->handleException($exception);
+        }
     }
 
     /**
@@ -116,8 +132,6 @@ trait Worker
     }
 
     /**
-     * Helper method
-     *
      * Consume message by calling client callback and
      * standardize the reply to manager
      *
@@ -126,52 +140,41 @@ trait Worker
      *
      * @param AMQPEnvelope $message
      * @param AMQPQueue $q
-     * @param Closure $onMessage
      * @throws MessagePayloadFormatException
      * @throws \AMQPChannelException
      * @throws \AMQPConnectionException
      * @throws \AMQPExchangeException
      */
-    protected function ackEngine(AMQPEnvelope $message, AMQPQueue $q, Closure $onMessage)
+    private function consumeReceivedMessage(AMQPEnvelope $message, AMQPQueue $q)
     {
         /**
          * Re-construct message payload objectValue from request body
          */
         $messagePayload = OrderMessagePayload::fromJson($message->getBody());
-        /**
-         * Notify manager of start consuming & task status change
-         */
-        $this->notifyTo($message, ReplyMessagePayload::buildFromOrderMessagePayload(
-            $messagePayload,
-            MessageHandlerInterface::TYPE_PROGRESS,
-            []
-        ));
 
-        /**
-         * let try to run the client callback. Otherwise catch the error.
-         */
         try {
-            $answer = $onMessage($message, $messagePayload);
+            /**
+             * Notify manager of start consuming & task status change
+             */
+            $this->notifyTo($message, ReplyMessagePayload::buildFromOrderMessagePayload(
+                $messagePayload,
+                MessageHandlerInterface::TYPE_PROGRESS,
+                []
+            ));
 
-            $status = MessageHandlerInterface::TYPE_SUCCESS;
-            $answer = array_merge($answer, [
-                'status' => $status
-            ]);
+            $answer = $this->makeMessageHandler()($message, $messagePayload);
+            $answer['status'] = MessageHandlerInterface::TYPE_SUCCESS;
         } catch (Exception $exception) {
-            $this->makeExceptionHandler()($exception, $messagePayload);
-            $status = MessageHandlerInterface::TYPE_ERROR;
+            $answer = [
+                'worker'    => self::class,
+                'id'        => $this->worker_id,
+                'status'    => MessageHandlerInterface::TYPE_ERROR,
+                'message'   => $exception->getMessage(),
+                'code'      => $exception->getCode(),
+                'correlation_id' => $messagePayload->getOrderId()
+            ];
 
-            $answer = array_merge(
-            [
-                "worker" => self::class,
-                "id"     => $this->worker_id,
-                "correlation_id" => $messagePayload->getOrderId()
-            ],
-            [
-                'status'  => $status,
-                'message' => $exception->getMessage(),
-                'code'    => $exception->getCode()
-            ]);
+            $this->handleException($exception, $messagePayload);
         } finally {
             /**
              * Create final message to reply back to manager with
@@ -179,7 +182,7 @@ trait Worker
              */
             $replyToMessage = ReplyMessagePayload::buildFromOrderMessagePayload(
                 $messagePayload,
-                $status,
+                $answer['status'],
                 $answer
             );
 
@@ -215,6 +218,23 @@ trait Worker
     }
 
     /**
+     * Handle exception by calling
+     * client exception callback
+     *
+     * @param $exception
+     * @param OrderMessagePayload|null $messagePayload
+     * @return void
+     */
+    private function handleException($exception, ?OrderMessagePayload $messagePayload = null)
+    {
+        try {
+            $this->makeExceptionHandler()($exception, $messagePayload);
+        } catch (\Exception $exception) {
+            $this->logException($exception);
+        }
+    }
+
+    /**
      * Can be string or array of keys
      *
      * @return mixed
@@ -243,4 +263,12 @@ trait Worker
      * @return Closure
      */
     abstract protected function makeExceptionHandler(): Closure;
+
+    /**
+     * Prototype method
+     * Child can overide this function to log exceptions
+     *
+     * @param Exception $exception
+     */
+    protected function logException(\Exception $exception){}
 }
