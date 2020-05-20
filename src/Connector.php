@@ -129,7 +129,8 @@ trait Connector
             'host'      => $this->getHost(),
             'port'      => $this->getPort(),
             'login'     => $this->getUser(),
-            'password'  => $this->getPassword()
+            'password'  => $this->getPassword(),
+            'heartbeat' => 15
         ]);
 
         $connection->connect();
