@@ -211,7 +211,7 @@ final class Task extends Bindable
             return 0;
         }
 
-        return $this->timeStart->getTimestamp() - $this->timeFinished->getTimestamp();
+        return $this->timeFinished->getTimestamp() - $this->timeStart->getTimestamp();
     }
 
     /**
