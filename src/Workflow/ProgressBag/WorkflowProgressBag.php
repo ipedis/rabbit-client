@@ -257,7 +257,7 @@ class WorkflowProgressBag implements ProgressBagInterface
      */
     public function isPending(): bool
     {
-        return $this->isCompleted() && $this->countRunningGroups() === 0;
+        return !$this->isCompleted() && $this->countRunningGroups() === 0;
     }
 
     /**
