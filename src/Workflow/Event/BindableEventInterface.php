@@ -13,6 +13,7 @@ interface BindableEventInterface
 
     const WORKFLOW_ON_GROUPS_FAILURE = 'workflow.groups.failed';
     const WORKFLOW_ON_GROUPS_SUCCESS = 'workflow.groups.successed';
+    const WORKFLOW_ON_GROUPS_FINISH = 'workflow.groups.finished';
 
     const WORKFLOW_ON_TASKS_FAILURE = 'workflow.tasks.failed';
     const WORKFLOW_ON_TASKS_SUCCESS = 'workflow.tasks.successed';
@@ -26,6 +27,7 @@ interface BindableEventInterface
 
         self::WORKFLOW_ON_GROUPS_FAILURE,
         self::WORKFLOW_ON_GROUPS_SUCCESS,
+        self::WORKFLOW_ON_GROUPS_FINISH,
 
         self::WORKFLOW_ON_TASKS_FAILURE,
         self::WORKFLOW_ON_TASKS_SUCCESS,

@@ -4,9 +4,13 @@ namespace Ipedis\Demo\Rabbit\Worker\Workflow\Worker;
 
 
 use AMQPEnvelope;
+use Closure;
+use Exception;
 use Ipedis\Demo\Rabbit\Utils\ConnectorAbstract;
+use Ipedis\Rabbit\Consumer\Handler\MessageHandlerInterface;
 use Ipedis\Rabbit\Lifecyle\Hook\OnBeforeMessage;
 use Ipedis\Rabbit\MessagePayload\OrderMessagePayload;
+use Ipedis\Rabbit\MessagePayload\ReplyMessagePayload;
 use Ipedis\Rabbit\Order\Worker as WorkerTrait;
 
 class Waiter extends ConnectorAbstract implements OnBeforeMessage
@@ -17,7 +21,14 @@ class Waiter extends ConnectorAbstract implements OnBeforeMessage
     {
         return function (AMQPEnvelope $message, OrderMessagePayload $messagePayload) {
             $params = $messagePayload->getData();
-
+            $this->notifyTo(
+                $message,
+                ReplyMessagePayload::buildFromOrderMessagePayload(
+                    $messagePayload,
+                    MessageHandlerInterface::TYPE_PROGRESS,
+                    ['status' => 'PROGRESS', 'step' => 1]
+                )
+            );
             sleep(rand(0, 1));
 
             return ["step" => "step1 finished"];

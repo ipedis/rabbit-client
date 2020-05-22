@@ -33,7 +33,7 @@ class ProgressManager extends ConnectorAbstract
     {
         $workflow = new Workflow(
             function (Group $group) {
-                for($i = 0; $i < 3; $i++) {
+                for($i = 0; $i < 2; $i++) {
                     $group->planifyOrder(OrderMessagePayload::build(OrderChannel::fromString('v1.admin.publication.waiter')));
                 }
             }
@@ -52,7 +52,6 @@ class ProgressManager extends ConnectorAbstract
              */
             $this->print($workflow->getProgressBag());
         });
-
         $this->run($workflow);
     }
 

@@ -166,13 +166,16 @@ trait Manager
 
                 $this->workflow->call(BindableEventInterface::WORKFLOW_ON_TASKS_SUCCESS, $task);
                 $this->workflow->call(BindableEventInterface::WORKFLOW_ON_TASKS_FINISH, $task);
-
             break;
             case MessageHandlerInterface::TYPE_ERROR :
                 $task->call(BindableEventInterface::TASK_ON_FAILURE, $task);
                 $task->call(BindableEventInterface::TASK_ON_FINISH, $task);
+
                 $group->call(BindableEventInterface::GROUP_ON_TASKS_FAILURE, $task);
+                $group->call(BindableEventInterface::GROUP_ON_TASKS_FINISH, $task);
+
                 $this->workflow->call(BindableEventInterface::WORKFLOW_ON_TASKS_FAILURE, $task);
+                $this->workflow->call(BindableEventInterface::WORKFLOW_ON_TASKS_FINISH, $task);
             break;
             case MessageHandlerInterface::TYPE_PROGRESS :
                 $task->call(BindableEventInterface::TASK_ON_PROGRESS, $task);
@@ -188,6 +191,7 @@ trait Manager
         $group->call($group->getProgressBag()->hasFailure() ? BindableEventInterface::GROUP_ON_FAILURE : BindableEventInterface::GROUP_ON_SUCCESS, $group);
         $group->call(BindableEventInterface::GROUP_ON_FINISH, $group);
         $this->workflow->call($group->getProgressBag()->hasFailure() ? BindableEventInterface::WORKFLOW_ON_GROUPS_FAILURE : BindableEventInterface::WORKFLOW_ON_GROUPS_SUCCESS, $group);
+        $this->workflow->call(BindableEventInterface::WORKFLOW_ON_GROUPS_FINISH, $group);
     }
 
     /**
