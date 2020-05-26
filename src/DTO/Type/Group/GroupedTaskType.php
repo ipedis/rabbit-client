@@ -10,9 +10,24 @@ use Ipedis\Rabbit\Exception\InvalidUuidException;
 
 class GroupedTaskType implements \JsonSerializable
 {
+    /**
+     * @var StatusType
+     */
     private $status;
+
+    /**
+     * @var SummaryType
+     */
     private $summary;
+
+    /**
+     * @var string
+     */
     private $type;
+
+    /**
+     * @var string[]
+     */
     private $uuids;
 
     /**

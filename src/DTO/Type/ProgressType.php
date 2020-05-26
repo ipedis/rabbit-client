@@ -77,7 +77,7 @@ class ProgressType implements \JsonSerializable
      */
     private function assertProgress(float $completed, float $success, float $failed): void
     {
-        if ($completed > 100 || $success > 100 || $failed > 100) {
+        if ($completed > 100 || $success > 100 || $failed > 100 || $completed < 0 || $success < 0 || $failed < 0) {
             throw new InvalidProgressValueException('[PROGRESS] Invalid progress value');
         }
     }

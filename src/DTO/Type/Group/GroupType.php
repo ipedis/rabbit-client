@@ -107,7 +107,7 @@ class GroupType implements \JsonSerializable
     }
 
     /**
-     * @return array|TaskType[]
+     * @return TaskType[]
      */
     public function getTasks()
     {
@@ -147,7 +147,7 @@ class GroupType implements \JsonSerializable
     {
         foreach ($tasks as $task) {
             if (!$task instanceof TaskType) {
-                throw new NotTaskException('Object of type Task expected');
+                throw new NotTaskException('Object of type TaskType expected');
             }
         }
     }

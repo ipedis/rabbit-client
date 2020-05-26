@@ -49,10 +49,10 @@ abstract class ChannelAbstract
 
     /**
      * @param string $channel
-     * @return mixed
+     * @return array
      * @throws ChannelNamingException
      */
-    private static function assertChannel(string $channel)
+    private static function assertChannel(string $channel): array
     {
         preg_match(self::CHANNEL_PATTERN, $channel, $catched);
         if (
