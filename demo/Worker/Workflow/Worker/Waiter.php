@@ -31,6 +31,12 @@ class Waiter extends ConnectorAbstract implements OnBeforeMessage
             );
             sleep(rand(0, 1));
 
+            $x = random_int(1, 10);
+
+            if ($x % 2 === 0) {
+                throw new Exception('failed');
+            }
+
             return ["step" => "step1 finished"];
         };
     }

@@ -4,6 +4,7 @@ namespace Ipedis\Rabbit\Workflow;
 
 
 use Ipedis\Rabbit\Consumer\Handler\MessageHandlerInterface;
+use Ipedis\Rabbit\DTO\Type\StatusType;
 use Ipedis\Rabbit\Exception\Task\InvalidStatusException;
 use Ipedis\Rabbit\MessagePayload\OrderMessagePayload;
 use Ipedis\Rabbit\MessagePayload\ReplyMessagePayload;
@@ -199,6 +200,30 @@ final class Task extends Bindable
     public function isPlanified(): bool
     {
         return $this->getStatus() === MessageHandlerInterface::TYPE_PLANIFIED;
+    }
+
+    public function getStatusType()
+    {
+        if ($this->isPlanified()) {
+            return StatusType::buildPending();
+        }
+        if ($this->isSuccess()) {
+            return StatusType::buildSuccess();
+        }
+
+        if ($this->isOnFailure()) {
+            return StatusType::buildFailed();
+        }
+
+        return StatusType::buildRunning();
+    }
+
+    /**
+     * @return false|string
+     */
+    public function getType()
+    {
+        return substr($this->getOrderMessage()->getChannel(), 3);
     }
 
     /**

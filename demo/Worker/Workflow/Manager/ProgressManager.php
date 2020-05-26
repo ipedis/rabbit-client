@@ -50,8 +50,9 @@ class ProgressManager extends ConnectorAbstract
              * You can print the actual % like this.
              * print_r($workflow->getProgressBag()->getPercentageProgression()."% \n\n");
              */
-            $this->print($workflow->getProgressBag());
+            var_dump(json_encode($workflow->getProgressBag()->getSummary()));
         });
+
         $this->run($workflow);
     }
 
