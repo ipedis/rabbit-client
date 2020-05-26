@@ -6,6 +6,7 @@ namespace Ipedis\Rabbit\Workflow;
 use Ipedis\Rabbit\Channel\ChannelAbstract;
 use Ipedis\Rabbit\Consumer\Handler\MessageHandlerInterface;
 use Ipedis\Rabbit\DTO\Type\StatusType;
+use Ipedis\Rabbit\DTO\Type\TimerType;
 use Ipedis\Rabbit\Exception\Task\InvalidStatusException;
 use Ipedis\Rabbit\MessagePayload\OrderMessagePayload;
 use Ipedis\Rabbit\MessagePayload\ReplyMessagePayload;
@@ -205,18 +206,29 @@ final class Task extends Bindable
 
     public function getStatusType()
     {
-        if ($this->isPlanified()) {
-            return StatusType::buildPending();
+        switch ($this->getStatus()) {
+            case MessageHandlerInterface::TYPE_PLANIFIED:
+                return StatusType::buildPending();
+            case MessageHandlerInterface::TYPE_SUCCESS:
+                return StatusType::buildSuccess();
+            case MessageHandlerInterface::TYPE_ERROR:
+                return StatusType::buildFailed();
+            case MessageHandlerInterface::TYPE_PROGRESS:
+            case MessageHandlerInterface::TYPE_DISPATCHED:
+                return StatusType::buildRunning();
         }
-        if ($this->isSuccess()) {
-            return StatusType::buildSuccess();
-        }
+    }
 
-        if ($this->isOnFailure()) {
-            return StatusType::buildFailed();
-        }
-
-        return StatusType::buildRunning();
+    /**
+     * @return TimerType
+     */
+    public function getTimer()
+    {
+        return TimerType::build(
+            $this->getExecutionTime(),
+            $this->getStartTime(),
+            $this->getFinishedTime()
+        );
     }
 
     /**

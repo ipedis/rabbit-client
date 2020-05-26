@@ -2,9 +2,13 @@
 
 namespace Ipedis\Rabbit\Workflow\ProgressBag;
 
+use Ipedis\Rabbit\Channel\ChannelAbstract;
 use Ipedis\Rabbit\DTO\Type\ProgressType;
 use Ipedis\Rabbit\DTO\Type\StatusType;
 use Ipedis\Rabbit\DTO\Type\SummaryType;
+use Ipedis\Rabbit\DTO\Type\Task\TasksType;
+use Ipedis\Rabbit\DTO\Type\TaskType;
+use Ipedis\Rabbit\DTO\Type\TimerType;
 use Ipedis\Rabbit\DTO\Type\Workflow\WorkflowType;
 use Ipedis\Rabbit\Workflow\Group;
 use Ipedis\Rabbit\Workflow\Task;
@@ -304,15 +308,15 @@ class WorkflowProgressBag implements ProgressBagInterface
      */
     public function getStatus(): StatusType
     {
-        if ($this->hasFailure()) {
-            return StatusType::buildFailed();
-        }
-        else if ($this->isCompleted()) {
-            return StatusType::buildSuccess();
-        } elseif ($this->isRunning()) {
-            return StatusType::buildRunning();
-        } else {
-            return StatusType::buildPending();
+        switch ($this) {
+            case $this->hasFailure():
+                return StatusType::buildFailed();
+            case $this->isCompleted():
+                return StatusType::buildSuccess();
+            case $this->isRunning():
+                return StatusType::buildRunning();
+            default:
+                return StatusType::buildPending();
         }
     }
 
@@ -533,28 +537,44 @@ class WorkflowProgressBag implements ProgressBagInterface
      */
     private function updateDetailsByType(array $summary, Task $task): array
     {
-        $summary[$task->getType()]['total'] = $summary[$task->getType()]['total'] + 1;
+        $summary[$task->getType()]['total'] ++;
         $summary[$task->getType()]['uuids'][] = $task->getOrderMessage()->getOrderId();
-
-        if ($task->isOnFailure()) {
-            $summary[$task->getType()]['failed'] = $summary[$task->getType()]['failed'] + 1;
-        }
-
-        if ($task->isSuccess()) {
-            $summary[$task->getType()]['successful'] = $summary[$task->getType()]['successful'] + 1;
-        }
-
-        if ($task->isDispatched()) {
-            $summary[$task->getType()]['dispatched'] = $summary[$task->getType()]['dispatched'] + 1;
-        }
-
-        if ($task->isCompleted()) {
-            $summary[$task->getType()]['completed'] = $summary[$task->getType()]['completed'] + 1;
-        }
-
-        if ($task->isPlanified()) {
-            $summary[$task->getType()]['pending'] = $summary[$task->getType()]['pending'] + 1;
+        switch ($task) {
+            case $task->isOnFailure():
+                $summary[$task->getType()]['failed'] ++;
+                $summary[$task->getType()]['completed'] ++;
+                break;
+            case $task->isSuccess():
+                $summary[$task->getType()]['successful'] ++;
+                $summary[$task->getType()]['completed'] ++;
+                break;
+            case $task->isDispatched():
+                $summary[$task->getType()]['dispatched'] ++;
+                break;
+            case $task->isCompleted():
+                $summary[$task->getType()]['completed'] ++;
+                break;
+            case $task->isPlanified():
+                $summary[$task->getType()]['pending'] ++;
+                break;
         }
         return $summary;
+    }
+
+    public function getTasks(): TasksType
+    {
+        $tasks = [];
+        foreach ($this->groups as $group) {
+            foreach ($group->getTasks() as $task) {
+                $tasks[] = TaskType::build(
+                    $task->getOrderMessage()->getOrderId(),
+                    $task->getType(),
+                    $task->getStatusType(),
+                    $task->getTimer()
+                );
+            }
+        }
+
+        return new TasksType($tasks);
     }
 }

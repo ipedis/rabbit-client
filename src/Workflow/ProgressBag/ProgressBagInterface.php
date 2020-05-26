@@ -5,7 +5,7 @@ namespace Ipedis\Rabbit\Workflow\ProgressBag;
 
 use Ipedis\Rabbit\DTO\Type\ProgressType;
 use Ipedis\Rabbit\DTO\Type\StatusType;
-use Ipedis\Rabbit\DTO\Type\SummaryType;
+use Ipedis\Rabbit\DTO\Type\Task\TasksType;
 
 interface ProgressBagInterface
 {
@@ -52,4 +52,9 @@ interface ProgressBagInterface
      * @return array
      */
     public function getSummary(): array;
+
+    /**
+     * @return TasksType
+     */
+    public function getTasks(): TasksType;
 }
