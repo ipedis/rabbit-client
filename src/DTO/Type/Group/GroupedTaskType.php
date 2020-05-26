@@ -67,7 +67,7 @@ class GroupedTaskType implements \JsonSerializable
     public function jsonSerialize()
     {
         return [
-            'status' => $this->getStatus(),
+            'state' => $this->getStatus(),
             'summary' => $this->getSummary(),
             'type' => $this->getType(),
             'contain' => $this->getUuids()
