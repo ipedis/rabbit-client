@@ -46,11 +46,11 @@ class ProgressManager extends ConnectorAbstract
         });
 
         $workflow->bind(BindableEventInterface::WORKFLOW_ON_TASKS_FINISH, function () use ($workflow) {
+
             /**
-             * You can print the actual % like this.
-             * print_r($workflow->getProgressBag()->getPercentageProgression()."% \n\n");
+             * echo completed task : $workflow->getProgressBag()->getPercentage()->getCompleted() . '%'
              */
-            var_dump(json_encode($workflow->getProgressBag()->getSummary()));
+            echo json_encode($workflow->getProgressBag()->getSummary(), JSON_PRETTY_PRINT);
         });
 
         $this->run($workflow);

@@ -4,6 +4,8 @@
 namespace Ipedis\Rabbit\DTO\Type;
 
 
+use Ipedis\Rabbit\Exception\Timer\InvalidTimespentException;
+
 class TimerType implements \JsonSerializable
 {
     /**
@@ -23,6 +25,8 @@ class TimerType implements \JsonSerializable
 
     private function __construct(float $spent, ?\DateTime $startedAt = null, ?\DateTime $finishedAt = null)
     {
+        $this->assertSpentTime($spent);
+        $this->assertTime($startedAt, $finishedAt);
         $this->spent = $spent;
         $this->startedAt = $startedAt;
         $this->finishedAt = $finishedAt;
@@ -67,5 +71,21 @@ class TimerType implements \JsonSerializable
             'startedAt'     => (!is_null($this->getStartedAt())) ? $this->getStartedAt()->getTimestamp() : null,
             'finishedAt'    => (!is_null($this->getFinishedAt())) ? $this->getFinishedAt()->getTimestamp() : null,
         ];
+    }
+
+    private function assertTime(?\DateTime $startedAt = null, ?\DateTime $finishedAt = null)
+    {
+        if ($startedAt !== null && $finishedAt !== null) {
+            if ($startedAt->getTimestamp() > $finishedAt->getTimestamp()) {
+                throw new InvalidTimespentException('[TIMER] Start time should be before finish time');
+            }
+        }
+    }
+
+    private function assertSpentTime(float $spent)
+    {
+        if ($spent < 0) {
+            throw new InvalidTimespentException("{$spent} is not a valid time spent");
+        }
     }
 }

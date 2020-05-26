@@ -337,9 +337,9 @@ class GroupProgressBag implements ProgressBagInterface
     public function getPercentage(): ProgressType
     {
         return ProgressType::build(
-            $this->countCompletedOrders(),
-            $this->countSuccessfulOrders(),
-            $this->countFailedOrders()
+            (100 * $this->countCompletedOrders())/ $this->countOrdersInGroup(),
+            (100 * $this->countSuccessfulOrders())/ $this->countOrdersInGroup(),
+            (100 * $this->countFailedOrders())/ $this->countOrdersInGroup()
         );
     }
 
@@ -375,53 +375,88 @@ class GroupProgressBag implements ProgressBagInterface
         );
     }
 
+    /**
+     * Create an array of task grouped by type
+     * @return SummaryType[]
+     */
     public function getGroupedTasksSummary()
     {
         $summary = [];
         foreach ($this->tasks as $task) {
+            /*
+             * initialize count of task of this type
+             */
             if (!isset($summary[$task->getType()])) {
-                $summary[$task->getType()] = [
-                    'total' => 0,
-                    'pending' => 0,
-                    'dispatched' => 0,
-                    'completed' => 0,
-                    'successful' => 0,
-                    'failed' => 0
-                ];
+                $summary = $this->initializeDetailsByType($summary, $task);
             }
-
-            $summary[$task->getType()]['total'] = $summary[$task->getType()]['total'] + 1;
-            $summary[$task->getType()]['uuids'][] = $task->getOrderMessage()->getOrderId();
-
-            if ($task->isOnFailure()) {
-                $summary[$task->getType()]['failed'] = $summary[$task->getType()]['failed'] + 1;
-            }
-
-            if ($task->isSuccess()) {
-                $summary[$task->getType()]['successful'] = $summary[$task->getType()]['successful'] + 1;
-            }
-
-            if ($task->isDispatched()) {
-                $summary[$task->getType()]['dispatched'] = $summary[$task->getType()]['dispatched'] + 1;
-            }
-
-            if ($task->isCompleted()) {
-                $summary[$task->getType()]['completed'] = $summary[$task->getType()]['completed'] + 1;
-            }
-
-            if ($task->isPlanified()) {
-                $summary[$task->getType()]['pending'] = $summary[$task->getType()]['pending'] + 1;
-            }
+            /*
+             * Update counts by type
+             */
+            $summary = $this->updateDetailsByType($summary, $task);
         }
-        $data = [];
-        foreach ($summary as $type => $detail) {
-            $data[$type] = [
-                'type' => $type,
-                'summary' => SummaryType::build($detail['total'], $detail['pending'], $detail['dispatched'], $detail['completed'], $detail['successful'], $detail['failed']),
-                'contain' => $detail['uuids']
+
+        return array_map(function ($type, $detail) {
+            return [
+                $type => [
+                    'type' => $type,
+                    'summary' => SummaryType::build(
+                        $detail['total'],
+                        $detail['pending'],
+                        $detail['dispatched'],
+                        $detail['completed'],
+                        $detail['successful'],
+                        $detail['failed']
+                    ),
+                    'contain' => $detail['uuids']
+                ]
             ];
-        }
+        },array_keys($summary), $summary);
+    }
 
-        return $data;
+    /**
+     * @param array $summary
+     * @param Task $task
+     * @return array
+     */
+    private function initializeDetailsByType(array $summary, Task $task): array
+    {
+        if (isset($summary[$task->getType()])) {
+            return $summary;
+        }
+        $summary[$task->getType()] = [
+            'total' => 0,
+            'pending' => 0,
+            'dispatched' => 0,
+            'completed' => 0,
+            'successful' => 0,
+            'failed' => 0
+        ];
+
+        return $summary;
+    }
+
+    /**
+     * Append associated array key by 1
+     * @param array $summary
+     * @param Task $task
+     * @return array
+     */
+    private function updateDetailsByType(array $summary, Task $task): array
+    {
+        $summary[$task->getType()]['total'] = $summary[$task->getType()]['total'] + 1;
+        $summary[$task->getType()]['uuids'][] = $task->getOrderMessage()->getOrderId();
+
+        if ($task->isOnFailure()) {
+            $summary[$task->getType()]['failed'] = $summary[$task->getType()]['failed'] + 1;
+        } else if ($task->isSuccess()) {
+            $summary[$task->getType()]['successful'] = $summary[$task->getType()]['successful'] + 1;
+        } else if ($task->isDispatched()) {
+            $summary[$task->getType()]['dispatched'] = $summary[$task->getType()]['dispatched'] + 1;
+        } else if ($task->isCompleted()) {
+            $summary[$task->getType()]['completed'] = $summary[$task->getType()]['completed'] + 1;
+        } else if ($task->isPlanified()) {
+            $summary[$task->getType()]['pending'] = $summary[$task->getType()]['pending'] + 1;
+        }
+        return $summary;
     }
 }

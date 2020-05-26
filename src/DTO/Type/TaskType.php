@@ -4,6 +4,8 @@
 namespace Ipedis\Rabbit\DTO\Type;
 
 
+use Ipedis\Rabbit\Exception\InvalidUuidException;
+
 class TaskType implements \JsonSerializable
 {
     private $uuid;
@@ -13,6 +15,7 @@ class TaskType implements \JsonSerializable
 
     private function __construct(string $uuid, string $type, StatusType $status, TimerType $timer)
     {
+        $this->assertUuid($uuid);
         $this->uuid = $uuid;
         $this->type = $type;
         $this->status = $status;
@@ -67,5 +70,16 @@ class TaskType implements \JsonSerializable
             'status' => $this->getStatus(),
             'timer' => $this->getTimer()
         ];
+    }
+
+    /**
+     * @param string $uuid
+     * @throws InvalidUuidException
+     */
+    private function assertUuid(string $uuid): void
+    {
+        if (!uuid_is_valid($uuid)) {
+            throw new InvalidUuidException("{$uuid} is not a valid uuid");
+        }
     }
 }

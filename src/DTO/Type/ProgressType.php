@@ -4,6 +4,8 @@
 namespace Ipedis\Rabbit\DTO\Type;
 
 
+use Ipedis\Rabbit\Exception\Progress\InvalidProgressValueException;
+
 class ProgressType implements \JsonSerializable
 {
     /**
@@ -23,6 +25,7 @@ class ProgressType implements \JsonSerializable
 
     private function __construct(float $completed, float $success, float $failed)
     {
+        $this->assertProgress($completed, $success, $failed);
         $this->completed = $completed;
         $this->success = $success;
         $this->failed = $failed;
@@ -64,5 +67,18 @@ class ProgressType implements \JsonSerializable
             'success' => $this->getSuccess(),
             'failed' => $this->getFailed()
         ];
+    }
+
+    /**
+     * @param float $completed
+     * @param float $success
+     * @param float $failed
+     * @throws InvalidProgressValueException
+     */
+    private function assertProgress(float $completed, float $success, float $failed): void
+    {
+        if ($completed > 100 || $success > 100 || $failed > 100) {
+            throw new InvalidProgressValueException('[PROGRESS] Invalid progress value');
+        }
     }
 }

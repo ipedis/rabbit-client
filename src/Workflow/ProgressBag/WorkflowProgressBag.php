@@ -2,14 +2,9 @@
 
 namespace Ipedis\Rabbit\Workflow\ProgressBag;
 
-
-use Ipedis\Rabbit\DTO\Type\Group\GroupedTaskType;
-use Ipedis\Rabbit\DTO\Type\Group\GroupType;
 use Ipedis\Rabbit\DTO\Type\ProgressType;
 use Ipedis\Rabbit\DTO\Type\StatusType;
 use Ipedis\Rabbit\DTO\Type\SummaryType;
-use Ipedis\Rabbit\DTO\Type\TaskType;
-use Ipedis\Rabbit\DTO\Type\TimerType;
 use Ipedis\Rabbit\DTO\Type\Workflow\WorkflowType;
 use Ipedis\Rabbit\Workflow\Group;
 use Ipedis\Rabbit\Workflow\Task;
@@ -312,7 +307,7 @@ class WorkflowProgressBag implements ProgressBagInterface
         if ($this->hasFailure()) {
             return StatusType::buildFailed();
         }
-        if ($this->isCompleted()) {
+        else if ($this->isCompleted()) {
             return StatusType::buildSuccess();
         } elseif ($this->isRunning()) {
             return StatusType::buildRunning();
@@ -431,9 +426,9 @@ class WorkflowProgressBag implements ProgressBagInterface
     public function getPercentage(): ProgressType
     {
         return ProgressType::build(
-            $this->countTotalCompletedOrders(),
-            $this->countTotalSuccessfulOrders(),
-            $this->countTotalFailedOrders()
+            (100 * $this->countTotalCompletedOrders())/ $this->countTotalOrders(),
+            (100 * $this->countTotalSuccessfulOrders())/ $this->countTotalOrders(),
+            (100 * $this->countTotalFailedOrders())/ $this->countTotalOrders()
         );
     }
 
@@ -477,49 +472,89 @@ class WorkflowProgressBag implements ProgressBagInterface
         foreach ($this->groups as $group) {
             foreach ($group->getTasks() as $task) {
                 if (!isset($summary[$task->getType()])) {
-                    $summary[$task->getType()] = [
-                        'total' => 0,
-                        'pending' => 0,
-                        'dispatched' => 0,
-                        'completed' => 0,
-                        'successful' => 0,
-                        'failed' => 0
-                    ];
+                    /*
+                     * Initialize counts for current task type
+                     */
+                    $summary = $this->initializeDetailsByType($summary, $task);
                 }
-
-                $summary[$task->getType()]['total'] = $summary[$task->getType()]['total'] + 1;
-                $summary[$task->getType()]['uuids'][] = $task->getOrderMessage()->getOrderId();
-
-                if ($task->isOnFailure()) {
-                    $summary[$task->getType()]['failed'] = $summary[$task->getType()]['failed'] + 1;
-                }
-
-                if ($task->isSuccess()) {
-                    $summary[$task->getType()]['successful'] = $summary[$task->getType()]['successful'] + 1;
-                }
-
-                if ($task->isDispatched()) {
-                    $summary[$task->getType()]['dispatched'] = $summary[$task->getType()]['dispatched'] + 1;
-                }
-
-                if ($task->isCompleted()) {
-                    $summary[$task->getType()]['completed'] = $summary[$task->getType()]['completed'] + 1;
-                }
-
-                if ($task->isPlanified()) {
-                    $summary[$task->getType()]['pending'] = $summary[$task->getType()]['pending'] + 1;
-                }
+                /*
+                 * Update counts for current task type
+                 */
+                $summary = $this->updateDetailsByType($summary, $task);
             }
         }
-        $data = [];
-        foreach ($summary as $type => $detail) {
-            $data[$type] = [
-                'type' => $type,
-                'summary' => SummaryType::build($detail['total'], $detail['pending'], $detail['dispatched'], $detail['completed'], $detail['successful'], $detail['failed']),
-                'contain' => $detail['uuids']
+
+        return array_map(function ($type, $detail) {
+            return [
+                $type => [
+                    'type' => $type,
+                    'summary' => SummaryType::build(
+                        $detail['total'],
+                        $detail['pending'],
+                        $detail['dispatched'],
+                        $detail['completed'],
+                        $detail['successful'],
+                        $detail['failed']
+                    ),
+                    'contain' => $detail['uuids']
+                ]
             ];
+        }, array_keys($summary),$summary);
+
+    }
+
+    /**
+     * @param array $summary
+     * @param Task $task
+     * @return array
+     */
+    private function initializeDetailsByType(array $summary, Task $task): array
+    {
+        if (isset($summary[$task->getType()])) {
+            return $summary;
+        }
+        $summary[$task->getType()] = [
+            'total' => 0,
+            'pending' => 0,
+            'dispatched' => 0,
+            'completed' => 0,
+            'successful' => 0,
+            'failed' => 0
+        ];
+
+        return $summary;
+    }
+
+    /**
+     * Append associated array key by 1
+     * @param array $summary
+     * @param Task $task
+     * @return array
+     */
+    private function updateDetailsByType(array $summary, Task $task): array
+    {
+        $summary[$task->getType()]['total'] = $summary[$task->getType()]['total'] + 1;
+        $summary[$task->getType()]['uuids'][] = $task->getOrderMessage()->getOrderId();
+
+        if ($task->isOnFailure()) {
+            $summary[$task->getType()]['failed'] = $summary[$task->getType()]['failed'] + 1;
         }
 
-        return $data;
+        if ($task->isSuccess()) {
+            $summary[$task->getType()]['successful'] = $summary[$task->getType()]['successful'] + 1;
+        }
+
+        if ($task->isDispatched()) {
+            $summary[$task->getType()]['dispatched'] = $summary[$task->getType()]['dispatched'] + 1;
+        }
+
+        if ($task->isCompleted()) {
+            $summary[$task->getType()]['completed'] = $summary[$task->getType()]['completed'] + 1;
+        }
+
+        if ($task->isPlanified()) {
+            $summary[$task->getType()]['pending'] = $summary[$task->getType()]['pending'] + 1;
+        }
+        return $summary;
     }
 }

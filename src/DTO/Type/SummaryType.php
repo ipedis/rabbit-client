@@ -4,6 +4,8 @@
 namespace Ipedis\Rabbit\DTO\Type;
 
 
+use Ipedis\Rabbit\Exception\Progress\InvalidProgressValueException;
+
 class SummaryType implements \JsonSerializable
 {
     /**
@@ -45,6 +47,7 @@ class SummaryType implements \JsonSerializable
         int $failed
     )
     {
+        $this->assertCounts($total, $inPending, $dispatched, $completed, $successful, $failed);
         $this->total = $total;
         $this->inPending = $inPending;
         $this->dispatched = $dispatched;
@@ -125,5 +128,21 @@ class SummaryType implements \JsonSerializable
             'successful' => $this->getSuccessful(),
             'failed' => $this->getFailed()
         ];
+    }
+
+    /**
+     * @param int $total
+     * @param int $inPending
+     * @param int $dispatched
+     * @param int $completed
+     * @param int $successful
+     * @param int $failed
+     * @throws InvalidProgressValueException
+     */
+    private function assertCounts(int $total, int $inPending, int $dispatched, int $completed, int $successful, int $failed): void
+    {
+        if ($total < 0 || $inPending < 0 || $dispatched < 0 || $completed < 0 || $successful < 0 || $failed < 0) {
+            throw new InvalidProgressValueException('[SUMMARY] count should not be less than 0');
+        }
     }
 }

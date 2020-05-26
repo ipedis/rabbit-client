@@ -3,6 +3,7 @@
 namespace Ipedis\Rabbit\Workflow;
 
 
+use Ipedis\Rabbit\Channel\ChannelAbstract;
 use Ipedis\Rabbit\Consumer\Handler\MessageHandlerInterface;
 use Ipedis\Rabbit\DTO\Type\StatusType;
 use Ipedis\Rabbit\Exception\Task\InvalidStatusException;
@@ -219,11 +220,11 @@ final class Task extends Bindable
     }
 
     /**
-     * @return false|string
+     * @return string
      */
     public function getType()
     {
-        return substr($this->getOrderMessage()->getChannel(), 3);
+        return ChannelAbstract::getTypeFromString($this->getOrderMessage()->getChannel());
     }
 
     /**

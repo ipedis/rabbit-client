@@ -8,6 +8,9 @@ use Ipedis\Rabbit\DTO\Type\ProgressType;
 use Ipedis\Rabbit\DTO\Type\StatusType;
 use Ipedis\Rabbit\DTO\Type\TaskType;
 use Ipedis\Rabbit\DTO\Type\TimerType;
+use Ipedis\Rabbit\Exception\InvalidUuidException;
+use Ipedis\Rabbit\Exception\Task\NotTaskException;
+use Ipedis\Rabbit\Workflow\Task;
 
 class GroupType implements \JsonSerializable
 {
@@ -43,6 +46,8 @@ class GroupType implements \JsonSerializable
      * @param TimerType $timer
      * @param ProgressType $percentage
      * @param TaskType[] $tasks
+     * @throws InvalidUuidException
+     * @throws NotTaskException
      */
     private function __construct(
         string $uuid,
@@ -51,6 +56,8 @@ class GroupType implements \JsonSerializable
         ProgressType $percentage,
         array $tasks
     ) {
+        $this->assertUuid($uuid);
+        $this->assertTasks($tasks);
         $this->uuid = $uuid;
         $this->status = $status;
         $this->timer = $timer;
@@ -119,5 +126,29 @@ class GroupType implements \JsonSerializable
             'percentage' => $this->getPercentage(),
             'tasks' => $this->getTasks()
         ];
+    }
+
+    /**
+     * @param string $uuid
+     * @throws InvalidUuidException
+     */
+    private function assertUuid(string $uuid): void
+    {
+        if (!uuid_is_valid($uuid)) {
+            throw new InvalidUuidException("{$uuid} is not a valid uuid");
+        }
+    }
+
+    /**
+     * @param array $tasks
+     * @throws NotTaskException
+     */
+    private function assertTasks(array $tasks): void
+    {
+        foreach ($tasks as $task) {
+            if (!$task instanceof TaskType) {
+                throw new NotTaskException('Object of type Task expected');
+            }
+        }
     }
 }

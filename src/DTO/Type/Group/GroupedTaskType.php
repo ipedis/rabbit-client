@@ -6,6 +6,7 @@ namespace Ipedis\Rabbit\DTO\Type\Group;
 
 use Ipedis\Rabbit\DTO\Type\StatusType;
 use Ipedis\Rabbit\DTO\Type\SummaryType;
+use Ipedis\Rabbit\Exception\InvalidUuidException;
 
 class GroupedTaskType implements \JsonSerializable
 {
@@ -20,9 +21,11 @@ class GroupedTaskType implements \JsonSerializable
      * @param SummaryType $summary
      * @param string $type
      * @param string[] $uuids
+     * @throws InvalidUuidException
      */
     private function __construct(StatusType $status, SummaryType $summary, string $type, array $uuids)
     {
+        $this->assertUuids($uuids);
         $this->status = $status;
         $this->summary = $summary;
         $this->type = $type;
@@ -72,5 +75,18 @@ class GroupedTaskType implements \JsonSerializable
             'type' => $this->getType(),
             'contain' => $this->getUuids()
         ];
+    }
+
+    /**
+     * @param array $uuids
+     * @throws InvalidUuidException
+     */
+    private function assertUuids(array $uuids): void
+    {
+        foreach ($uuids as $uuid) {
+            if (!uuid_is_valid($uuid)) {
+                throw new InvalidUuidException("{$uuid} is not a valid uuid");
+            }
+        }
     }
 }

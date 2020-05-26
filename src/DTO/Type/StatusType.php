@@ -19,10 +19,7 @@ class StatusType implements \JsonSerializable
 
     private function __construct(string $status)
     {
-        if (!in_array($status, self::AVAILABLES_STATUS)) {
-            throw new \Exception("{$status} is not a valid status");
-        }
-
+        $this->assertStatus($status);
         $this->status = $status;
     }
 
@@ -79,5 +76,16 @@ class StatusType implements \JsonSerializable
         return [
             'status' => $this->getStatus()
         ];
+    }
+
+    /**
+     * @param string $status
+     * @throws \Exception
+     */
+    private function assertStatus(string $status): void
+    {
+        if (!in_array($status, self::AVAILABLES_STATUS)) {
+            throw new \Exception("{$status} is not a valid status");
+        }
     }
 }

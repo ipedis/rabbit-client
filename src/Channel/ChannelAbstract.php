@@ -48,6 +48,25 @@ abstract class ChannelAbstract
     }
 
     /**
+     * @param string $channel
+     * @return mixed
+     * @throws ChannelNamingException
+     */
+    private static function assertChannel(string $channel)
+    {
+        preg_match(self::CHANNEL_PATTERN, $channel, $catched);
+        if (
+            empty($catched['protocol']) ||
+            empty($catched['service']) ||
+            empty($catched['aggregate']) ||
+            empty($catched['action'])
+        ) {
+            throw new ChannelNamingException('Channel can\'t be parsed.');
+        }
+        return $catched;
+    }
+
+    /**
      * @return string
      */
     public function getProtocol(): string
@@ -91,15 +110,7 @@ abstract class ChannelAbstract
      */
     public static function fromString(string $channel): self
     {
-        preg_match(self::CHANNEL_PATTERN, $channel, $catched);
-        if(
-            empty($catched['protocol']) ||
-            empty($catched['service']) ||
-            empty($catched['aggregate']) ||
-            empty($catched['action'])
-        ) {
-            throw new ChannelNamingException('Channel can\'t be parsed.');
-        }
+        $catched = self::assertChannel($channel);
 
         return new static(
             $catched['protocol'],
@@ -107,6 +118,13 @@ abstract class ChannelAbstract
             $catched['aggregate'],
             $catched['action']
         );
+    }
+
+    public static function getTypeFromString(string $channel) : string
+    {
+        $channelDetails = self::assertChannel($channel);
+
+        return sprintf('%s.%s.%s', $channelDetails['service'], $channelDetails['aggregate'], $channelDetails['action']);
     }
 
     /**
