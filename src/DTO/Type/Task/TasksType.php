@@ -10,14 +10,26 @@ use Ipedis\Rabbit\DTO\Type\StatusType;
 use Ipedis\Rabbit\DTO\Type\TaskType;
 use Ipedis\Rabbit\DTO\Type\TimerType;
 
-class TasksType
+class TasksType implements \JsonSerializable
 {
+    /**
+     * @var TaskType[]
+     */
     private $tasks;
 
-    /** @var TaskType[] $tasks*/
-    public function __construct(array $tasks)
+    /**
+     * @var ProgressType
+     */
+    private $percentage;
+
+    /**
+     * @param ProgressType $percentage
+     * @var TaskType[] $tasks
+     */
+    public function __construct(array $tasks, ProgressType $percentage)
     {
         $this->assertParams($tasks);
+        $this->percentage = $percentage;
         $this->tasks = $tasks;
     }
 
@@ -26,19 +38,12 @@ class TasksType
      */
     public function getSuccessfullTasks(): array
     {
-        $tasks = [];
-        foreach ($this->tasks as $task) {
-            if ($task->isSuccess()) {
-                $tasks[] = TaskType::build(
-                    $task->getOrderMessage()->getOrderId(),
-                    ChannelAbstract::getTypeFromString($task->getOrderMessage()->getChannel()),
-                    StatusType::buildSuccess(),
-                    TimerType::build($task->getExecutionTime(), $task->getStartTime(), $task->getFinishedTime())
-                );
-            }
-        }
-
-        return $tasks;
+        return [
+            'tasks' => array_filter($this->tasks, function (TaskType $task) {
+                return $task->getStatus()->isSuccess();
+            }),
+            'percentage' => $this->getPercentageByStatus(StatusType::STATUS_SUCCESS)
+        ];
     }
 
     /**
@@ -46,20 +51,12 @@ class TasksType
      */
     public function getFailedTasks(): array
     {
-        $tasks = [];
-
-        foreach ($tasks as $task) {
-            if ($task->isOnFailure()) {
-                $tasks[] = TaskType::build(
-                    $task->getOrderMessage()->getOrderId(),
-                    ChannelAbstract::getTypeFromString($task->getOrderMessage()->getChannel()),
-                    StatusType::buildFailed(),
-                    TimerType::build($task->getExecutionTime(), $task->getStartTime(), $task->getFinishedTime())
-                );
-            }
-        }
-
-        return $tasks;
+        return [
+            'tasks' => array_filter($this->tasks, function (TaskType $task) {
+                return $task->getStatus()->isFailed();
+            }),
+            'percentage' => $this->getPercentageByStatus(StatusType::STATUS_FAILED)
+        ];
     }
 
     /**
@@ -67,20 +64,12 @@ class TasksType
      */
     public function getRunningTasks(): array
     {
-        $tasks = [];
-
-        foreach ($tasks as $task) {
-            if ($task->isInProgress()) {
-                $tasks[] = TaskType::build(
-                    $task->getOrderMessage()->getOrderId(),
-                    ChannelAbstract::getTypeFromString($task->getOrderMessage()->getChannel()),
-                    StatusType::buildRunning(),
-                    TimerType::build($task->getExecutionTime(), $task->getStartTime(), $task->getFinishedTime())
-                );
-            }
-        }
-
-        return $tasks;
+        return [
+            'tasks' => array_filter($this->tasks, function (TaskType $task) {
+                return $task->getStatus()->isRunning();
+            }),
+            'percentage' => $this->getPercentageByStatus(StatusType::STATUS_RUNNING)
+        ];
     }
 
     /**
@@ -88,19 +77,47 @@ class TasksType
      */
     public function getPendingTasks(): array
     {
-        $tasks = [];
-        foreach ($this->tasks as $task) {
-            if ($task->isPlanified()) {
-                $tasks[] = TaskType::build(
-                    $task->getOrderMessage()->getOrderId(),
-                    ChannelAbstract::getTypeFromString($task->getOrderMessage()->getChannel()),
-                    StatusType::buildPending(),
-                    TimerType::build($task->getExecutionTime(), $task->getStartTime(), $task->getFinishedTime())
-                );
-            }
-        }
+        return [
+            'tasks' => array_filter($this->tasks, function (TaskType $task) {
+                return $task->getStatus()->isPending();
+            }),
+            'percentage' => $this->getPercentageByStatus(StatusType::STATUS_PENDING)
+        ];
+    }
 
-        return $tasks;
+    /**
+     * Get how many task are in the given status compared to the number of existing tasks
+     * @param string $status
+     * @return float|int
+     */
+    private function getPercentageByStatus(string $status)
+    {
+        $tasks = count($this->tasks);
+        $found = count(array_filter($this->tasks, function (TaskType $taskType) use ($status){
+            return $taskType->getStatus()->getStatus() ===  $status;
+        }));
+
+        return ($found * 100) / $tasks;
+    }
+
+    /**
+     * Finished means completed but can be failed or successful
+     * @return array
+     */
+    public function getFinishedTasks(): array
+    {
+        $tasks = array_merge(
+            array_filter($this->tasks, function (TaskType $task) {
+                return $task->getStatus()->isSuccess();
+            }),
+            array_filter($this->tasks, function (TaskType $task) {
+                return $task->getStatus()->isFailed();
+            })
+        );
+        return  [
+            'tasks' => $tasks,
+            'percentage' => $this->getCompletedTasksPercentage()
+        ];
     }
 
     /**
@@ -108,20 +125,12 @@ class TasksType
      */
     public function getTaskSummaryOnChannel(string $channel): array
     {
-        $tasks = [];
-
-        foreach ($this->tasks as $task) {
-            if ($task->getType() === ChannelAbstract::getTypeFromString($channel)) { //task is for the specified channel
-                $tasks[] = TaskType::build(
-                    $task->getOrderMessage()->getOrderId(),
-                    $task->getType(),
-                    $task->getStatusType(),
-                    $task->getTimer()
-                );
-            }
-        }
+        $tasks = array_filter($this->tasks, function (TaskType $task) use ($channel){
+            return $task->getType() === ChannelAbstract::getTypeFromString($channel) ;
+        });
 
         return [
+            'type' => ChannelAbstract::getTypeFromString($channel),
             'tasks' => $tasks,
             'percentage' => $this->getProgressOnChannel($channel)
         ];
@@ -135,12 +144,12 @@ class TasksType
         $failed = $completed = $success = 0;
         foreach ($this->tasks as $task) {
             if ($task->getType() === ChannelAbstract::getTypeFromString($channel)) { //task is for the specified channel
-                if($task->isCompleted()) {
+                if($task->getStatus()->isSuccess() || $task->getStatus()->isFailed()) {
                     $completed ++;
                 }
-                if($task->isOnFailure()) {
+                if($task->getStatus()->isFailed()) {
                     $failed ++;
-                } else if ($task->isSuccess()) {
+                } else if ($task->getStatus()->isSuccess()) {
                     $success ++;
                 }
             }
@@ -151,6 +160,15 @@ class TasksType
             ($success * 100) / $this->countTotalOrders(),
             ($failed * 100) / $this->countTotalOrders()
         );
+    }
+
+    public function find(string $orderId)
+    {
+        $task = array_filter($this->tasks, function (TaskType $taskType) use ($orderId){
+           return  $taskType->getUuid() === $orderId;
+        });
+
+        return $task[0] ?? [];
     }
 
     private function countTotalOrders()
@@ -165,5 +183,24 @@ class TasksType
                 throw new \InvalidArgumentException('Invalid task type');
             }
         }
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function jsonSerialize()
+    {
+        return [
+            'tasks' => $this->tasks,
+            'percentage' => $this->percentage
+        ];
+    }
+
+    /**
+     * @return float|int
+     */
+    private function getCompletedTasksPercentage()
+    {
+        return $this->getPercentageByStatus(StatusType::STATUS_FAILED) + $this->getPercentageByStatus(StatusType::STATUS_SUCCESS);
     }
 }

@@ -41,7 +41,7 @@ class RetryOnFailureManager extends ConnectorAbstract
         );
 
         $workflow->bind(BindableEventInterface::WORKFLOW_ON_TASKS_FAILURE, function () use ($workflow) {
-            print_r(json_encode($workflow->getProgressBag()->getSummary())."\n\n");
+            print_r(json_encode($workflow->getProgressBag()->getTasks())."\n\n");
         });
 
         $this->run($workflow);

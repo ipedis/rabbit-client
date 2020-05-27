@@ -10,7 +10,6 @@ use Ipedis\Rabbit\DTO\Type\TaskType;
 use Ipedis\Rabbit\DTO\Type\TimerType;
 use Ipedis\Rabbit\Exception\InvalidUuidException;
 use Ipedis\Rabbit\Exception\Task\NotTaskException;
-use Ipedis\Rabbit\Workflow\Task;
 
 class GroupType implements \JsonSerializable
 {

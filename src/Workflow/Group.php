@@ -205,16 +205,34 @@ class Group extends Bindable
      */
     public function getDetail()
     {
-        $progressBag = $this->getProgressBag();
         return GroupType::build(
             $this->getGroupId(),
-            $progressBag->getStatus(),
-            TimerType::build($progressBag->getExecutionTime(), $progressBag->getStartedAt(), $progressBag->getFinishedAt()),
-            $progressBag->getPercentage(),
+            $this->getStatus(),
+            $this->getTimer(),
+            $this->getPercentage(),
             array_map(function (Task $task){
                 $timer = TimerType::build($task->getExecutionTime(), $task->getStartTime(), $task->getFinishedTime());
                 return TaskType::build($this->getGroupId(), $task->getType(),$task->getStatusType(), $timer);
             }, $this->getTasks())
+        );
+    }
+
+    public function getStatus()
+    {
+        return $this->getProgressBag()->getStatus();
+    }
+
+    public function getPercentage()
+    {
+        return $this->getProgressBag()->getPercentage();
+    }
+
+    public function getTimer()
+    {
+        return TimerType::build(
+            $this->getProgressBag()->getExecutionTime(),
+            $this->getProgressBag()->getStartedAt(),
+            $this->getProgressBag()->getFinishedAt()
         );
     }
 

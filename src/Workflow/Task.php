@@ -6,6 +6,7 @@ namespace Ipedis\Rabbit\Workflow;
 use Ipedis\Rabbit\Channel\ChannelAbstract;
 use Ipedis\Rabbit\Consumer\Handler\MessageHandlerInterface;
 use Ipedis\Rabbit\DTO\Type\StatusType;
+use Ipedis\Rabbit\DTO\Type\TaskType;
 use Ipedis\Rabbit\DTO\Type\TimerType;
 use Ipedis\Rabbit\Exception\Task\InvalidStatusException;
 use Ipedis\Rabbit\MessagePayload\OrderMessagePayload;
@@ -274,6 +275,16 @@ final class Task extends Bindable
     public function getRetryCount(): int
     {
         return $this->retryCount;
+    }
+
+    public function getSummary()
+    {
+        return TaskType::build(
+            $this->getOrderMessage()->getOrderId(),
+            $this->getType(),
+            $this->getStatusType(),
+            $this->getTimer()
+        );
     }
 
     /**

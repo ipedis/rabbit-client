@@ -3,6 +3,8 @@
 namespace Ipedis\Rabbit\Workflow\ProgressBag;
 
 use Ipedis\Rabbit\Channel\ChannelAbstract;
+use Ipedis\Rabbit\DTO\Type\Group\GroupsType;
+use Ipedis\Rabbit\DTO\Type\Group\GroupType;
 use Ipedis\Rabbit\DTO\Type\ProgressType;
 use Ipedis\Rabbit\DTO\Type\StatusType;
 use Ipedis\Rabbit\DTO\Type\SummaryType;
@@ -308,16 +310,16 @@ class WorkflowProgressBag implements ProgressBagInterface
      */
     public function getStatus(): StatusType
     {
-        switch ($this) {
-            case $this->hasFailure():
+        if ($this->isCompleted()) {
+            if ($this->hasFailure()) {
                 return StatusType::buildFailed();
-            case $this->isCompleted():
-                return StatusType::buildSuccess();
-            case $this->isRunning():
-                return StatusType::buildRunning();
-            default:
-                return StatusType::buildPending();
+            }
+
+            return StatusType::buildSuccess();
+        } elseif ($this->isRunning()) {
+            return StatusType::buildRunning();
         }
+        return StatusType::buildPending();
     }
 
     /**
@@ -575,6 +577,52 @@ class WorkflowProgressBag implements ProgressBagInterface
             }
         }
 
-        return new TasksType($tasks);
+        return new TasksType($tasks, $this->getPercentage());
+    }
+
+    /**
+     * Get groups details
+     * @return GroupsType
+     */
+    public function getGroupsSummary(): GroupsType
+    {
+        $status = $this->getStatus();
+        $summary = SummaryType::build(
+            $this->countGroupsInWorkflow(),
+            $this->countPendingGroups(),
+            $this->countRunningGroups(),
+            $this->countCompletedGroups(),
+            $this->countSuccessfulGroups(),
+            $this->countFailedGroups()
+        );
+
+        $groups = array_map(function (Group $group) {
+            return GroupType::build(
+                $group->getGroupId(),
+                $group->getStatus(),
+                $group->getTimer(),
+                $group->getPercentage(),
+                array_map(function (Task $task) {
+                    return $task->getSummary();
+                }, $group->getTasks())
+            );
+        }, $this->groups);
+
+        return new GroupsType($status, $summary, $this->getPercentage(),$groups);
+    }
+
+    /**
+     * Get all tasks in the workflow
+     * @return array
+     */
+    public function getOrdersInWorkflow()
+    {
+        $tasks = [];
+
+        foreach ($this->groups as $group) {
+            $tasks = array_merge($tasks, $group->getTasks());
+        }
+
+        return $tasks;
     }
 }

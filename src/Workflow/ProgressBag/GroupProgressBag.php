@@ -221,11 +221,12 @@ class GroupProgressBag implements ProgressBagInterface
             if ($this->hasFailure()) {
                 return StatusType::buildFailed();
             }
+
             return StatusType::buildSuccess();
+        }  elseif($this->isPending()) {
+            return StatusType::buildPending();
         } elseif ($this->isRunning()) {
             return StatusType::buildRunning();
-        } else {
-            return StatusType::buildPending();
         }
     }
 
@@ -479,7 +480,7 @@ class GroupProgressBag implements ProgressBagInterface
                     $task->getStatusType(),
                     $task->getTimer()
                 );
-            }, $this->tasks)
+            }, $this->tasks), $this->getPercentage()
         );
     }
 }
