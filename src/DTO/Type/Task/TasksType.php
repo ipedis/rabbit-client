@@ -34,7 +34,7 @@ class TasksType implements \JsonSerializable
     }
 
     /**
-     * @inheritDoc
+     * Get how many tasks was successfully executed
      */
     public function getSuccessfullTasks(): array
     {
@@ -47,7 +47,7 @@ class TasksType implements \JsonSerializable
     }
 
     /**
-     * @inheritDoc
+     * Get how many tasks was failed
      */
     public function getFailedTasks(): array
     {
@@ -60,7 +60,7 @@ class TasksType implements \JsonSerializable
     }
 
     /**
-     * @inheritDoc
+     * Get how many tasks is actually running
      */
     public function getRunningTasks(): array
     {
@@ -73,7 +73,7 @@ class TasksType implements \JsonSerializable
     }
 
     /**
-     * @inheritDoc
+     * Get how many tasks are in pending
      */
     public function getPendingTasks(): array
     {
@@ -137,7 +137,9 @@ class TasksType implements \JsonSerializable
     }
 
     /**
-     * @inheritDoc
+     * Get the current progress on a specified channel
+     * @param string $channel
+     * @return ProgressType
      */
     public function getProgressOnChannel(string $channel): ProgressType
     {

@@ -8,9 +8,24 @@ use Ipedis\Rabbit\Exception\InvalidUuidException;
 
 class TaskType implements \JsonSerializable
 {
+    /**
+     * @var string
+     */
     private $uuid;
+
+    /**
+     * @var string
+     */
     private $type;
+
+    /**
+     * @var StatusType
+     */
     private $status;
+
+    /**
+     * @var TimerType
+     */
     private $timer;
 
     private function __construct(string $uuid, string $type, StatusType $status, TimerType $timer)
