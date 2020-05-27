@@ -2,7 +2,6 @@
 
 namespace Ipedis\Rabbit\Workflow\ProgressBag;
 
-use Ipedis\Rabbit\Channel\ChannelAbstract;
 use Ipedis\Rabbit\DTO\Type\Group\GroupsType;
 use Ipedis\Rabbit\DTO\Type\Group\GroupType;
 use Ipedis\Rabbit\DTO\Type\ProgressType;
@@ -10,7 +9,6 @@ use Ipedis\Rabbit\DTO\Type\StatusType;
 use Ipedis\Rabbit\DTO\Type\SummaryType;
 use Ipedis\Rabbit\DTO\Type\Task\TasksType;
 use Ipedis\Rabbit\DTO\Type\TaskType;
-use Ipedis\Rabbit\DTO\Type\TimerType;
 use Ipedis\Rabbit\DTO\Type\Workflow\WorkflowType;
 use Ipedis\Rabbit\Workflow\Group;
 use Ipedis\Rabbit\Workflow\Task;
@@ -464,11 +462,11 @@ class WorkflowProgressBag implements ProgressBagInterface
     }
 
     /**
-     * @return array
+     * @return WorkflowType
      */
-    public function getSummary(): array
+    public function getSummary(): WorkflowType
     {
-        return (WorkflowType::buildSummary($this))->jsonSerialize();
+        return (WorkflowType::buildSummary($this));
     }
 
     public function getGroupedTasksSummary()

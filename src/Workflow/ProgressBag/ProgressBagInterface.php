@@ -49,11 +49,6 @@ interface ProgressBagInterface
     public function getPercentage(): ProgressType;
 
     /**
-     * @return array
-     */
-    public function getSummary(): array;
-
-    /**
      * @return TasksType
      */
     public function getTasks(): TasksType;
