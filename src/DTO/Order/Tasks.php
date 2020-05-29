@@ -1,7 +1,7 @@
 <?php
 
 
-namespace Ipedis\Rabbit\DTO\Type\Task;
+namespace Ipedis\Rabbit\DTO\Order;
 
 
 use Ipedis\Rabbit\Channel\ChannelAbstract;
@@ -10,7 +10,7 @@ use Ipedis\Rabbit\DTO\Type\StatusType;
 use Ipedis\Rabbit\DTO\Type\TaskType;
 use Ipedis\Rabbit\DTO\Type\TimerType;
 
-class TasksType implements \JsonSerializable
+class Tasks implements \JsonSerializable
 {
     /**
      * @var TaskType[]
@@ -23,6 +23,11 @@ class TasksType implements \JsonSerializable
     private $percentage;
 
     /**
+     * @var int
+     */
+    private $countTotalOrders;
+
+    /**
      * @param ProgressType $percentage
      * @var TaskType[] $tasks
      */
@@ -31,6 +36,7 @@ class TasksType implements \JsonSerializable
         $this->assertParams($tasks);
         $this->percentage = $percentage;
         $this->tasks = $tasks;
+        $this->countTotalOrders = count($tasks);
     }
 
     /**
@@ -126,11 +132,11 @@ class TasksType implements \JsonSerializable
     public function getTaskSummaryOnChannel(string $channel): array
     {
         $tasks = array_filter($this->tasks, function (TaskType $task) use ($channel){
-            return $task->getType() === ChannelAbstract::getTypeFromString($channel) ;
+            return $task->getType() === ChannelAbstract::getTypeFromChannelName($channel) ;
         });
 
         return [
-            'type' => ChannelAbstract::getTypeFromString($channel),
+            'type' => ChannelAbstract::getTypeFromChannelName($channel),
             'tasks' => $tasks,
             'percentage' => $this->getProgressOnChannel($channel)
         ];
@@ -145,7 +151,7 @@ class TasksType implements \JsonSerializable
     {
         $failed = $completed = $success = 0;
         foreach ($this->tasks as $task) {
-            if ($task->getType() === ChannelAbstract::getTypeFromString($channel)) { //task is for the specified channel
+            if ($task->getType() === ChannelAbstract::getTypeFromChannelName($channel)) { //task is for the specified channel
                 if($task->getStatus()->isSuccess() || $task->getStatus()->isFailed()) {
                     $completed ++;
                 }
@@ -158,9 +164,9 @@ class TasksType implements \JsonSerializable
         }
 
         return ProgressType::build(
-            ($completed * 100) / $this->countTotalOrders(),
-            ($success * 100) / $this->countTotalOrders(),
-            ($failed * 100) / $this->countTotalOrders()
+            ($completed * 100) / $this->countTotalOrders,
+            ($success * 100) / $this->countTotalOrders,
+            ($failed * 100) / $this->countTotalOrders
         );
     }
 
@@ -170,12 +176,7 @@ class TasksType implements \JsonSerializable
            return  $taskType->getUuid() === $orderId;
         });
 
-        return $task[0] ?? [];
-    }
-
-    private function countTotalOrders()
-    {
-        return count($this->tasks);
+        return $task[0] ?? null;
     }
 
     private function assertParams(array $tasks)

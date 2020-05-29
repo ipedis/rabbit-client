@@ -2,12 +2,10 @@
 
 namespace Ipedis\Rabbit\Workflow\ProgressBag;
 
-
-use Ipedis\Rabbit\Channel\ChannelAbstract;
+use Ipedis\Rabbit\DTO\Order\Tasks;
 use Ipedis\Rabbit\DTO\Type\ProgressType;
 use Ipedis\Rabbit\DTO\Type\StatusType;
 use Ipedis\Rabbit\DTO\Type\SummaryType;
-use Ipedis\Rabbit\DTO\Type\Task\TasksType;
 use Ipedis\Rabbit\DTO\Type\TaskType;
 use Ipedis\Rabbit\DTO\Type\TimerType;
 use Ipedis\Rabbit\Workflow\Task;
@@ -470,9 +468,9 @@ class GroupProgressBag implements ProgressBagInterface
         return $summary;
     }
 
-    public function getTasks(): TasksType
+    public function getTasks(): Tasks
     {
-        return new TasksType(
+        return new Tasks(
             array_map(function (Task $task) {
                 return TaskType::build(
                     $task->getOrderMessage()->getOrderId(),

@@ -1,14 +1,15 @@
 <?php
 
 
-namespace Ipedis\Rabbit\DTO\Type\Group;
+namespace Ipedis\Rabbit\DTO\Group;
 
 
+use Ipedis\Rabbit\DTO\Type\Group\GroupType;
 use Ipedis\Rabbit\DTO\Type\ProgressType;
 use Ipedis\Rabbit\DTO\Type\StatusType;
 use Ipedis\Rabbit\DTO\Type\SummaryType;
 
-class GroupsType implements \JsonSerializable
+class Groups implements \JsonSerializable
 {
     /**
      * @var StatusType
@@ -145,7 +146,7 @@ class GroupsType implements \JsonSerializable
             return $groupType->getUuid() === $groupId;
         });
 
-        return $group[0] ?? [];
+        return $group[0] ?? null;
     }
 
     /**

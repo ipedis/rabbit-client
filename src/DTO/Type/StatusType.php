@@ -79,6 +79,14 @@ class StatusType implements \JsonSerializable
     }
 
     /**
+     * @return string
+     */
+    public function __toString()
+    {
+        return $this->status;
+    }
+
+    /**
      * @param string $status
      * @throws \Exception
      */

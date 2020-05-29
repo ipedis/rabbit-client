@@ -120,7 +120,7 @@ abstract class ChannelAbstract
         );
     }
 
-    public static function getTypeFromString(string $channel) : string
+    public static function getTypeFromChannelName(string $channel) : string
     {
         $channelDetails = self::assertChannel($channel);
 

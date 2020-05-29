@@ -48,11 +48,11 @@ class ProgressManager extends ConnectorAbstract
         $workflow->bind(BindableEventInterface::WORKFLOW_ON_TASKS_FINISH, function () use ($workflow) {
 
             /**
-             * echo completed task : $workflow->getProgressBag()->getPercentage()->getCompleted() . '%'
+             * echo completed task : $workflow->getProgressPercentage() . '%'
              * get progress on specific channel $workflow->getProgressBag()->getTasks()->getProgressOnChannel('v1.admin.publication.waiter')
              * get finished tasks $workflow->getProgressBag()->getTasks()->getFinishedTasks()
              */
-            echo json_encode($workflow->getProgressBag()->getSummary()->getGroupedTasks(), JSON_PRETTY_PRINT);
+            echo json_encode($workflow->getProgressBag()->getGroupsSummary()->getFinishedGroups(), JSON_PRETTY_PRINT);
         });
 
         $this->run($workflow);

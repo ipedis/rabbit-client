@@ -216,6 +216,15 @@ class Workflow extends Bindable
     }
 
     /**
+     * get current workflow progress percentage
+     * @return float
+     */
+    public function getProgressPercentage(): float
+    {
+        return $this->getProgressBag()->getPercentage()->getCompleted();
+    }
+
+    /**
      * @param $step
      * @throws InvalidWorkflowArgumentException
      */

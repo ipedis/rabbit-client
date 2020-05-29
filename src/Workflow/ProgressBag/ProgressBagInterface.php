@@ -3,9 +3,9 @@
 namespace Ipedis\Rabbit\Workflow\ProgressBag;
 
 
+use Ipedis\Rabbit\DTO\Order\Tasks;
 use Ipedis\Rabbit\DTO\Type\ProgressType;
 use Ipedis\Rabbit\DTO\Type\StatusType;
-use Ipedis\Rabbit\DTO\Type\Task\TasksType;
 
 interface ProgressBagInterface
 {
@@ -49,7 +49,7 @@ interface ProgressBagInterface
     public function getPercentage(): ProgressType;
 
     /**
-     * @return TasksType
+     * @return Tasks
      */
-    public function getTasks(): TasksType;
+    public function getTasks(): Tasks;
 }

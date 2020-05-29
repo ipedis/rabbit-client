@@ -237,7 +237,7 @@ final class Task extends Bindable
      */
     public function getType()
     {
-        return ChannelAbstract::getTypeFromString($this->getOrderMessage()->getChannel());
+        return ChannelAbstract::getTypeFromChannelName($this->getOrderMessage()->getChannel());
     }
 
     /**

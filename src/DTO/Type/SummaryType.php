@@ -144,5 +144,13 @@ class SummaryType implements \JsonSerializable
         if ($total < 0 || $inPending < 0 || $dispatched < 0 || $completed < 0 || $successful < 0 || $failed < 0) {
             throw new InvalidProgressValueException('[SUMMARY] count should not be less than 0');
         }
+
+        if ($total < $inPending || $total < $dispatched || $total < $completed || $total < $successful || $total < $failed) {
+            throw new InvalidProgressValueException('[SUMMARY] Total should be the greatest parameter');
+        }
+
+        if ($completed !== ($successful + $failed)) {
+            throw new InvalidProgressValueException('[SUMMARY] inconsistent value of completed, successful and failed orders');
+        }
     }
 }

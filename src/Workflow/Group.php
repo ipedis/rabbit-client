@@ -4,8 +4,6 @@ namespace Ipedis\Rabbit\Workflow;
 
 
 use Ipedis\Rabbit\DTO\Type\Group\GroupType;
-use Ipedis\Rabbit\DTO\Type\StatusType;
-use Ipedis\Rabbit\DTO\Type\SummaryType;
 use Ipedis\Rabbit\DTO\Type\TaskType;
 use Ipedis\Rabbit\DTO\Type\TimerType;
 use Ipedis\Rabbit\Exception\Group\InvalidGroupArgumentException;

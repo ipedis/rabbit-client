@@ -2,12 +2,13 @@
 
 namespace Ipedis\Rabbit\Workflow\ProgressBag;
 
-use Ipedis\Rabbit\DTO\Type\Group\GroupsType;
+use Ipedis\Rabbit\DTO\Group\Groups;
+use Ipedis\Rabbit\DTO\Type\Group\GroupedTaskType;
 use Ipedis\Rabbit\DTO\Type\Group\GroupType;
 use Ipedis\Rabbit\DTO\Type\ProgressType;
 use Ipedis\Rabbit\DTO\Type\StatusType;
 use Ipedis\Rabbit\DTO\Type\SummaryType;
-use Ipedis\Rabbit\DTO\Type\Task\TasksType;
+use Ipedis\Rabbit\DTO\Order\Tasks;
 use Ipedis\Rabbit\DTO\Type\TaskType;
 use Ipedis\Rabbit\DTO\Type\Workflow\WorkflowType;
 use Ipedis\Rabbit\Workflow\Group;
@@ -489,20 +490,29 @@ class WorkflowProgressBag implements ProgressBagInterface
         }
 
         return array_map(function ($type, $detail) {
-            return [
-                $type => [
-                    'type' => $type,
-                    'summary' => SummaryType::build(
-                        $detail['total'],
-                        $detail['pending'],
-                        $detail['dispatched'],
-                        $detail['completed'],
-                        $detail['successful'],
-                        $detail['failed']
-                    ),
-                    'contain' => $detail['uuids']
-                ]
-            ];
+            if ($detail['failed'] !== 0) {
+                $status = StatusType::buildFailed();
+            } elseif ($detail['completed'] === $detail['successful']) {
+                $status = StatusType::buildSuccess();
+            } elseif ($detail['total'] === $detail['pending']) {
+                $status = StatusType::buildPending();
+            } else {
+                $status = StatusType::buildRunning();
+            }
+
+            return GroupedTaskType::build(
+                $status,
+                SummaryType::build(
+                    $detail['total'],
+                    $detail['pending'],
+                    $detail['dispatched'],
+                    $detail['completed'],
+                    $detail['successful'],
+                    $detail['failed']
+                ),
+                $type,
+                $detail['uuids']
+            );
         }, array_keys($summary),$summary);
 
     }
@@ -561,7 +571,7 @@ class WorkflowProgressBag implements ProgressBagInterface
         return $summary;
     }
 
-    public function getTasks(): TasksType
+    public function getTasks(): Tasks
     {
         $tasks = [];
         foreach ($this->groups as $group) {
@@ -575,14 +585,14 @@ class WorkflowProgressBag implements ProgressBagInterface
             }
         }
 
-        return new TasksType($tasks, $this->getPercentage());
+        return new Tasks($tasks, $this->getPercentage());
     }
 
     /**
      * Get groups details
-     * @return GroupsType
+     * @return Groups
      */
-    public function getGroupsSummary(): GroupsType
+    public function getGroupsSummary(): Groups
     {
         $status = $this->getStatus();
         $summary = SummaryType::build(
@@ -606,7 +616,7 @@ class WorkflowProgressBag implements ProgressBagInterface
             );
         }, $this->groups);
 
-        return new GroupsType($status, $summary, $this->getPercentage(),$groups);
+        return new Groups($status, $summary, $this->getPercentage(),$groups);
     }
 
     /**

@@ -48,6 +48,19 @@ class GroupedTaskType implements \JsonSerializable
     }
 
     /**
+     * @param StatusType $status
+     * @param SummaryType $summary
+     * @param string $type
+     * @param array $uuids
+     * @return GroupedTaskType
+     * @throws InvalidUuidException
+     */
+    public static function build(StatusType $status, SummaryType $summary, string $type, array $uuids)
+    {
+        return new self($status, $summary, $type, $uuids);
+    }
+
+    /**
      * @return StatusType
      */
     public function getStatus(): StatusType
