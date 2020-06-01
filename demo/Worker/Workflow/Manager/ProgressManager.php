@@ -31,31 +31,49 @@ class ProgressManager extends ConnectorAbstract
 
     public function main()
     {
-        $workflow = new Workflow(
-            function (Group $group) {
-                for($i = 0; $i < 2; $i++) {
-                    $group->planifyOrder(OrderMessagePayload::build(OrderChannel::fromString('v1.admin.publication.waiter')));
-                }
-            }
-        );
+        /**
+         * Having group like following
+         * - Group 1
+         * ---- Task 1.1 - success
+         * ---- Task 1.2 - failure
+         * - Group 2
+         * ---- Task 2.1 - success
+         * ---- Task 2.2 - failure
+         */
+        $workflow = new Workflow($this->craftGroup('v1.admin.publication.success'));
+        $workflow->then($this->craftGroup('v1.admin.publication.waiter'));
 
-        $workflow->then(function (Group $group) {
-        for($i = 0; $i < 8; $i++) {
-                $group->planifyOrder(OrderMessagePayload::build(OrderChannel::fromString('v1.admin.publication.waiter')));
-            }
-        });
-
-        $workflow->bind(BindableEventInterface::WORKFLOW_ON_TASKS_FINISH, function () use ($workflow) {
-
-            /**
-             * echo completed task : $workflow->getProgressPercentage() . '%'
-             * get progress on specific channel $workflow->getProgressBag()->getTasks()->getProgressOnChannel('v1.admin.publication.waiter')
-             * get finished tasks $workflow->getProgressBag()->getTasks()->getFinishedTasks()
-             */
-            echo json_encode($workflow->getProgressBag()->getTasks()->getFinishedTasks(), JSON_PRETTY_PRINT);
-        });
-
+        $workflow->bind(BindableEventInterface::WORKFLOW_ON_TASKS_FINISH, $this->json($workflow));
         $this->run($workflow);
+    }
+
+    public function craftGroup(string $channel, $numberOfTasks = 2, bool $shouldFailed = true): Closure
+    {
+        return function (Group $group) use ($channel, $numberOfTasks, $shouldFailed) {
+            for($i = 0; $i < $numberOfTasks; $i++) {
+                $group->planifyOrder(
+                    OrderMessagePayload::build(
+                        OrderChannel::fromString($channel),
+                        ['failure' => $shouldFailed && ($i % 2 === 0)]
+                    )
+                );
+            }
+        };
+    }
+
+    /**
+     * echo completed task : $workflow->getProgressPercentage() . '%'
+     * get progress on specific channel $workflow->getProgressBag()->getTasks()->getProgressOnChannel('v1.admin.publication.waiter')
+     * get finished tasks $workflow->getProgressBag()->getTasks()->getFinishedTasks()
+     * @param Workflow $workflow
+     * @return Closure
+     */
+    public function json(Workflow $workflow): Closure {
+        return function () use ($workflow) {
+            echo "\n\n\n\n";
+            echo json_encode($workflow->getProgressBag()->getSummary()->getGroupedTasks(), JSON_PRETTY_PRINT);
+            echo "\n\n\n\n";
+        };
     }
 
     public function print(WorkflowProgressBag $progressBag)

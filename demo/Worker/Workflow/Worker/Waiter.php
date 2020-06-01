@@ -30,7 +30,7 @@ class Waiter extends ConnectorAbstract implements OnBeforeMessage
                 )
             );
             sleep(rand(0, 1));
-
+            if(!empty($params['failure']) && $params['failure'] === true) throw new Exception('oups');
             return ["step" => "step1 finished"];
         };
     }
@@ -57,6 +57,6 @@ class Waiter extends ConnectorAbstract implements OnBeforeMessage
      */
     public function beforeMessageHandled()
     {
-        printf("WORKER LIFECYCLE HOOK : BEFORE HANDLING MESSAGE..."."\n\n");
+        //printf("WORKER LIFECYCLE HOOK : BEFORE HANDLING MESSAGE..."."\n\n");
     }
 }

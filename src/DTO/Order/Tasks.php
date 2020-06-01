@@ -214,6 +214,22 @@ class Tasks implements \JsonSerializable
     }
 
     /**
+     * @return TaskType[]
+     */
+    public function findAll(): array
+    {
+        return $this->tasks;
+    }
+
+    /**
+     * @return ProgressType
+     */
+    public function getPercentage(): ProgressType
+    {
+        return $this->percentage;
+    }
+
+    /**
      * @return float|int
      */
     private function getCompletedTasksPercentage()

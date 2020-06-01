@@ -4,6 +4,8 @@ namespace Ipedis\Demo\Rabbit\Worker\Workflow\Worker;
 
 
 use AMQPEnvelope;
+use Closure;
+use Exception;
 use Ipedis\Demo\Rabbit\Utils\ConnectorAbstract;
 use Ipedis\Rabbit\Consumer\Handler\MessageHandlerInterface;
 use Ipedis\Rabbit\MessagePayload\OrderMessagePayload;
