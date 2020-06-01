@@ -52,7 +52,7 @@ class ProgressManager extends ConnectorAbstract
              * get progress on specific channel $workflow->getProgressBag()->getTasks()->getProgressOnChannel('v1.admin.publication.waiter')
              * get finished tasks $workflow->getProgressBag()->getTasks()->getFinishedTasks()
              */
-            echo json_encode($workflow->getProgressBag()->getGroupsSummary()->getFinishedGroups(), JSON_PRETTY_PRINT);
+            echo json_encode($workflow->getProgressBag()->getTasks()->getFinishedTasks(), JSON_PRETTY_PRINT);
         });
 
         $this->run($workflow);

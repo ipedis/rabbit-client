@@ -45,9 +45,11 @@ class Tasks implements \JsonSerializable
     public function getSuccessfullTasks(): array
     {
         return [
-            'tasks' => array_filter($this->tasks, function (TaskType $task) {
-                return $task->getStatus()->isSuccess();
-            }),
+            'tasks' => array_values(
+                array_filter($this->tasks, function (TaskType $task) {
+                    return $task->getStatus()->isSuccess();
+                })
+            ),
             'percentage' => $this->getPercentageByStatus(StatusType::STATUS_SUCCESS)
         ];
     }
@@ -58,9 +60,11 @@ class Tasks implements \JsonSerializable
     public function getFailedTasks(): array
     {
         return [
-            'tasks' => array_filter($this->tasks, function (TaskType $task) {
-                return $task->getStatus()->isFailed();
-            }),
+            'tasks' => array_values(
+                array_filter($this->tasks, function (TaskType $task) {
+                    return $task->getStatus()->isFailed();
+                })
+            ),
             'percentage' => $this->getPercentageByStatus(StatusType::STATUS_FAILED)
         ];
     }
@@ -71,9 +75,11 @@ class Tasks implements \JsonSerializable
     public function getRunningTasks(): array
     {
         return [
-            'tasks' => array_filter($this->tasks, function (TaskType $task) {
-                return $task->getStatus()->isRunning();
-            }),
+            'tasks' => array_values(
+                array_filter($this->tasks, function (TaskType $task) {
+                    return $task->getStatus()->isRunning();
+                })
+            ),
             'percentage' => $this->getPercentageByStatus(StatusType::STATUS_RUNNING)
         ];
     }
@@ -84,9 +90,11 @@ class Tasks implements \JsonSerializable
     public function getPendingTasks(): array
     {
         return [
-            'tasks' => array_filter($this->tasks, function (TaskType $task) {
-                return $task->getStatus()->isPending();
-            }),
+            'tasks' => array_values(
+                array_filter($this->tasks, function (TaskType $task) {
+                    return $task->getStatus()->isPending();
+                })
+            ),
             'percentage' => $this->getPercentageByStatus(StatusType::STATUS_PENDING)
         ];
     }
@@ -113,12 +121,14 @@ class Tasks implements \JsonSerializable
     public function getFinishedTasks(): array
     {
         $tasks = array_merge(
-            array_filter($this->tasks, function (TaskType $task) {
-                return $task->getStatus()->isSuccess();
-            }),
-            array_filter($this->tasks, function (TaskType $task) {
+            array_values(
+                array_filter($this->tasks, function (TaskType $task) {
+                    return $task->getStatus()->isSuccess();
+                })
+            ),
+            array_values(array_filter($this->tasks, function (TaskType $task) {
                 return $task->getStatus()->isFailed();
-            })
+            }))
         );
         return  [
             'tasks' => $tasks,
@@ -131,9 +141,11 @@ class Tasks implements \JsonSerializable
      */
     public function getTaskSummaryOnChannel(string $channel): array
     {
-        $tasks = array_filter($this->tasks, function (TaskType $task) use ($channel){
-            return $task->getType() === ChannelAbstract::getTypeFromChannelName($channel) ;
-        });
+        $tasks = array_values(
+            array_filter($this->tasks, function (TaskType $task) use ($channel){
+                return $task->getType() === ChannelAbstract::getTypeFromChannelName($channel) ;
+            })
+        );
 
         return [
             'type' => ChannelAbstract::getTypeFromChannelName($channel),
@@ -172,9 +184,11 @@ class Tasks implements \JsonSerializable
 
     public function find(string $orderId)
     {
-        $task = array_filter($this->tasks, function (TaskType $taskType) use ($orderId){
-           return  $taskType->getUuid() === $orderId;
-        });
+        $task = array_values(
+            array_filter($this->tasks, function (TaskType $taskType) use ($orderId){
+                return  $taskType->getUuid() === $orderId;
+            })
+        );
 
         return $task[0] ?? null;
     }

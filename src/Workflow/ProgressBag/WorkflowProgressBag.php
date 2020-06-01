@@ -14,7 +14,7 @@ use Ipedis\Rabbit\DTO\Type\Workflow\WorkflowType;
 use Ipedis\Rabbit\Workflow\Group;
 use Ipedis\Rabbit\Workflow\Task;
 
-class WorkflowProgressBag implements ProgressBagInterface
+class WorkflowProgressBag implements ProgressBagInterface, \JsonSerializable
 {
     /**
      * @var Group[] $groups
@@ -632,5 +632,10 @@ class WorkflowProgressBag implements ProgressBagInterface
         }
 
         return $tasks;
+    }
+
+    public function jsonSerialize()
+    {
+        return $this->getSummary()->jsonSerialize();
     }
 }

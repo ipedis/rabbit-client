@@ -91,9 +91,11 @@ class Groups implements \JsonSerializable
      */
     public function getSuccessfullGroups()
     {
-        return array_filter($this->details, function (GroupType $groupType) {
-           return $groupType->getStatus()->isSuccess();
-        });
+        return array_values(
+            array_filter($this->details, function (GroupType $groupType) {
+                return $groupType->getStatus()->isSuccess();
+            })
+        );
     }
 
     /**
@@ -102,9 +104,11 @@ class Groups implements \JsonSerializable
      */
     public function getFailedGroups()
     {
-        return array_filter($this->details, function (GroupType $groupType) {
-            return $groupType->getStatus()->isFailed();
-        });
+        return array_values(
+            array_filter($this->details, function (GroupType $groupType) {
+                return $groupType->getStatus()->isFailed();
+            })
+        );
     }
 
     /**
@@ -113,9 +117,11 @@ class Groups implements \JsonSerializable
      */
     public function getInPendingGroups()
     {
-        return array_filter($this->details, function (GroupType $groupType) {
-            return $groupType->getStatus()->isPending();
-        });
+        return array_values(
+            array_filter($this->details, function (GroupType $groupType) {
+                return $groupType->getStatus()->isPending();
+            })
+        );
     }
 
     /**
@@ -123,9 +129,11 @@ class Groups implements \JsonSerializable
      */
     public function getRunningGroups()
     {
-        return array_filter($this->details, function (GroupType $groupType) {
-            return $groupType->getStatus()->isRunning();
-        });
+        return array_values(
+            array_filter($this->details, function (GroupType $groupType) {
+                return $groupType->getStatus()->isRunning();
+            })
+        );
     }
 
     /**
@@ -142,9 +150,11 @@ class Groups implements \JsonSerializable
 
     public function find(string $groupId)
     {
-        $group = array_filter($this->details, function (GroupType $groupType) use ($groupId){
-            return $groupType->getUuid() === $groupId;
-        });
+        $group = array_values(
+            array_filter($this->details, function (GroupType $groupType) use ($groupId){
+                return $groupType->getUuid() === $groupId;
+            })
+        );
 
         return $group[0] ?? null;
     }
