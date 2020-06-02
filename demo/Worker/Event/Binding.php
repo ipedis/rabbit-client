@@ -6,14 +6,41 @@ namespace Ipedis\Demo\Rabbit\Worker\Event;
 use Closure;
 use Exception;
 use Ipedis\Demo\Rabbit\Utils\ConnectorAbstract;
+use Ipedis\Rabbit\Channel\Factory\ChannelFactory;
 use Ipedis\Rabbit\Event\EventListener;
 use Ipedis\Rabbit\Lifecyle\Hook\OnAfterMessage;
 use Ipedis\Rabbit\Lifecyle\Hook\OnBeforeMessage;
 use Ipedis\Rabbit\MessagePayload\EventMessagePayload;
+use Ipedis\Rabbit\MessagePayload\Validator\ValidatorInterface;
 
 class Binding extends ConnectorAbstract implements OnBeforeMessage, OnAfterMessage
 {
     use EventListener;
+
+    /**
+     * @var ChannelFactory $channelFactory
+     */
+    private $channelFactory;
+
+    /**
+     * @var ValidatorInterface $messagePayloadValidator
+     */
+    private $messagePayloadValidator;
+
+    public function __construct(
+        string $host,
+        int $port,
+        string $user,
+        string $password,
+        string $exchange,
+        string $type,
+        ChannelFactory $channelFactory,
+        ValidatorInterface $messagePayloadValidator
+    ) {
+        parent::__construct($host, $port, $user, $password, $exchange, $type);
+        $this->channelFactory = $channelFactory;
+        $this->messagePayloadValidator = $messagePayloadValidator;
+    }
 
     /**
      * Process messages coming from queue
@@ -98,5 +125,21 @@ class Binding extends ConnectorAbstract implements OnBeforeMessage, OnAfterMessa
     public function afterMessageHandled()
     {
         printf("WORKER LIFECYCLE HOOK : AFTER HANDLING MESSAGE..."."\n\n");
+    }
+
+    /**
+     * @return ChannelFactory
+     */
+    public function getChannelFactory(): ChannelFactory
+    {
+        return $this->channelFactory;
+    }
+
+    /**
+     * @return ValidatorInterface
+     */
+    public function getMessagePayloadValidator(): ValidatorInterface
+    {
+        return $this->messagePayloadValidator;
     }
 }

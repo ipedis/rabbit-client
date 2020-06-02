@@ -40,6 +40,7 @@ trait EventDispatcher
      * @throws ChannelFactoryException
      * @throws ChannelNamingException
      * @throws MessagePayloadValidatorException
+     * @throws \HttpSignatures\Exception
      */
     public function dispatch(EventMessagePayload $messagePayload)
     {
@@ -113,6 +114,7 @@ trait EventDispatcher
      * Store event on recovery
      *
      * @param EventMessagePayload $payload
+     * @throws \HttpSignatures\Exception
      */
     private function storeEventOnRecovery(EventMessagePayload $payload)
     {

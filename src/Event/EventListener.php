@@ -7,11 +7,17 @@ use AMQPEnvelope;
 use AMQPQueue;
 use Closure;
 use Exception;
+use Ipedis\Rabbit\Channel\EventChannel;
+use Ipedis\Rabbit\Channel\Factory\ChannelFactory;
 use Ipedis\Rabbit\Connector;
+use Ipedis\Rabbit\Exception\Channel\ChannelFactoryException;
+use Ipedis\Rabbit\Exception\Channel\ChannelNamingException;
 use Ipedis\Rabbit\Exception\MessagePayload\MessagePayloadFormatException;
+use Ipedis\Rabbit\Exception\MessagePayload\MessagePayloadValidatorException;
 use Ipedis\Rabbit\Lifecyle\Hook\OnAfterMessage;
 use Ipedis\Rabbit\Lifecyle\Hook\OnBeforeMessage;
 use Ipedis\Rabbit\MessagePayload\EventMessagePayload;
+use Ipedis\Rabbit\MessagePayload\Validator\ValidatorInterface;
 
 trait EventListener
 {
@@ -35,6 +41,24 @@ trait EventListener
      */
     public function execute()
     {
+        /**
+         * Before stating worker
+         * Check if channel factory is defined
+         * to validate event naming
+         */
+        if (!$this->getChannelFactory() instanceof ChannelFactory) {
+            throw new ChannelFactoryException('Must provide channel factory {channelFactory} with version and service.');
+        }
+
+        /**
+         * Before starting worker
+         * Check if message payload validator is defined
+         * to validate message naming
+         */
+        if (!$this->getMessagePayloadValidator() instanceof ValidatorInterface) {
+            throw new MessagePayloadValidatorException("Must provide message payload validator {messagePayloadValidator}");
+        }
+
         $this->worker_id = uniqid("worker_id_");
         $this->connect();
         $this->declareQueueIfNecessary();
@@ -93,7 +117,23 @@ trait EventListener
         $messagePayload = EventMessagePayload::fromJson($message->getBody());
 
         try {
-            if ($this->isSubscribed($messagePayload->getChannel())) {
+            /**
+             * 1. Validate channel naming and return event name
+             */
+            $eventName = $this->getEventName($messagePayload->getChannel());
+
+            /**
+             * 2. Check if message is to be consumed
+             */
+            if ($this->isSubscribed($eventName)) {
+                /**
+                 * 3. Validate message payload data schema
+                 */
+                $this->getMessagePayloadValidator()->validate($messagePayload);
+
+                /**
+                 * 4. Process the message
+                 */
                 $this->handleReceivedMessage($messagePayload);
             }
         } catch (Exception $exception) {
@@ -166,28 +206,6 @@ trait EventListener
     }
 
     /**
-     * Bind listener to multiple events
-     *
-     * @throws \AMQPChannelException
-     * @throws \AMQPConnectionException
-     */
-    private function resolveRoutingKeys()
-    {
-        $routingKey = $this->getBindingKey();
-
-        // If is string, we cast it to array.
-        if(is_string($routingKey)) $routingKey = [$routingKey];
-
-        if(is_array($routingKey)) {
-            foreach ($routingKey as $key) {
-                if(is_string($key)) {
-                    $this->queue->bind($this->exchange->getName(), $key);
-                }
-            }
-        }
-    }
-
-    /**
      * Define callback to be executed
      * when consuming message from queue
      */
@@ -225,4 +243,56 @@ trait EventListener
      * @param Exception $exception
      */
     protected function logException(\Exception $exception){}
+
+    /**
+     * Validate event naming
+     * Event name is used as routing key when publishing message
+     *
+     * @param $event
+     * @return string
+     * @throws ChannelNamingException
+     */
+    private function getEventName($event): string
+    {
+        if (is_string($event)) {
+            // if it is partial channel name
+            if ($this->getChannelFactory()->matchPartial($event)) {
+                return (string)$this->getChannelFactory()->getEvent($event);
+            }
+
+            // if it is full name, this will throw exception if full name is invalid.
+            $eventObj = EventChannel::fromString($event);
+
+            return (string)$eventObj;
+        }
+        // if it is an instance, get channel full name
+        if ($event instanceof EventChannel) {
+            return (string)$event;
+        }
+
+        // no criteria fulfilled, throw an exception.
+        throw new ChannelNamingException('Invalid channel provided.');
+    }
+
+    /**
+     * Bind listener to multiple events
+     *
+     * @throws \AMQPChannelException
+     * @throws \AMQPConnectionException
+     */
+    private function resolveRoutingKeys()
+    {
+        $routingKey = $this->getBindingKey();
+
+        // If is string, we cast it to array.
+        if(is_string($routingKey)) $routingKey = [$routingKey];
+
+        if(is_array($routingKey)) {
+            foreach ($routingKey as $key) {
+                if(is_string($key)) {
+                    $this->queue->bind($this->exchange->getName(), $key);
+                }
+            }
+        }
+    }
 }

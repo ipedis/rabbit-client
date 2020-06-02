@@ -138,7 +138,9 @@ if ( !empty($argv[1]) ) {
                 $configEvent['use'],
                 $configEvent['password'],
                 $configEvent['exchange'],
-                $configEvent['type']
+                $configEvent['type'],
+                $channelFactory,
+                $messagePayloadValidator
             ))->execute();
             break;
 
