@@ -6,14 +6,16 @@ namespace Ipedis\Demo\Rabbit\Worker\Workflow\Worker;
 use AMQPEnvelope;
 use Closure;
 use Exception;
-use Ipedis\Demo\Rabbit\Utils\ConnectorAbstract;
+use Ipedis\Demo\Rabbit\Utils\WorkerAbstract;
 use Ipedis\Rabbit\Consumer\Handler\MessageHandlerInterface;
+use Ipedis\Rabbit\Exception\MessagePayload\MessagePayloadInvalidSchemaException;
+use Ipedis\Rabbit\Lifecyle\Hook\OnAfterMessage;
 use Ipedis\Rabbit\Lifecyle\Hook\OnBeforeMessage;
 use Ipedis\Rabbit\MessagePayload\OrderMessagePayload;
 use Ipedis\Rabbit\MessagePayload\ReplyMessagePayload;
 use Ipedis\Rabbit\Order\Worker as WorkerTrait;
 
-class Waiter extends ConnectorAbstract implements OnBeforeMessage
+class Waiter extends WorkerAbstract implements OnBeforeMessage, OnAfterMessage
 {
     use WorkerTrait;
 
@@ -37,7 +39,10 @@ class Waiter extends ConnectorAbstract implements OnBeforeMessage
 
     protected function makeExceptionHandler(): Closure
     {
-        return function (Exception $exception, OrderMessagePayload $payload) {
+        /**
+         * @var $exception \Exception|MessagePayloadInvalidSchemaException
+         */
+        return function ($exception, OrderMessagePayload $payload) {
             printf('In Exception Handler');
         };
     }
@@ -58,5 +63,10 @@ class Waiter extends ConnectorAbstract implements OnBeforeMessage
     public function beforeMessageHandled()
     {
         printf("WORKER LIFECYCLE HOOK : BEFORE HANDLING MESSAGE..."."\n\n");
+    }
+
+    public function afterMessageHandled()
+    {
+        printf("WORKER LIFECYCLE HOOK : AFTER HANDLING MESSAGE..."."\n\n");
     }
 }

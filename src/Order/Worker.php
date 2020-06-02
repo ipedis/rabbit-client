@@ -8,12 +8,16 @@ use AMQPExchange;
 use AMQPQueue;
 use Closure;
 use Exception;
+use Ipedis\Rabbit\Channel\Factory\ChannelFactory;
 use Ipedis\Rabbit\Consumer\Handler\MessageHandlerInterface;
+use Ipedis\Rabbit\Exception\Channel\ChannelFactoryException;
 use Ipedis\Rabbit\Exception\MessagePayload\MessagePayloadFormatException;
+use Ipedis\Rabbit\Exception\MessagePayload\MessagePayloadValidatorException;
 use Ipedis\Rabbit\Lifecyle\Hook\OnAfterMessage;
 use Ipedis\Rabbit\Lifecyle\Hook\OnBeforeMessage;
 use Ipedis\Rabbit\MessagePayload\OrderMessagePayload;
 use Ipedis\Rabbit\MessagePayload\ReplyMessagePayload;
+use Ipedis\Rabbit\MessagePayload\Validator\ValidatorInterface;
 
 /**
  * Class Worker
@@ -39,6 +43,25 @@ trait Worker
      */
     public function execute()
     {
+        /**
+         * Before stating worker
+         * Check if channel factory is defined
+         * to validate event naming
+         */
+        if (!$this->getChannelFactory() instanceof ChannelFactory) {
+            throw new ChannelFactoryException('Must provide channel factory {channelFactory} with version and service.');
+        }
+
+        /**
+         * Before starting worker
+         * Check if message payload validator is defined
+         * to validate message naming
+         */
+
+        if (!$this->getMessagePayloadValidator() instanceof ValidatorInterface) {
+            throw new MessagePayloadValidatorException("Must provide message payload validator {messagePayloadValidator}");
+        }
+
         $this->worker_id = uniqid("worker_id_");
         $this->connect();
         $this->queueDeclare();
@@ -153,6 +176,11 @@ trait Worker
         $messagePayload = OrderMessagePayload::fromJson($message->getBody());
 
         try {
+            /**
+             * Validate message payload data schema
+             */
+            $this->getMessagePayloadValidator()->validate($messagePayload);
+
             /**
              * Notify manager of start consuming & task status change
              */

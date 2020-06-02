@@ -41,7 +41,9 @@ if ( !empty($argv[1]) ) {
                 $configOrder['use'],
                 $configOrder['password'],
                 $configOrder['exchange'],
-                $configOrder['type']
+                $configOrder['type'],
+                $channelFactory,
+                $messagePayloadValidator
             ))->execute();
         break;
 
@@ -53,7 +55,8 @@ if ( !empty($argv[1]) ) {
                 $configOrder['password'],
                 $configOrder['exchange'],
                 $configOrder['type'],
-                $channelFactory
+                $channelFactory,
+                $messagePayloadValidator
             ))->main();
             break;
 
@@ -65,7 +68,9 @@ if ( !empty($argv[1]) ) {
                 $configOrder['use'],
                 $configOrder['password'],
                 $configOrder['exchange'],
-                $configOrder['type']
+                $configOrder['type'],
+                $channelFactory,
+                $messagePayloadValidator
             ))->execute();
             break;
 
@@ -76,7 +81,9 @@ if ( !empty($argv[1]) ) {
                 $configOrder['use'],
                 $configOrder['password'],
                 $configOrder['exchange'],
-                $configOrder['type']
+                $configOrder['type'],
+                $channelFactory,
+                $messagePayloadValidator
             ))->execute();
             break;
 
@@ -87,7 +94,9 @@ if ( !empty($argv[1]) ) {
                 $configOrder['use'],
                 $configOrder['password'],
                 $configOrder['exchange'],
-                $configOrder['type']
+                $configOrder['type'],
+                $channelFactory,
+                $messagePayloadValidator
             ))->execute();
             break;
 

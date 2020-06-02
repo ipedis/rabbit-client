@@ -5,42 +5,15 @@ namespace Ipedis\Demo\Rabbit\Worker\Event;
 
 use Closure;
 use Exception;
-use Ipedis\Demo\Rabbit\Utils\ConnectorAbstract;
-use Ipedis\Rabbit\Channel\Factory\ChannelFactory;
+use Ipedis\Demo\Rabbit\Utils\WorkerAbstract;
 use Ipedis\Rabbit\Event\EventListener;
 use Ipedis\Rabbit\Lifecyle\Hook\OnAfterMessage;
 use Ipedis\Rabbit\Lifecyle\Hook\OnBeforeMessage;
 use Ipedis\Rabbit\MessagePayload\EventMessagePayload;
-use Ipedis\Rabbit\MessagePayload\Validator\ValidatorInterface;
 
-class Binding extends ConnectorAbstract implements OnBeforeMessage, OnAfterMessage
+class Binding extends WorkerAbstract implements OnBeforeMessage, OnAfterMessage
 {
     use EventListener;
-
-    /**
-     * @var ChannelFactory $channelFactory
-     */
-    private $channelFactory;
-
-    /**
-     * @var ValidatorInterface $messagePayloadValidator
-     */
-    private $messagePayloadValidator;
-
-    public function __construct(
-        string $host,
-        int $port,
-        string $user,
-        string $password,
-        string $exchange,
-        string $type,
-        ChannelFactory $channelFactory,
-        ValidatorInterface $messagePayloadValidator
-    ) {
-        parent::__construct($host, $port, $user, $password, $exchange, $type);
-        $this->channelFactory = $channelFactory;
-        $this->messagePayloadValidator = $messagePayloadValidator;
-    }
 
     /**
      * Process messages coming from queue
@@ -73,8 +46,14 @@ class Binding extends ConnectorAbstract implements OnBeforeMessage, OnAfterMessa
      */
     protected function makeExceptionHandler(): Closure
     {
-        return function (Exception $exception, ?EventMessagePayload $messagePayload) {
-            printf($exception->getMessage()."\n\n");
+        /**
+         * @param $exception $exception Exception|MessagePayloadInvalidSchemaException
+         * @param EventMessagePayload|null $messagePayload
+         */
+        return function ($exception, ?EventMessagePayload $messagePayload) {
+            if ($exception instanceof Exception) {
+                printf($exception->getMessage()."\n\n");
+            }
         };
     }
 
@@ -125,21 +104,5 @@ class Binding extends ConnectorAbstract implements OnBeforeMessage, OnAfterMessa
     public function afterMessageHandled()
     {
         printf("WORKER LIFECYCLE HOOK : AFTER HANDLING MESSAGE..."."\n\n");
-    }
-
-    /**
-     * @return ChannelFactory
-     */
-    public function getChannelFactory(): ChannelFactory
-    {
-        return $this->channelFactory;
-    }
-
-    /**
-     * @return ValidatorInterface
-     */
-    public function getMessagePayloadValidator(): ValidatorInterface
-    {
-        return $this->messagePayloadValidator;
     }
 }

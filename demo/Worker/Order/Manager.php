@@ -1,6 +1,5 @@
 <?php
 
-
 namespace Ipedis\Demo\Rabbit\Worker\Order;
 
 
@@ -11,6 +10,7 @@ use Ipedis\Rabbit\Channel\OrderChannel;
 use Ipedis\Rabbit\Consumer\Handler\MessageHandlerInterface;
 use Ipedis\Rabbit\MessagePayload\OrderMessagePayload;
 use Ipedis\Rabbit\MessagePayload\ReplyMessagePayload;
+use Ipedis\Rabbit\MessagePayload\Validator\ValidatorInterface;
 use Ipedis\Rabbit\Order\Manager as ManagerTrait;
 
 class Manager extends ConnectorAbstract
@@ -20,8 +20,12 @@ class Manager extends ConnectorAbstract
     /**
      * @var ChannelFactory $channelFactory
      */
-
     private $channelFactory;
+
+    /**
+     * @var ValidatorInterface
+     */
+    private $messagePayloadValidator;
 
     /**
      * Manager constructor.
@@ -32,6 +36,7 @@ class Manager extends ConnectorAbstract
      * @param string $exchange
      * @param string $type
      * @param ChannelFactory $channelFactory
+     * @param ValidatorInterface $messagePayloadValidator
      * @throws \Ipedis\Rabbit\Exception\RabbitClientConnectException
      */
     public function __construct(
@@ -41,11 +46,13 @@ class Manager extends ConnectorAbstract
         string $password,
         string $exchange,
         string $type,
-        ChannelFactory $channelFactory
+        ChannelFactory $channelFactory,
+        ValidatorInterface $messagePayloadValidator
     ) {
         parent::__construct($host, $port, $user, $password, $exchange, $type);
 
         $this->channelFactory = $channelFactory;
+        $this->messagePayloadValidator = $messagePayloadValidator;
         $this->connect();
 
         /**
@@ -104,5 +111,13 @@ class Manager extends ConnectorAbstract
     public function getChannelFactory(): ChannelFactory
     {
         return $this->channelFactory;
+    }
+
+    /**
+     * @return ValidatorInterface
+     */
+    public function getMessagePayloadValidator(): ValidatorInterface
+    {
+        return $this->messagePayloadValidator;
     }
 }
