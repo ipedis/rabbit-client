@@ -8,6 +8,7 @@ use Ipedis\Rabbit\DTO\Type\Group\GroupType;
 use Ipedis\Rabbit\DTO\Type\ProgressType;
 use Ipedis\Rabbit\DTO\Type\StatusType;
 use Ipedis\Rabbit\DTO\Type\SummaryType;
+use Ipedis\Rabbit\Exception\Workflow\InvalidWorkflowArgumentException;
 
 class Groups implements \JsonSerializable
 {
@@ -31,17 +32,25 @@ class Groups implements \JsonSerializable
      */
     private $progress;
 
+    /**
+     * @var string
+     */
+    private $workflowId;
+
     public function __construct(
+        string $workflowId,
         StatusType $status,
         SummaryType $summary,
         ProgressType $progressType ,
         array $details
     ) {
         $this->assertDetails($details);
+        $this->assertUuid($workflowId);
         $this->status = $status;
         $this->summary = $summary;
         $this->details = $details;
         $this->progress = $progressType;
+        $this->workflowId = $workflowId;
     }
 
     /**
@@ -173,10 +182,18 @@ class Groups implements \JsonSerializable
     public function jsonSerialize()
     {
         return [
+            'workflowId' => $this->workflowId,
             'status' => $this->getStatus(),
             'summary' => $this->getSummary(),
             'details' => $this->getDetails(),
             'progress' => $this->getPercentage()
         ];
+    }
+
+    public function assertUuid(string $uuid)
+    {
+        if (!uuid_is_valid($uuid)) {
+            throw new InvalidWorkflowArgumentException("{$uuid} is not valid uuid");
+        }
     }
 }

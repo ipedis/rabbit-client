@@ -632,7 +632,7 @@ class WorkflowProgressBag implements ProgressBagInterface, \JsonSerializable
             );
         }, $this->groups);
 
-        return new Groups($status, $summary, $this->getPercentage(),$groups);
+        return new Groups($this->getWorkflowId(), $status, $summary, $this->getPercentage(),$groups);
     }
 
     /**
