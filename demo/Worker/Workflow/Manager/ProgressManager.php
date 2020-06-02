@@ -71,7 +71,7 @@ class ProgressManager extends ConnectorAbstract
     public function json(Workflow $workflow): Closure {
         return function () use ($workflow) {
             echo "\n\n\n\n";
-            echo json_encode($workflow->getProgressBag()->getSummary()->getGroupedTasks(), JSON_PRETTY_PRINT);
+            echo json_encode($workflow->getProgressBag()->getGroupedTasksSummary(), JSON_PRETTY_PRINT);
             echo "\n\n\n\n";
         };
     }

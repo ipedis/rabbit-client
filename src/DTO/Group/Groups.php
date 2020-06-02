@@ -47,9 +47,17 @@ class Groups implements \JsonSerializable
     /**
      * @return ProgressType
      */
-    public function getProgress(): ProgressType
+    public function getPercentage(): ProgressType
     {
         return $this->progress;
+    }
+
+    public function findAll()
+    {
+        return [
+            'status' => $this->status,
+            'groups' => $this->details
+        ];
     }
 
     /**
@@ -168,7 +176,7 @@ class Groups implements \JsonSerializable
             'status' => $this->getStatus(),
             'summary' => $this->getSummary(),
             'details' => $this->getDetails(),
-            'progress' => $this->getProgress()
+            'progress' => $this->getPercentage()
         ];
     }
 }

@@ -208,10 +208,16 @@ class Group extends Bindable
             $this->getStatus(),
             $this->getTimer(),
             $this->getPercentage(),
-            array_map(function (Task $task){
-                $timer = TimerType::build($task->getExecutionTime(), $task->getStartTime(), $task->getFinishedTime());
-                return TaskType::build($this->getGroupId(), $task->getType(),$task->getStatusType(), $timer);
-            }, $this->getTasks())
+            array_values(
+                array_map(function (Task $task){
+                    return TaskType::build(
+                        $task->getOrderMessage()->getOrderId(),
+                        $task->getType(),
+                        $task->getStatusType(),
+                        $task->getTimer()
+                    );
+                }, $this->getTasks())
+            )
         );
     }
 

@@ -11,6 +11,7 @@ use Ipedis\Rabbit\DTO\Type\SummaryType;
 use Ipedis\Rabbit\DTO\Order\Tasks;
 use Ipedis\Rabbit\DTO\Type\TaskType;
 use Ipedis\Rabbit\DTO\Type\Workflow\WorkflowType;
+use Ipedis\Rabbit\Exception\Progress\InvalidProgressBagArgumentException;
 use Ipedis\Rabbit\Workflow\Group;
 use Ipedis\Rabbit\Workflow\Task;
 
@@ -21,8 +22,15 @@ class WorkflowProgressBag implements ProgressBagInterface, \JsonSerializable
      */
     private $groups;
 
-    public function __construct(array $groups)
+    /**
+     * @var string
+     */
+    private $workflowId;
+
+    public function __construct(array $groups, string $workflowId)
     {
+        $this->assertUuid($workflowId);
+        $this->workflowId = $workflowId;
         $this->groups = $groups;
     }
 
@@ -70,7 +78,7 @@ class WorkflowProgressBag implements ProgressBagInterface, \JsonSerializable
     public function getFailedGroups(): array
     {
         return array_filter($this->groups, function (Group $group) {
-            return $group->getProgressBag()->hasFailure();
+            return $group->getProgressBag()->isCompleted() && $group->getProgressBag()->hasFailure();
         });
     }
 
@@ -440,26 +448,26 @@ class WorkflowProgressBag implements ProgressBagInterface, \JsonSerializable
     /**
      * @return array|Group[]
      */
-    public function getGroups()
+    public function getGroupInWorkflow()
     {
         return $this->groups;
     }
 
     public function getGroupsState()
     {
-        if ($this->countFailedGroups() !== 0) {
-            return StatusType::buildFailed();
+        if ($this->countTotalOrders() === $this->countTotalCompletedOrders()) {
+            if ($this->countFailedGroups() !== 0) {
+                return StatusType::buildFailed();
+            }
+
+            return StatusType::buildSuccess();
         }
 
         if ($this->countRunningGroups() !== 0) {
             return StatusType::buildRunning();
         }
 
-        if ($this->countPendingGroups() === $this->countGroupsInWorkflow()) {
-            return StatusType::buildPending();
-        }
-
-        return StatusType::buildSuccess();
+        return StatusType::buildPending();
     }
 
     /**
@@ -492,7 +500,7 @@ class WorkflowProgressBag implements ProgressBagInterface, \JsonSerializable
         return array_map(function ($type, $detail) {
             if ($detail['failed'] !== 0) {
                 $status = StatusType::buildFailed();
-            } elseif ($detail['completed'] === $detail['successful']) {
+            } elseif ($detail['completed'] === $detail['successful'] && $detail['completed'] === $detail['total']) {
                 $status = StatusType::buildSuccess();
             } elseif ($detail['total'] === $detail['pending']) {
                 $status = StatusType::buildPending();
@@ -500,7 +508,7 @@ class WorkflowProgressBag implements ProgressBagInterface, \JsonSerializable
                 $status = StatusType::buildRunning();
             }
 
-            return GroupedTaskType::build(
+            return [$type => GroupedTaskType::build(
                 $status,
                 SummaryType::build(
                     $detail['total'],
@@ -512,9 +520,17 @@ class WorkflowProgressBag implements ProgressBagInterface, \JsonSerializable
                 ),
                 $type,
                 $detail['uuids']
-            );
+            )];
         }, array_keys($summary),$summary);
 
+    }
+
+    /**
+     * @return string
+     */
+    public function getWorkflowId(): string
+    {
+        return $this->workflowId;
     }
 
     /**
@@ -592,7 +608,7 @@ class WorkflowProgressBag implements ProgressBagInterface, \JsonSerializable
      * Get groups details
      * @return Groups
      */
-    public function getGroupsSummary(): Groups
+    public function getGroups(): Groups
     {
         $status = $this->getStatus();
         $summary = SummaryType::build(
@@ -637,5 +653,12 @@ class WorkflowProgressBag implements ProgressBagInterface, \JsonSerializable
     public function jsonSerialize()
     {
         return $this->getSummary()->jsonSerialize();
+    }
+
+    protected function assertUuid(string $uuid)
+    {
+        if (!uuid_is_valid($uuid)) {
+            throw new InvalidProgressBagArgumentException("[WORKFLOW] {$uuid} is not a valid uuid");
+        }
     }
 }

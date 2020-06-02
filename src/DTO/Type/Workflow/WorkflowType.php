@@ -38,6 +38,7 @@ class WorkflowType implements \JsonSerializable
     public function getGroupedTasks()
     {
         return [
+            'uuid' => $this->progressBag->getWorkflowId(),
             'state' => $this->progressBag->getStatus(),
             'summary' => SummaryType::build(
                 $this->progressBag->countTotalOrders(),
@@ -59,6 +60,7 @@ class WorkflowType implements \JsonSerializable
     public function getGroups()
     {
         return [
+            'uuid' => $this->progressBag->getWorkflowId(),
             'state' => $this->progressBag->getGroupsState(),
             'summary' => SummaryType::build(
                 $this->progressBag->countGroupsInWorkflow(),
@@ -70,13 +72,14 @@ class WorkflowType implements \JsonSerializable
             ),
             'details' => array_map(function (Group $group) {
                 return $group->getDetail();
-            }, $this->progressBag->getGroups())
+            }, $this->progressBag->getGroupInWorkflow())
         ];
     }
 
     public function jsonSerialize()
     {
         return [
+            'uuid' => $this->progressBag->getWorkflowId(),
             'status' => $this->progressBag->getStatus(),
             'progression' => $this->getProgress(),
             'timer' => $this->getTimer(),
