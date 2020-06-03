@@ -46,14 +46,8 @@ class Binding extends WorkerAbstract implements OnBeforeMessage, OnAfterMessage
      */
     protected function makeExceptionHandler(): Closure
     {
-        /**
-         * @param $exception $exception Exception|MessagePayloadInvalidSchemaException
-         * @param EventMessagePayload|null $messagePayload
-         */
-        return function ($exception, ?EventMessagePayload $messagePayload) {
-            if ($exception instanceof Exception) {
-                printf($exception->getMessage()."\n\n");
-            }
+        return function (Exception $exception, ?EventMessagePayload $messagePayload) {
+            printf($exception->getMessage()."\n\n");
         };
     }
 
