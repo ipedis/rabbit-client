@@ -119,6 +119,21 @@ abstract class MessagePayloadAbstract implements MessagePayloadInterface
         return $this->channel;
     }
 
+    public function getUuid(): string
+    {
+        return $this->getHeader(self::HEADER_UUID);
+    }
+
+    public function getTimestamp(): int
+    {
+        return $this->getHeader(self::HEADER_TIMESTAMP);
+    }
+
+    public function getTimezone() : array
+    {
+        return $this->getHeader(self::HEADER_TIMEZONE);
+    }
+
     public function jsonSerialize()
     {
         $this->setDefaultHeader();
