@@ -8,8 +8,14 @@ use AMQPChannel;
 use AMQPChannelException;
 use AMQPConnectionException;
 use AMQPQueue;
+use Ipedis\Rabbit\Channel\Factory\ChannelFactory;
+use Ipedis\Rabbit\Channel\OrderChannel;
 use Ipedis\Rabbit\Consumer\Handler\MessageHandlerInterface;
+use Ipedis\Rabbit\Exception\Channel\ChannelFactoryException;
+use Ipedis\Rabbit\Exception\Channel\ChannelNamingException;
+use Ipedis\Rabbit\Exception\MessagePayload\MessagePayloadValidatorException;
 use Ipedis\Rabbit\MessagePayload\ReplyMessagePayload;
+use Ipedis\Rabbit\MessagePayload\Validator\ValidatorInterface;
 use Ipedis\Rabbit\Workflow\Event\BindableEventInterface;
 
 trait Manager
@@ -55,6 +61,18 @@ trait Manager
     {
         $wasAtLeastOneFailure = false;
         $this->workflow = $workflow;
+
+        /**
+         * Channel factory must be provided to
+         * construct/validate channel
+         */
+        $this->assertChannelFactory();
+
+        /**
+         * Message payload validator must be provided
+         */
+        $this->assertMessagePayloadValidator();
+
         /**
          * Each groups will be executed sequencially, we iterate on each group.
          * call relevant callback if needed.
@@ -197,21 +215,79 @@ trait Manager
     /**
      * @param Task $task
      * @return $this
+     * @throws ChannelFactoryException
+     * @throws MessagePayloadValidatorException
      */
     protected function publish(Task $task): self
     {
         $message = $task->getOrderMessage();
+
+        /**
+         * Validate channel and return queue name
+         */
+        $channel = $this->getChannelName($message->getChannel());
+
+        /**
+         * Validate message payload data schema
+         */
+        $this->getMessagePayloadValidator()->validate($message);
+
+
         $message->setReplyQueue($this->replyQueue->getName());
         /**
          * Publish task on exchange
          */
         $this->exchange->publish(
             json_encode($message),
-            $message->getChannel(),
+            $channel,
             AMQP_NOPARAM,
             $message->getMessageProperties()
         );
 
         return $this;
+    }
+
+    /**
+     * @param $queueName
+     * @return string
+     * @throws ChannelNamingException
+     */
+    private function getChannelName($queueName): string
+    {
+        if (is_string($queueName)) {
+            // if it is partial channel name
+            if ($this->getChannelFactory()->matchPartial($queueName)) {
+                return (string)$this->getChannelFactory()->getOrder($queueName);
+            }
+
+            // if it is full name, this will throw exception if full name is invalid.
+            $eventObj = OrderChannel::fromString($queueName);
+
+            return (string)$eventObj;
+        }
+        // if it is an instance, get channel full name
+        if ($queueName instanceof OrderChannel) {
+            return (string)$queueName;
+        }
+
+        // no criteria fulfilled, throw an exception.
+        throw new ChannelNamingException('Invalid channel provided.');
+    }
+
+    protected function assertChannelFactory(): void
+    {
+        if (!$this->getChannelFactory() instanceof ChannelFactory) {
+            throw new ChannelFactoryException('Must provide channel factory {channelFactory} with version and service.');
+        }
+    }
+
+    /**
+     * @throws MessagePayloadValidatorException
+     */
+    protected function assertMessagePayloadValidator(): void
+    {
+        if (!$this->getMessagePayloadValidator() instanceof ValidatorInterface) {
+            throw new MessagePayloadValidatorException("Must provide message payload validator {messagePayloadValidator}");
+        }
     }
 }

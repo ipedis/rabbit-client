@@ -52,16 +52,6 @@ trait Worker
             throw new ChannelFactoryException('Must provide channel factory {channelFactory} with version and service.');
         }
 
-        /**
-         * Before starting worker
-         * Check if message payload validator is defined
-         * to validate message naming
-         */
-
-        if (!$this->getMessagePayloadValidator() instanceof ValidatorInterface) {
-            throw new MessagePayloadValidatorException("Must provide message payload validator {messagePayloadValidator}");
-        }
-
         $this->worker_id = uniqid("worker_id_");
         $this->connect();
         $this->queueDeclare();
@@ -171,15 +161,25 @@ trait Worker
     private function consumeReceivedMessage(AMQPEnvelope $message, AMQPQueue $q)
     {
         /**
+         * Ignore if message not proper json
+         */
+        if (!$this->isValidMessageFormat($message->getBody())) {
+            return;
+        }
+
+        /**
          * Re-construct message payload objectValue from request body
          */
         $messagePayload = OrderMessagePayload::fromJson($message->getBody());
 
         try {
             /**
-             * Validate message payload data schema
+             * 1. Validate channel naming and return event name
              */
-            $this->getMessagePayloadValidator()->validate($messagePayload);
+            if (!$this->isValidChannelName($messagePayload->getChannel())) {
+                return;
+            }
+
 
             /**
              * Notify manager of start consuming & task status change
@@ -299,4 +299,26 @@ trait Worker
      * @param Exception $exception
      */
     protected function logException(\Exception $exception){}
+
+    /**
+     * Check if message is valid json
+     *
+     * @param $message
+     * @return bool
+     */
+    private function isValidMessageFormat(string $message): bool
+    {
+        return json_decode($message) != null;
+    }
+
+    /**
+     * Check if channel name follows proper naming
+     *
+     * @param string $channelName
+     * @return bool
+     */
+    private function isValidChannelName(string $channelName): bool
+    {
+        return $this->getChannelFactory()->match($channelName);
+    }
 }

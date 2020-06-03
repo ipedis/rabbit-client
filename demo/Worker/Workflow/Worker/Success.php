@@ -45,10 +45,7 @@ class Success extends WorkerAbstract implements OnBeforeMessage, OnAfterMessage
 
     protected function makeExceptionHandler(): \Closure
     {
-        /**
-         * @var $exception \Exception|MessagePayloadInvalidSchemaException
-         */
-        return function ($exception, OrderMessagePayload $payload) {
+        return function (\Exception $exception, OrderMessagePayload $payload) {
             printf('In Exception Handler');
         };
     }

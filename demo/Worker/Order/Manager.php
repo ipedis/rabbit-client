@@ -108,7 +108,7 @@ class Manager extends ConnectorAbstract
     /**
      * @return ChannelFactory
      */
-    public function getChannelFactory(): ChannelFactory
+    protected function getChannelFactory(): ChannelFactory
     {
         return $this->channelFactory;
     }
@@ -116,7 +116,7 @@ class Manager extends ConnectorAbstract
     /**
      * @return ValidatorInterface
      */
-    public function getMessagePayloadValidator(): ValidatorInterface
+    protected function getMessagePayloadValidator(): ValidatorInterface
     {
         return $this->messagePayloadValidator;
     }

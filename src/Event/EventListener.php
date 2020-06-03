@@ -7,17 +7,14 @@ use AMQPEnvelope;
 use AMQPQueue;
 use Closure;
 use Exception;
-use Ipedis\Rabbit\Channel\EventChannel;
 use Ipedis\Rabbit\Channel\Factory\ChannelFactory;
 use Ipedis\Rabbit\Connector;
 use Ipedis\Rabbit\Exception\Channel\ChannelFactoryException;
-use Ipedis\Rabbit\Exception\Channel\ChannelNamingException;
 use Ipedis\Rabbit\Exception\MessagePayload\MessagePayloadFormatException;
-use Ipedis\Rabbit\Exception\MessagePayload\MessagePayloadValidatorException;
 use Ipedis\Rabbit\Lifecyle\Hook\OnAfterMessage;
 use Ipedis\Rabbit\Lifecyle\Hook\OnBeforeMessage;
 use Ipedis\Rabbit\MessagePayload\EventMessagePayload;
-use Ipedis\Rabbit\MessagePayload\Validator\ValidatorInterface;
+
 
 trait EventListener
 {
@@ -48,15 +45,6 @@ trait EventListener
          */
         if (!$this->getChannelFactory() instanceof ChannelFactory) {
             throw new ChannelFactoryException('Must provide channel factory {channelFactory} with version and service.');
-        }
-
-        /**
-         * Before starting worker
-         * Check if message payload validator is defined
-         * to validate message naming
-         */
-        if (!$this->getMessagePayloadValidator() instanceof ValidatorInterface) {
-            throw new MessagePayloadValidatorException("Must provide message payload validator {messagePayloadValidator}");
         }
 
         $this->worker_id = uniqid("worker_id_");
@@ -114,23 +102,27 @@ trait EventListener
      */
     private function consumeReceivedMessage(AMQPEnvelope $message)
     {
+        /**
+         * Ignore if message not proper json
+         */
+        if (!$this->isValidMessageFormat($message->getBody())) {
+            return;
+        }
+
         $messagePayload = EventMessagePayload::fromJson($message->getBody());
 
         try {
             /**
              * 1. Validate channel naming and return event name
              */
-            $eventName = $this->getEventName($messagePayload->getChannel());
+            if (!$this->isValidChannelName($messagePayload->getChannel())) {
+                return;
+            }
 
             /**
              * 2. Check if message is to be consumed
              */
-            if ($this->isSubscribed($eventName)) {
-                /**
-                 * 3. Validate message payload data schema
-                 */
-                $this->getMessagePayloadValidator()->validate($messagePayload);
-
+            if ($this->isSubscribed($messagePayload->getChannel())) {
                 /**
                  * 4. Process the message
                  */
@@ -245,33 +237,25 @@ trait EventListener
     protected function logException(\Exception $exception){}
 
     /**
-     * Validate event naming
-     * Event name is used as routing key when publishing message
+     * Check if message is valid json
      *
-     * @param $event
-     * @return string
-     * @throws ChannelNamingException
+     * @param $message
+     * @return bool
      */
-    private function getEventName($event): string
+    private function isValidMessageFormat(string $message): bool
     {
-        if (is_string($event)) {
-            // if it is partial channel name
-            if ($this->getChannelFactory()->matchPartial($event)) {
-                return (string)$this->getChannelFactory()->getEvent($event);
-            }
+        return json_decode($message) != null;
+    }
 
-            // if it is full name, this will throw exception if full name is invalid.
-            $eventObj = EventChannel::fromString($event);
-
-            return (string)$eventObj;
-        }
-        // if it is an instance, get channel full name
-        if ($event instanceof EventChannel) {
-            return (string)$event;
-        }
-
-        // no criteria fulfilled, throw an exception.
-        throw new ChannelNamingException('Invalid channel provided.');
+    /**
+     * Check if channel name follows proper naming
+     *
+     * @param string $channelName
+     * @return bool
+     */
+    private function isValidChannelName(string $channelName): bool
+    {
+        return $this->getChannelFactory()->match($channelName);
     }
 
     /**

@@ -4,7 +4,6 @@ namespace Ipedis\Demo\Rabbit\Utils;
 
 
 use Ipedis\Rabbit\Channel\Factory\ChannelFactory;
-use Ipedis\Rabbit\MessagePayload\Validator\ValidatorInterface;
 
 abstract class WorkerAbstract extends ConnectorAbstract
 {
@@ -13,11 +12,6 @@ abstract class WorkerAbstract extends ConnectorAbstract
      */
     private $channelFactory;
 
-    /**
-     * @var ValidatorInterface $messagePayloadValidator
-     */
-    private $messagePayloadValidator;
-
     public function __construct(
         string $host,
         int $port,
@@ -25,12 +19,10 @@ abstract class WorkerAbstract extends ConnectorAbstract
         string $password,
         string $exchange,
         string $type,
-        ChannelFactory $channelFactory,
-        ValidatorInterface $messagePayloadValidator
+        ChannelFactory $channelFactory
     ) {
         parent::__construct($host, $port, $user, $password, $exchange, $type);
         $this->channelFactory = $channelFactory;
-        $this->messagePayloadValidator = $messagePayloadValidator;
     }
 
     /**
@@ -39,13 +31,5 @@ abstract class WorkerAbstract extends ConnectorAbstract
     protected function getChannelFactory(): ChannelFactory
     {
         return $this->channelFactory;
-    }
-
-    /**
-     * @return ValidatorInterface
-     */
-    protected function getMessagePayloadValidator(): ValidatorInterface
-    {
-        return $this->messagePayloadValidator;
     }
 }
