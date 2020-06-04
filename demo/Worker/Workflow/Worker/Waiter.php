@@ -29,7 +29,7 @@ class Waiter extends ConnectorAbstract implements OnBeforeMessage
                     ['status' => 'PROGRESS', 'step' => 1]
                 )
             );
-            sleep(rand(0, 1));
+            sleep(rand(0, 10));
             if(!empty($params['failure']) && $params['failure'] === true) throw new Exception('oups');
             return ["step" => "step1 finished"];
         };

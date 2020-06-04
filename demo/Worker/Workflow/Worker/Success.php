@@ -37,6 +37,7 @@ class Success extends ConnectorAbstract
                     ['status' => 'PROGRESS', 'step' => 1]
                 )
             );
+            sleep(rand(0, 10));
 
             return ["step" => "step1 finished"];
         };
