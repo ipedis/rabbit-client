@@ -497,7 +497,8 @@ class WorkflowProgressBag implements ProgressBagInterface, \JsonSerializable
             }
         }
 
-        return array_map(function ($type, $detail) {
+        $object = new \stdClass();
+        foreach ($summary as $type => $detail) {
             if ($detail['failed'] !== 0) {
                 $status = StatusType::buildFailed();
             } elseif ($detail['completed'] === $detail['successful'] && $detail['completed'] === $detail['total']) {
@@ -507,8 +508,7 @@ class WorkflowProgressBag implements ProgressBagInterface, \JsonSerializable
             } else {
                 $status = StatusType::buildRunning();
             }
-
-            return [$type => GroupedTaskType::build(
+            $object->$type = GroupedTaskType::build(
                 $status,
                 SummaryType::build(
                     $detail['total'],
@@ -520,9 +520,10 @@ class WorkflowProgressBag implements ProgressBagInterface, \JsonSerializable
                 ),
                 $type,
                 $detail['uuids']
-            )];
-        }, array_keys($summary),$summary);
+            );
+        }
 
+        return $object;
     }
 
     /**
@@ -626,9 +627,11 @@ class WorkflowProgressBag implements ProgressBagInterface, \JsonSerializable
                 $group->getStatus(),
                 $group->getTimer(),
                 $group->getPercentage(),
-                array_map(function (Task $task) {
-                    return $task->getSummary();
-                }, $group->getTasks())
+                array_values(
+                    array_map(function (Task $task) {
+                        return $task->getSummary();
+                    }, $group->getTasks())
+                )
             );
         }, $this->groups);
 
