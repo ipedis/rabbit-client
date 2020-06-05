@@ -497,7 +497,7 @@ class WorkflowProgressBag implements ProgressBagInterface, \JsonSerializable
             }
         }
 
-        $object = new \stdClass();
+        $groupedTasks = [];
         foreach ($summary as $type => $detail) {
             if ($detail['failed'] !== 0) {
                 $status = StatusType::buildFailed();
@@ -508,7 +508,7 @@ class WorkflowProgressBag implements ProgressBagInterface, \JsonSerializable
             } else {
                 $status = StatusType::buildRunning();
             }
-            $object->$type = GroupedTaskType::build(
+            $groupedTasks[$type] = GroupedTaskType::build(
                 $status,
                 SummaryType::build(
                     $detail['total'],
@@ -523,7 +523,7 @@ class WorkflowProgressBag implements ProgressBagInterface, \JsonSerializable
             );
         }
 
-        return $object;
+        return $groupedTasks;
     }
 
     /**

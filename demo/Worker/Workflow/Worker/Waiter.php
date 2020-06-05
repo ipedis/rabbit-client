@@ -17,7 +17,7 @@ class Waiter extends ConnectorAbstract implements OnBeforeMessage
 {
     use WorkerTrait;
 
-    protected function makeMessageHandler(): \Closure
+    protected function makeMessageHandler(): Closure
     {
         return function (AMQPEnvelope $message, OrderMessagePayload $messagePayload) {
             $params = $messagePayload->getData();
