@@ -61,6 +61,7 @@ trait Manager
      * @return string
      */
     abstract protected function getExchangeName(): string;
+    abstract protected function getChannelFactory();
 
     public function resetOrdersQueue()
     {

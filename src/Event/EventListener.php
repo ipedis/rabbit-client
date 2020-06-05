@@ -124,7 +124,7 @@ trait EventListener
              */
             if ($this->isSubscribed($messagePayload->getChannel())) {
                 /**
-                 * 4. Process the message
+                 * 3. Process the message
                  */
                 $this->handleReceivedMessage($messagePayload);
             }
@@ -209,6 +209,7 @@ trait EventListener
     abstract protected function makeMessageHandler(): Closure;
     abstract protected function makeExceptionHandler(): Closure;
     abstract protected function getBindingKey();
+    abstract protected function getChannelFactory();
 
     /**
      * If you want to limit the call of callback for each message, you can filter by white list here.

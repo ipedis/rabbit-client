@@ -292,6 +292,8 @@ trait Worker
      */
     abstract protected function makeExceptionHandler(): Closure;
 
+    abstract protected function getChannelFactory();
+
     /**
      * Prototype method
      * Child can overide this function to log exceptions

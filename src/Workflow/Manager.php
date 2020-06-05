@@ -290,4 +290,6 @@ trait Manager
             throw new MessagePayloadValidatorException("Must provide message payload validator {messagePayloadValidator}");
         }
     }
+
+    abstract protected function getChannelFactory();
 }
