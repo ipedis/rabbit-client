@@ -37,6 +37,7 @@ class GeneratorManager extends ConnectorAbstract
         ;
 
         $generation->bind(BindableEventInterface::WORKFLOW_ON_TASKS_FINISH, function () use ($generation) {
+            return;
             printf(
                 "Generation PoC: Each table is one tick of generation - %.2f%% done\n----\n\n",
                 $generation->getProgressPercentage()

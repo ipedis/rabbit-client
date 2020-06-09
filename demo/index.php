@@ -241,5 +241,6 @@ if ( !empty($argv[1]) ) {
         'generator.image',
         'generator.image-page',
         'generator.double-thumb',
+        'generator.double-zoomable',
     ]));
 }

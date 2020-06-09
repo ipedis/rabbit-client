@@ -59,7 +59,7 @@ trait Manager
          * Each groups will be executed sequencially, we iterate on each group.
          * call relevant callback if needed.
          */
-        $this->workflow->call(BindableEventInterface::WORKFLOW_ON_START);
+        $workflow->call(BindableEventInterface::WORKFLOW_ON_START);
 
         /** @var Group $group */
         foreach ($workflow->getGroups() as $group) {
@@ -82,21 +82,21 @@ trait Manager
 
             $this->replyQueue->consume([$this, 'onGroupReply']);
 
-            $this->onGroupFinish($group);
+            $this->onGroupFinish($workflow, $group);
 
             if ($group->getProgressBag()->hasFailure()) {
                 $wasAtLeastOneFailure = true;
                 /**
                  * if workflow is configure to stop execution on first failure, Don't run next group.
                  */
-                if(!$this->workflow->getConfig()->hasToContinueOnFailure()) break;
+                if(!$workflow->getConfig()->hasToContinueOnFailure()) break;
             }
         }
         /**
          * run is finish, let concluing workflow.
          */
-        $this->workflow->call($wasAtLeastOneFailure ? BindableEventInterface::WORKFLOW_ON_FAILURE : BindableEventInterface::WORKFLOW_ON_SUCCESS);
-        $this->workflow->call(BindableEventInterface::WORKFLOW_ON_FINISH);
+        $workflow->call($wasAtLeastOneFailure ? BindableEventInterface::WORKFLOW_ON_FAILURE : BindableEventInterface::WORKFLOW_ON_SUCCESS);
+        $workflow->call(BindableEventInterface::WORKFLOW_ON_FINISH);
     }
 
     public function onGroupReply(\AMQPEnvelope $envelope, AMQPQueue $q)
@@ -136,7 +136,6 @@ trait Manager
          * Call event binded on task layer.
          */
         $this->onUpdatedTaskStatus($message, $group, $task);
-
         /**
          * wait until entire group is finish.
          */
@@ -184,14 +183,15 @@ trait Manager
     }
 
     /**
+     * @param Workflow $workflow
      * @param Group $group
      */
-    private function onGroupFinish(Group $group)
+    private function onGroupFinish(Workflow $workflow, Group $group)
     {
         $group->call($group->getProgressBag()->hasFailure() ? BindableEventInterface::GROUP_ON_FAILURE : BindableEventInterface::GROUP_ON_SUCCESS, $group);
         $group->call(BindableEventInterface::GROUP_ON_FINISH, $group);
-        $this->workflow->call($group->getProgressBag()->hasFailure() ? BindableEventInterface::WORKFLOW_ON_GROUPS_FAILURE : BindableEventInterface::WORKFLOW_ON_GROUPS_SUCCESS, $group);
-        $this->workflow->call(BindableEventInterface::WORKFLOW_ON_GROUPS_FINISH, $group);
+        $workflow->call($group->getProgressBag()->hasFailure() ? BindableEventInterface::WORKFLOW_ON_GROUPS_FAILURE : BindableEventInterface::WORKFLOW_ON_GROUPS_SUCCESS, $group);
+        $workflow->call(BindableEventInterface::WORKFLOW_ON_GROUPS_FINISH, $group);
     }
 
     /**
