@@ -3,6 +3,10 @@
 namespace Ipedis\Rabbit\Workflow\ProgressBag;
 
 
+use Ipedis\Rabbit\DTO\Order\Tasks;
+use Ipedis\Rabbit\DTO\Type\ProgressType;
+use Ipedis\Rabbit\DTO\Type\StatusType;
+
 interface ProgressBagInterface
 {
     const STATUS_PENDING  = 'pending';
@@ -30,9 +34,9 @@ interface ProgressBagInterface
     public function hasFailure(): bool;
 
     /**
-     * @return string
+     * @return StatusType
      */
-    public function getStatus(): string;
+    public function getStatus(): StatusType;
 
     /**
      * @return float
@@ -40,12 +44,12 @@ interface ProgressBagInterface
     public function getExecutionTime(): float;
 
     /**
-     * @return float
+     * @return ProgressType
      */
-    public function getPercentageProgression(): float;
+    public function getPercentage(): ProgressType;
 
     /**
-     * @return array
+     * @return Tasks
      */
-    public function getSummary(): array;
+    public function getTasks(): Tasks;
 }

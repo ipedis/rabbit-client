@@ -1,0 +1,120 @@
+<?php
+
+
+namespace Ipedis\Rabbit\DTO\Type\Group;
+
+
+use Ipedis\Rabbit\DTO\Type\StatusType;
+use Ipedis\Rabbit\DTO\Type\SummaryType;
+use Ipedis\Rabbit\Exception\InvalidUuidException;
+
+class GroupedTaskType implements \JsonSerializable
+{
+    /**
+     * @var StatusType
+     */
+    private $status;
+
+    /**
+     * @var SummaryType
+     */
+    private $summary;
+
+    /**
+     * @var string
+     */
+    private $type;
+
+    /**
+     * @var string[]
+     */
+    private $uuids;
+
+    /**
+     * GroupedTaskType constructor.
+     * @param StatusType $status
+     * @param SummaryType $summary
+     * @param string $type
+     * @param string[] $uuids
+     * @throws InvalidUuidException
+     */
+    private function __construct(StatusType $status, SummaryType $summary, string $type, array $uuids)
+    {
+        $this->assertUuids($uuids);
+        $this->status = $status;
+        $this->summary = $summary;
+        $this->type = $type;
+        $this->uuids = $uuids;
+    }
+
+    /**
+     * @param StatusType $status
+     * @param SummaryType $summary
+     * @param string $type
+     * @param array $uuids
+     * @return GroupedTaskType
+     * @throws InvalidUuidException
+     */
+    public static function build(StatusType $status, SummaryType $summary, string $type, array $uuids)
+    {
+        return new self($status, $summary, $type, $uuids);
+    }
+
+    /**
+     * @return StatusType
+     */
+    public function getStatus(): StatusType
+    {
+        return $this->status;
+    }
+
+    /**
+     * @return SummaryType
+     */
+    public function getSummary(): SummaryType
+    {
+        return $this->summary;
+    }
+
+    /**
+     * @return string
+     */
+    public function getType(): string
+    {
+        return $this->type;
+    }
+
+    /**
+     * @return array|string[]
+     */
+    public function getUuids()
+    {
+        return $this->uuids;
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function jsonSerialize()
+    {
+        return [
+            'state' => $this->getStatus(),
+            'summary' => $this->getSummary(),
+            'type' => $this->getType(),
+            'contain' => $this->getUuids()
+        ];
+    }
+
+    /**
+     * @param array $uuids
+     * @throws InvalidUuidException
+     */
+    private function assertUuids(array $uuids): void
+    {
+        foreach ($uuids as $uuid) {
+            if (!uuid_is_valid($uuid)) {
+                throw new InvalidUuidException("{$uuid} is not a valid uuid");
+            }
+        }
+    }
+}

@@ -2,18 +2,35 @@
 
 namespace Ipedis\Rabbit\Workflow\ProgressBag;
 
-
+use Ipedis\Rabbit\DTO\Group\Groups;
+use Ipedis\Rabbit\DTO\Type\Group\GroupedTaskType;
+use Ipedis\Rabbit\DTO\Type\Group\GroupType;
+use Ipedis\Rabbit\DTO\Type\ProgressType;
+use Ipedis\Rabbit\DTO\Type\StatusType;
+use Ipedis\Rabbit\DTO\Type\SummaryType;
+use Ipedis\Rabbit\DTO\Order\Tasks;
+use Ipedis\Rabbit\DTO\Type\TaskType;
+use Ipedis\Rabbit\DTO\Type\Workflow\WorkflowType;
+use Ipedis\Rabbit\Exception\Progress\InvalidProgressBagArgumentException;
 use Ipedis\Rabbit\Workflow\Group;
+use Ipedis\Rabbit\Workflow\Task;
 
-class WorkflowProgressBag implements ProgressBagInterface
+class WorkflowProgressBag implements ProgressBagInterface, \JsonSerializable
 {
     /**
      * @var Group[] $groups
      */
     private $groups;
 
-    public function __construct(array $groups)
+    /**
+     * @var string
+     */
+    private $workflowId;
+
+    public function __construct(array $groups, string $workflowId)
     {
+        $this->assertUuid($workflowId);
+        $this->workflowId = $workflowId;
         $this->groups = $groups;
     }
 
@@ -61,7 +78,7 @@ class WorkflowProgressBag implements ProgressBagInterface
     public function getFailedGroups(): array
     {
         return array_filter($this->groups, function (Group $group) {
-            return $group->getProgressBag()->hasFailure();
+            return $group->getProgressBag()->isCompleted() && $group->getProgressBag()->hasFailure();
         });
     }
 
@@ -296,17 +313,20 @@ class WorkflowProgressBag implements ProgressBagInterface
      * - PENDING : no tasks of any group yet dispatched
      * - RUNNING : at least one task of a group has been dispatched
      * - FINISHED : all tasks of all groups have completed
-     * @return string
+     * @return StatusType
      */
-    public function getStatus(): string
+    public function getStatus(): StatusType
     {
         if ($this->isCompleted()) {
-            return self::STATUS_FINISHED;
+            if ($this->hasFailure()) {
+                return StatusType::buildFailed();
+            }
+
+            return StatusType::buildSuccess();
         } elseif ($this->isRunning()) {
-            return self::STATUS_RUNNING;
-        } else {
-            return self::STATUS_PENDING;
+            return StatusType::buildRunning();
         }
+        return StatusType::buildPending();
     }
 
     /**
@@ -414,42 +434,234 @@ class WorkflowProgressBag implements ProgressBagInterface
     /**
      * Get percentage progression of workflow
      *
-     * @return float
+     * @return ProgressType
      */
-    public function getPercentageProgression(): float
+    public function getPercentage(): ProgressType
     {
-        $percentage = ($this->countTotalCompletedOrders() / $this->countTotalOrders()) * 100;
-
-        return round($percentage, 2);
+        return ProgressType::build(
+            (100 * $this->countTotalCompletedOrders())/ $this->countTotalOrders(),
+            (100 * $this->countTotalSuccessfulOrders())/ $this->countTotalOrders(),
+            (100 * $this->countTotalFailedOrders())/ $this->countTotalOrders()
+        );
     }
 
     /**
+     * @return array|Group[]
+     */
+    public function getGroupInWorkflow()
+    {
+        return $this->groups;
+    }
+
+    public function getGroupsState()
+    {
+        if ($this->countTotalOrders() === $this->countTotalCompletedOrders()) {
+            if ($this->countFailedGroups() !== 0) {
+                return StatusType::buildFailed();
+            }
+
+            return StatusType::buildSuccess();
+        }
+
+        if ($this->countRunningGroups() !== 0) {
+            return StatusType::buildRunning();
+        }
+
+        return StatusType::buildPending();
+    }
+
+    /**
+     * @return WorkflowType
+     */
+    public function getSummary(): WorkflowType
+    {
+        return (WorkflowType::buildSummary($this));
+    }
+
+    public function getGroupedTasksSummary()
+    {
+        $summary = [];
+        /** @var Group $group */
+        foreach ($this->groups as $group) {
+            foreach ($group->getTasks() as $task) {
+                if (!isset($summary[$task->getType()])) {
+                    /*
+                     * Initialize counts for current task type
+                     */
+                    $summary = $this->initializeDetailsByType($summary, $task);
+                }
+                /*
+                 * Update counts for current task type
+                 */
+                $summary = $this->updateDetailsByType($summary, $task);
+            }
+        }
+
+        $groupedTasks = [];
+        foreach ($summary as $type => $detail) {
+            if ($detail['failed'] !== 0) {
+                $status = StatusType::buildFailed();
+            } elseif ($detail['completed'] === $detail['successful'] && $detail['completed'] === $detail['total']) {
+                $status = StatusType::buildSuccess();
+            } elseif ($detail['total'] === $detail['pending']) {
+                $status = StatusType::buildPending();
+            } else {
+                $status = StatusType::buildRunning();
+            }
+            $groupedTasks[$type] = GroupedTaskType::build(
+                $status,
+                SummaryType::build(
+                    $detail['total'],
+                    $detail['pending'],
+                    $detail['dispatched'],
+                    $detail['completed'],
+                    $detail['successful'],
+                    $detail['failed']
+                ),
+                $type,
+                $detail['uuids']
+            );
+        }
+
+        return $groupedTasks;
+    }
+
+    /**
+     * @return string
+     */
+    public function getWorkflowId(): string
+    {
+        return $this->workflowId;
+    }
+
+    /**
+     * @param array $summary
+     * @param Task $task
      * @return array
      */
-    public function getSummary(): array
+    private function initializeDetailsByType(array $summary, Task $task): array
     {
-        return [
-            'status' => $this->getStatus(),
-            'percentageProgression' => sprintf('%s %%', $this->getPercentageProgression()),
-            'executionTime' => sprintf('%fs', $this->getExecutionTime()),
-            'startedAt'     => (!is_null($this->getStartedAt())) ? $this->getStartedAt()->getTimestamp() : null,
-            'finishedAt'    => (!is_null($this->getFinishedAt())) ? $this->getFinishedAt()->getTimestamp() : null,
-            'groups' => [
-                'total'         => $this->countGroupsInWorkflow(),
-                'pending'       => $this->countPendingGroups(),
-                'dispatched'    => $this->countRunningGroups(),
-                'completed'     => $this->countCompletedGroups(),
-                'successful'    => $this->countSuccessfulGroups(),
-                'failed'        => $this->countFailedGroups(),
-            ],
-            'tasks' => [
-                'total'         => $this->countTotalOrders(),
-                'pending'       => $this->countTotalPlanifiedOrders(),
-                'dispatched'    => $this->countTotalDispatchedOrders(),
-                'completed'     => $this->countTotalCompletedOrders(),
-                'successful'    => $this->countTotalSuccessfulOrders(),
-                'failed'        => $this->countTotalFailedOrders(),
-            ]
+        if (isset($summary[$task->getType()])) {
+            return $summary;
+        }
+        $summary[$task->getType()] = [
+            'total' => 0,
+            'pending' => 0,
+            'dispatched' => 0,
+            'completed' => 0,
+            'successful' => 0,
+            'failed' => 0
         ];
+
+        return $summary;
+    }
+
+    /**
+     * Append associated array key by 1
+     * @param array $summary
+     * @param Task $task
+     * @return array
+     */
+    private function updateDetailsByType(array $summary, Task $task): array
+    {
+        $summary[$task->getType()]['total'] ++;
+        $summary[$task->getType()]['uuids'][] = $task->getOrderMessage()->getOrderId();
+        switch ($task) {
+            case $task->isOnFailure():
+                $summary[$task->getType()]['failed'] ++;
+                $summary[$task->getType()]['completed'] ++;
+                break;
+            case $task->isSuccess():
+                $summary[$task->getType()]['successful'] ++;
+                $summary[$task->getType()]['completed'] ++;
+                break;
+            case $task->isDispatched():
+                $summary[$task->getType()]['dispatched'] ++;
+                break;
+            case $task->isCompleted():
+                $summary[$task->getType()]['completed'] ++;
+                break;
+            case $task->isPlanified():
+                $summary[$task->getType()]['pending'] ++;
+                break;
+        }
+        return $summary;
+    }
+
+    public function getTasks(): Tasks
+    {
+        $tasks = [];
+        foreach ($this->groups as $group) {
+            foreach ($group->getTasks() as $task) {
+                $tasks[] = TaskType::build(
+                    $task->getOrderMessage()->getOrderId(),
+                    $task->getType(),
+                    $task->getStatusType(),
+                    $task->getTimer()
+                );
+            }
+        }
+
+        return new Tasks($tasks, $this->getPercentage());
+    }
+
+    /**
+     * Get groups details
+     * @return Groups
+     */
+    public function getGroups(): Groups
+    {
+        $status = $this->getStatus();
+        $summary = SummaryType::build(
+            $this->countGroupsInWorkflow(),
+            $this->countPendingGroups(),
+            $this->countRunningGroups(),
+            $this->countCompletedGroups(),
+            $this->countSuccessfulGroups(),
+            $this->countFailedGroups()
+        );
+
+        $groups = array_map(function (Group $group) {
+            return GroupType::build(
+                $group->getGroupId(),
+                $group->getStatus(),
+                $group->getTimer(),
+                $group->getPercentage(),
+                array_values(
+                    array_map(function (Task $task) {
+                        return $task->getSummary();
+                    }, $group->getTasks())
+                )
+            );
+        }, $this->groups);
+
+        return new Groups($this->getWorkflowId(), $status, $summary, $this->getPercentage(),$groups);
+    }
+
+    /**
+     * Get all tasks in the workflow
+     * @return array
+     */
+    public function getOrdersInWorkflow()
+    {
+        $tasks = [];
+
+        foreach ($this->groups as $group) {
+            $tasks = array_merge($tasks, $group->getTasks());
+        }
+
+        return $tasks;
+    }
+
+    public function jsonSerialize()
+    {
+        return $this->getSummary()->jsonSerialize();
+    }
+
+    protected function assertUuid(string $uuid)
+    {
+        if (!uuid_is_valid($uuid)) {
+            throw new InvalidProgressBagArgumentException("[WORKFLOW] {$uuid} is not a valid uuid");
+        }
     }
 }

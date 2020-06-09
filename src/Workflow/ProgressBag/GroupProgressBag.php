@@ -2,7 +2,12 @@
 
 namespace Ipedis\Rabbit\Workflow\ProgressBag;
 
-
+use Ipedis\Rabbit\DTO\Order\Tasks;
+use Ipedis\Rabbit\DTO\Type\ProgressType;
+use Ipedis\Rabbit\DTO\Type\StatusType;
+use Ipedis\Rabbit\DTO\Type\SummaryType;
+use Ipedis\Rabbit\DTO\Type\TaskType;
+use Ipedis\Rabbit\DTO\Type\TimerType;
 use Ipedis\Rabbit\Workflow\Task;
 
 class GroupProgressBag implements ProgressBagInterface
@@ -206,16 +211,20 @@ class GroupProgressBag implements ProgressBagInterface
      * - RUNNING : at least one task has been dispatched
      * - FINISHED : all tasks in group have completed
      *
-     * @return string
+     * @return StatusType
      */
-    public function getStatus(): string
+    public function getStatus(): StatusType
     {
         if ($this->isCompleted()) {
-            return self::STATUS_FINISHED;
+            if ($this->hasFailure()) {
+                return StatusType::buildFailed();
+            }
+
+            return StatusType::buildSuccess();
+        }  elseif($this->isPending()) {
+            return StatusType::buildPending();
         } elseif ($this->isRunning()) {
-            return self::STATUS_RUNNING;
-        } else {
-            return self::STATUS_PENDING;
+            return StatusType::buildRunning();
         }
     }
 
@@ -325,13 +334,15 @@ class GroupProgressBag implements ProgressBagInterface
     /**
      * Get percentage progression of group
      *
-     * @return float
+     * @return ProgressType
      */
-    public function getPercentageProgression(): float
+    public function getPercentage(): ProgressType
     {
-        $percentage = ($this->countCompletedOrders() / $this->countOrdersInGroup()) * 100;
-
-        return round($percentage, 2);
+        return ProgressType::build(
+            (100 * $this->countCompletedOrders())/ $this->countOrdersInGroup(),
+            (100 * $this->countSuccessfulOrders())/ $this->countOrdersInGroup(),
+            (100 * $this->countFailedOrders())/ $this->countOrdersInGroup()
+        );
     }
 
     /**
@@ -341,18 +352,133 @@ class GroupProgressBag implements ProgressBagInterface
     {
         return [
             'status' => $this->getStatus(),
-            'percentageProgression' => sprintf('%s %%', $this->getPercentageProgression()),
-            'executionTime' => sprintf('%fs', $this->getExecutionTime()),
-            'startedAt'     => (!is_null($this->getStartedAt())) ? $this->getStartedAt()->getTimestamp() : null,
-            'finishedAt'    => (!is_null($this->getFinishedAt())) ? $this->getFinishedAt()->getTimestamp() : null,
-            'tasks'         => [
-                'total'         => $this->countOrdersInGroup(),
-                'pending'       => $this->countPlanifiedOrders(),
-                'dispatched'    => $this->countDispatchedOrders(),
-                'completed'     => $this->countCompletedOrders(),
-                'successful'    => $this->countSuccessfulOrders(),
-                'failed'        => $this->countFailedOrders(),
+            'percentage' => $this->getPercentage(),
+            'timer' => TimerType::build($this->getExecutionTime(), $this->getStartedAt(), $this->getFinishedAt()),
+            'tasks' => [
+                'state' => $this->getStatus(),
+                'summary' => $this->getGlobalSummary(),
+                'types' => $this->getGroupedTasksSummary()
             ]
         ];
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function getGlobalSummary(): SummaryType
+    {
+        return SummaryType::build(
+            $this->countOrdersInGroup(),
+            $this->countPlanifiedOrders(),
+            $this->countDispatchedOrders(),
+            $this->countCompletedOrders(),
+            $this->countSuccessfulOrders(),
+            $this->countFailedOrders()
+        );
+    }
+
+    /**
+     * Create an array of task grouped by type
+     * @return SummaryType[]
+     */
+    public function getGroupedTasksSummary()
+    {
+        $summary = [];
+        foreach ($this->tasks as $task) {
+            /*
+             * initialize count of task of this type
+             */
+            if (!isset($summary[$task->getType()])) {
+                $summary = $this->initializeDetailsByType($summary, $task);
+            }
+            /*
+             * Update counts by type
+             */
+            $summary = $this->updateDetailsByType($summary, $task);
+        }
+
+        return array_map(function ($type, $detail) {
+            return [
+                $type => [
+                    'type' => $type,
+                    'summary' => SummaryType::build(
+                        $detail['total'],
+                        $detail['pending'],
+                        $detail['dispatched'],
+                        $detail['completed'],
+                        $detail['successful'],
+                        $detail['failed']
+                    ),
+                    'contain' => $detail['uuids']
+                ]
+            ];
+        },array_keys($summary), $summary);
+    }
+
+    /**
+     * @param array $summary
+     * @param Task $task
+     * @return array
+     */
+    private function initializeDetailsByType(array $summary, Task $task): array
+    {
+        if (isset($summary[$task->getType()])) {
+            return $summary;
+        }
+        $summary[$task->getType()] = [
+            'total' => 0,
+            'pending' => 0,
+            'dispatched' => 0,
+            'completed' => 0,
+            'successful' => 0,
+            'failed' => 0
+        ];
+
+        return $summary;
+    }
+
+    /**
+     * Append associated array key by 1
+     * @param array $summary
+     * @param Task $task
+     * @return array
+     */
+    private function updateDetailsByType(array $summary, Task $task): array
+    {
+        $summary[$task->getType()]['total'] ++;
+        $summary[$task->getType()]['uuids'][] = $task->getOrderMessage()->getOrderId();
+        switch ($task) {
+            case $task->isOnFailure():
+                $summary[$task->getType()]['failed'] ++;
+                break;
+            case $task->isSuccess():
+                $summary[$task->getType()]['successful'] ++;
+                break;
+            case $task->isDispatched():
+                $summary[$task->getType()]['dispatched'] ++;
+                break;
+            case $task->isCompleted():
+                $summary[$task->getType()]['completed'] ++;
+                break;
+            case $task->isPlanified():
+                $summary[$task->getType()]['pending'] ++;
+                break;
+        }
+
+        return $summary;
+    }
+
+    public function getTasks(): Tasks
+    {
+        return new Tasks(
+            array_map(function (Task $task) {
+                return TaskType::build(
+                    $task->getOrderMessage()->getOrderId(),
+                    $task->getType(),
+                    $task->getStatusType(),
+                    $task->getTimer()
+                );
+            }, $this->tasks), $this->getPercentage()
+        );
     }
 }

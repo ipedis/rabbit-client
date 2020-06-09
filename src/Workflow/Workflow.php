@@ -24,6 +24,8 @@ class Workflow extends Bindable
      */
     protected $config;
 
+    protected $workflowId;
+
     /**
      * Workflow constructor.
      *
@@ -33,7 +35,7 @@ class Workflow extends Bindable
      * @throws InvalidGroupArgumentException
      * @throws InvalidWorkflowArgumentException
      */
-    public function __construct($firstStep, array $groupCallbacks = [], ?WorkflowConfig $config = null)
+    public function __construct($firstStep, array $groupCallbacks = [], ?WorkflowConfig $config = null, ?string $workflowId = null)
     {
         /**
          * define config
@@ -51,6 +53,9 @@ class Workflow extends Bindable
          * - Callable : create and provide new group to callable
          */
         $this->schedule($firstStep, $groupCallbacks);
+
+        if ($workflowId) $this->assertUuid($workflowId);
+        $this->workflowId = $workflowId ?? uuid_create();
     }
 
     /**
@@ -212,7 +217,24 @@ class Workflow extends Bindable
      */
     public function getProgressBag(): WorkflowProgressBag
     {
-        return new WorkflowProgressBag($this->getGroups());
+        return new WorkflowProgressBag($this->getGroups(), $this->workflowId);
+    }
+
+    /**
+     * get current workflow progress percentage
+     * @return float
+     */
+    public function getProgressPercentage(): float
+    {
+        return $this->getProgressBag()->getPercentage()->getCompleted();
+    }
+
+    /**
+     * @return string|null
+     */
+    public function getWorkflowId(): ?string
+    {
+        return $this->workflowId;
     }
 
     /**
@@ -235,5 +257,12 @@ class Workflow extends Bindable
     protected function getAllowedBindableTypes(): array
     {
         return BindableEventInterface::WORKFLOW_ALLOW_TYPES;
+    }
+
+    protected function assertUuid(string $uuid)
+    {
+        if (!uuid_is_valid($uuid)) {
+            throw new InvalidWorkflowArgumentException("[WORKFLOW] {$uuid} is not a valid uuid");
+        }
     }
 }

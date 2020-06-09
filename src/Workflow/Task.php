@@ -3,7 +3,11 @@
 namespace Ipedis\Rabbit\Workflow;
 
 
+use Ipedis\Rabbit\Channel\ChannelAbstract;
 use Ipedis\Rabbit\Consumer\Handler\MessageHandlerInterface;
+use Ipedis\Rabbit\DTO\Type\StatusType;
+use Ipedis\Rabbit\DTO\Type\TaskType;
+use Ipedis\Rabbit\DTO\Type\TimerType;
 use Ipedis\Rabbit\Exception\Task\InvalidStatusException;
 use Ipedis\Rabbit\MessagePayload\OrderMessagePayload;
 use Ipedis\Rabbit\MessagePayload\ReplyMessagePayload;
@@ -201,6 +205,41 @@ final class Task extends Bindable
         return $this->getStatus() === MessageHandlerInterface::TYPE_PLANIFIED;
     }
 
+    public function getStatusType()
+    {
+        switch ($this->getStatus()) {
+            case MessageHandlerInterface::TYPE_PLANIFIED:
+                return StatusType::buildPending();
+            case MessageHandlerInterface::TYPE_SUCCESS:
+                return StatusType::buildSuccess();
+            case MessageHandlerInterface::TYPE_ERROR:
+                return StatusType::buildFailed();
+            case MessageHandlerInterface::TYPE_PROGRESS:
+            case MessageHandlerInterface::TYPE_DISPATCHED:
+                return StatusType::buildRunning();
+        }
+    }
+
+    /**
+     * @return TimerType
+     */
+    public function getTimer()
+    {
+        return TimerType::build(
+            $this->getExecutionTime(),
+            $this->getStartTime(),
+            $this->getFinishedTime()
+        );
+    }
+
+    /**
+     * @return string
+     */
+    public function getType()
+    {
+        return ChannelAbstract::getTypeFromChannelName($this->getOrderMessage()->getChannel());
+    }
+
     /**
      * Get task execution time
      * @return float
@@ -236,6 +275,16 @@ final class Task extends Bindable
     public function getRetryCount(): int
     {
         return $this->retryCount;
+    }
+
+    public function getSummary()
+    {
+        return TaskType::build(
+            $this->getOrderMessage()->getOrderId(),
+            $this->getType(),
+            $this->getStatusType(),
+            $this->getTimer()
+        );
     }
 
     /**
