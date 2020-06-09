@@ -20,15 +20,16 @@ trait Manager
      * @var AMQPQueue $replyQueue
      */
     private $replyQueue;
+
     /**
-     * @var Workflow
+     * @var Workflow[]
      */
     private $workflow = [];
 
     /**
-     * @var array $tasks
+     * @var $tickerStore[]
      */
-    private $tasks;
+    private $tickerStore;
 
     abstract protected function getExchangeName(): string;
 
@@ -79,16 +80,7 @@ trait Manager
             $this->resetOrdersQueue();
 
             foreach ($group->getTasks() as $task) {
-                /**
-                 * Track current task
-                 */
-                $this->tasks[$task->getTaskId()] = [
-                    'group'     => $group->getGroupId(),
-                    'workflow'  => $workflow->getWorkflowId()
-                ];
-
-
-                $this->publish($task);
+                $this->publish($task, $group, $workflow);
                 $task->setTaskAsDispatched();
                 $task->call(BindableEventInterface::TASK_ON_START, $task);
             }
@@ -120,14 +112,14 @@ trait Manager
         $message = ReplyMessagePayload::fromJson($envelope->getBody());
 
         /**
-         * @var string
+         * Get tasks group & workflow from store
          */
-        $taskArr = $this->tasks[$message->getOrderId()];
+        $ticker = $this->tickerStore[$message->getOrderId()];
 
         /**
          * @var Workflow
          */
-        $workflow = $this->workflow[$taskArr['workflow']];
+        $workflow = $this->workflow[$ticker['workflow']];
 
         /**
          * @var Group $group
@@ -149,7 +141,7 @@ trait Manager
             ($group->canRetryTask($task) || $workflow->canRetryTask($task, $group))
         ) {
             $workflow->retryGroupTask($message);
-            $this->publish($task);
+            $this->publish($task, $group, $workflow);
 
             $task->call(BindableEventInterface::TASK_ON_RETRY, $task);
             return true;
@@ -221,10 +213,20 @@ trait Manager
 
     /**
      * @param Task $task
+     * @param Group $group
+     * @param Workflow $workflow
      * @return $this
      */
-    protected function publish(Task $task): self
+    protected function publish(Task $task, Group $group, Workflow $workflow): self
     {
+        /**
+         * Add task metas to ticker store
+         */
+        $this->tickerStore[$task->getTaskId()] = [
+            'group'     => $group->getGroupId(),
+            'workflow'  => $workflow->getWorkflowId()
+        ];
+
         $message = $task->getOrderMessage();
         $message->setReplyQueue($this->replyQueue->getName());
         /**
