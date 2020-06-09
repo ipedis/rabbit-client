@@ -23,7 +23,12 @@ trait Manager
     /**
      * @var Workflow
      */
-    private $workflow;
+    private $workflow = [];
+
+    /**
+     * @var array $tasks
+     */
+    private $tasks;
 
     abstract protected function getExchangeName(): string;
 
@@ -54,7 +59,7 @@ trait Manager
     public function run(Workflow $workflow)
     {
         $wasAtLeastOneFailure = false;
-        $this->workflow = $workflow;
+        $this->workflow[$workflow->getWorkflowId()] = $workflow;
         /**
          * Each groups will be executed sequencially, we iterate on each group.
          * call relevant callback if needed.
@@ -63,7 +68,6 @@ trait Manager
 
         /** @var Group $group */
         foreach ($workflow->getGroups() as $group) {
-
             /**
              * We start to run current group.
              */
@@ -75,6 +79,15 @@ trait Manager
             $this->resetOrdersQueue();
 
             foreach ($group->getTasks() as $task) {
+                /**
+                 * Track current task
+                 */
+                $this->tasks[$task->getTaskId()] = [
+                    'group'     => $group->getGroupId(),
+                    'workflow'  => $workflow->getWorkflowId()
+                ];
+
+
                 $this->publish($task);
                 $task->setTaskAsDispatched();
                 $task->call(BindableEventInterface::TASK_ON_START, $task);
@@ -107,13 +120,23 @@ trait Manager
         $message = ReplyMessagePayload::fromJson($envelope->getBody());
 
         /**
+         * @var string
+         */
+        $taskArr = $this->tasks[$message->getOrderId()];
+
+        /**
+         * @var Workflow
+         */
+        $workflow = $this->workflow[$taskArr['workflow']];
+
+        /**
          * @var Group $group
          * @var Task $task
          *
          * Persist current message AND update task status.
          * It will return current group and current task.
          */
-        [$group, $task] = $this->workflow->taskReply($message);
+        [$group, $task] = $workflow->taskReply($message);
         // ACK Current message.
         $q->ack($envelope->getDeliveryTag());
 
@@ -123,9 +146,9 @@ trait Manager
          */
         if (
             $task->isOnFailure() &&
-            ($group->canRetryTask($task) || $this->workflow->canRetryTask($task, $group))
+            ($group->canRetryTask($task) || $workflow->canRetryTask($task, $group))
         ) {
-            $this->workflow->retryGroupTask($message);
+            $workflow->retryGroupTask($message);
             $this->publish($task);
 
             $task->call(BindableEventInterface::TASK_ON_RETRY, $task);
@@ -135,7 +158,7 @@ trait Manager
         /**
          * Call event binded on task layer.
          */
-        $this->onUpdatedTaskStatus($message, $group, $task);
+        $this->onUpdatedTaskStatus($message, $workflow, $group, $task);
         /**
          * wait until entire group is finish.
          */
@@ -146,11 +169,13 @@ trait Manager
      * notify callback
      *
      * @param ReplyMessagePayload $message
+     * @param Workflow $workflow
      * @param Group $group
      * @param Task $task
      */
     private function onUpdatedTaskStatus(
         ReplyMessagePayload $message,
+        Workflow $workflow,
         Group $group,
         Task $task
     ) {
@@ -163,8 +188,8 @@ trait Manager
                 $group->call(BindableEventInterface::GROUP_ON_TASKS_SUCCESS, $task);
                 $group->call(BindableEventInterface::GROUP_ON_TASKS_FINISH, $task);
 
-                $this->workflow->call(BindableEventInterface::WORKFLOW_ON_TASKS_SUCCESS, $task);
-                $this->workflow->call(BindableEventInterface::WORKFLOW_ON_TASKS_FINISH, $task);
+                $workflow->call(BindableEventInterface::WORKFLOW_ON_TASKS_SUCCESS, $task);
+                $workflow->call(BindableEventInterface::WORKFLOW_ON_TASKS_FINISH, $task);
             break;
             case MessageHandlerInterface::TYPE_ERROR :
                 $task->call(BindableEventInterface::TASK_ON_FAILURE, $task);
@@ -173,8 +198,8 @@ trait Manager
                 $group->call(BindableEventInterface::GROUP_ON_TASKS_FAILURE, $task);
                 $group->call(BindableEventInterface::GROUP_ON_TASKS_FINISH, $task);
 
-                $this->workflow->call(BindableEventInterface::WORKFLOW_ON_TASKS_FAILURE, $task);
-                $this->workflow->call(BindableEventInterface::WORKFLOW_ON_TASKS_FINISH, $task);
+                $workflow->call(BindableEventInterface::WORKFLOW_ON_TASKS_FAILURE, $task);
+                $workflow->call(BindableEventInterface::WORKFLOW_ON_TASKS_FINISH, $task);
             break;
             case MessageHandlerInterface::TYPE_PROGRESS :
                 $task->call(BindableEventInterface::TASK_ON_PROGRESS, $task);
