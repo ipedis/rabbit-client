@@ -40,10 +40,11 @@ class ProgressManager extends ConnectorAbstract
          * ---- Task 2.1 - success
          * ---- Task 2.2 - failure
          */
-        $workflow = new Workflow($this->craftGroup('v1.admin.publication.success'));
-        $workflow->then($this->craftGroup('v1.admin.publication.waiter'));
+        $workflow = new Workflow($this->craftGroup('v1.admin.publication.success', 5));
+        $workflow->then($this->craftGroup('v1.admin.publication.waiter', 5));
 
-        $workflow->bind(BindableEventInterface::WORKFLOW_ON_TASKS_FINISH, $this->json($workflow));
+        $workflow->bind(BindableEventInterface::WORKFLOW_ON_FINISH, $this->json($workflow));
+        echo "| index | event | uuid | sendAt |\n|---|---|---|---|\n";
         $this->run($workflow);
     }
 
@@ -71,7 +72,7 @@ class ProgressManager extends ConnectorAbstract
     public function json(Workflow $workflow): Closure {
         return function () use ($workflow) {
             echo "\n\n\n\n";
-            echo json_encode($workflow->getProgressBag()->getGroups(), JSON_PRETTY_PRINT);
+            echo json_encode($workflow->getProgressBag()->getSummary(), JSON_PRETTY_PRINT);
             echo "\n\n\n\n";
         };
     }

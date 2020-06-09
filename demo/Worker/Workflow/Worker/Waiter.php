@@ -17,7 +17,7 @@ class Waiter extends ConnectorAbstract implements OnBeforeMessage
 {
     use WorkerTrait;
 
-    protected function makeMessageHandler(): \Closure
+    protected function makeMessageHandler(): Closure
     {
         return function (AMQPEnvelope $message, OrderMessagePayload $messagePayload) {
             $params = $messagePayload->getData();
@@ -29,7 +29,7 @@ class Waiter extends ConnectorAbstract implements OnBeforeMessage
                     ['status' => 'PROGRESS', 'step' => 1]
                 )
             );
-            sleep(rand(0, 1));
+            sleep(rand(0, 10));
             if(!empty($params['failure']) && $params['failure'] === true) throw new Exception('oups');
             return ["step" => "step1 finished"];
         };
