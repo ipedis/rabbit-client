@@ -8,12 +8,16 @@ use AMQPExchange;
 use AMQPQueue;
 use Closure;
 use Exception;
+use Ipedis\Rabbit\Channel\Factory\ChannelFactory;
 use Ipedis\Rabbit\Consumer\Handler\MessageHandlerInterface;
+use Ipedis\Rabbit\Exception\Channel\ChannelFactoryException;
 use Ipedis\Rabbit\Exception\MessagePayload\MessagePayloadFormatException;
+use Ipedis\Rabbit\Exception\MessagePayload\MessagePayloadValidatorException;
 use Ipedis\Rabbit\Lifecyle\Hook\OnAfterMessage;
 use Ipedis\Rabbit\Lifecyle\Hook\OnBeforeMessage;
 use Ipedis\Rabbit\MessagePayload\OrderMessagePayload;
 use Ipedis\Rabbit\MessagePayload\ReplyMessagePayload;
+use Ipedis\Rabbit\MessagePayload\Validator\ValidatorInterface;
 
 /**
  * Class Worker
@@ -39,6 +43,15 @@ trait Worker
      */
     public function execute()
     {
+        /**
+         * Before stating worker
+         * Check if channel factory is defined
+         * to validate event naming
+         */
+        if (!$this->getChannelFactory() instanceof ChannelFactory) {
+            throw new ChannelFactoryException('Must provide channel factory {channelFactory} with version and service.');
+        }
+
         $this->worker_id = uniqid("worker_id_");
         $this->connect();
         $this->queueDeclare();
@@ -148,11 +161,26 @@ trait Worker
     private function consumeReceivedMessage(AMQPEnvelope $message, AMQPQueue $q)
     {
         /**
+         * Ignore if message not proper json
+         */
+        if (!$this->isValidMessageFormat($message->getBody())) {
+            return;
+        }
+
+        /**
          * Re-construct message payload objectValue from request body
          */
         $messagePayload = OrderMessagePayload::fromJson($message->getBody());
 
         try {
+            /**
+             * 1. Validate channel naming and return event name
+             */
+            if (!$this->isValidChannelName($messagePayload->getChannel())) {
+                return;
+            }
+
+
             /**
              * Notify manager of start consuming & task status change
              */
@@ -264,6 +292,8 @@ trait Worker
      */
     abstract protected function makeExceptionHandler(): Closure;
 
+    abstract protected function getChannelFactory();
+
     /**
      * Prototype method
      * Child can overide this function to log exceptions
@@ -271,4 +301,26 @@ trait Worker
      * @param Exception $exception
      */
     protected function logException(\Exception $exception){}
+
+    /**
+     * Check if message is valid json
+     *
+     * @param $message
+     * @return bool
+     */
+    private function isValidMessageFormat(string $message): bool
+    {
+        return json_decode($message) != null;
+    }
+
+    /**
+     * Check if channel name follows proper naming
+     *
+     * @param string $channelName
+     * @return bool
+     */
+    private function isValidChannelName(string $channelName): bool
+    {
+        return $this->getChannelFactory()->match($channelName);
+    }
 }

@@ -1,0 +1,14 @@
+{
+  "$schema":"http://json-schema.org/draft-07/schema#",
+  "$id":"v1.admin.publication.generate",
+  "type":"object",
+  "properties": {
+    "hasToFail": {
+      "type":"boolean"
+    },
+    "name":{
+      "type":"string"
+    }
+  },
+  "additionalProperties":false
+}

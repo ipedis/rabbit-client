@@ -11,18 +11,18 @@ use Ipedis\Rabbit\Exception\Channel\ChannelNamingException;
 
 class ChannelFactory
 {
+    private const TYPE_EVENT = 'event';
+    private const TYPE_ORDER = 'order';
+
     /**
      * @var string
      */
     private $protocolVersion;
+
     /**
      * @var string
      */
     private $serviceName;
-
-
-    private const TYPE_EVENT = 'event';
-    private const TYPE_ORDER = 'order';
 
     public function __construct(
         string $protocolVersion,
@@ -41,7 +41,9 @@ class ChannelFactory
     public function getEvent(string $partialChannel, string $protocolVersion = null): EventChannel
     {
         preg_match(EventChannel::PARTIAL_CHANNEL_PATTERN, $partialChannel, $matched);
+
         if (empty($matched['aggregate'] || $matched['action'])) throw new ChannelNamingException('impossible to parse : '.$partialChannel);
+
         /** @var EventChannel */
         return $this->getChannel(self::TYPE_EVENT, $matched['aggregate'], $matched['action'], $protocolVersion);
     }
@@ -55,17 +57,38 @@ class ChannelFactory
     public function getOrder(string $partialChannel, string $protocolVersion = null): OrderChannel
     {
         preg_match(OrderChannel::PARTIAL_CHANNEL_PATTERN, $partialChannel, $matched);
+
         if (empty($matched['aggregate'] || $matched['action'])) throw new ChannelNamingException('impossible to parse : '.$partialChannel);
+
         /** @var OrderChannel */
         return $this->getChannel(self::TYPE_ORDER, $matched['aggregate'], $matched['action'], $protocolVersion);
     }
 
+    /**
+     * @param string $channel
+     * @return bool
+     */
     public function matchPartial(string $channel): bool
     {
         preg_match(OrderChannel::PARTIAL_CHANNEL_PATTERN, $channel, $matches);
 
         return !empty($matches['aggregate']) &&
             !empty($matches['action']);
+    }
+
+    /**
+     * @param string $channel
+     * @return bool
+     */
+    public function match(string $channel): bool
+    {
+        preg_match(OrderChannel::CHANNEL_PATTERN, $channel, $matches);
+
+        return !empty($matches['protocol']) &&
+            !empty($matches['service']) &&
+            !empty($matches['aggregate']) &&
+            !empty($matches['action'])
+        ;
     }
 
     /**

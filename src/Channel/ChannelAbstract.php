@@ -11,7 +11,7 @@ abstract class ChannelAbstract
     /**
      * <protocol>.<service>.<aggregate>.<action>
      */
-    private const CHANNEL_PATTERN = '#^(?<protocol>v\d+)\.(?<service>[\w-]+)\.(?<aggregate>[\w-]+(?:\.[\w-]+)?)\.(?<action>[\w-]+)$#';
+    const CHANNEL_PATTERN = '#^(?<protocol>v\d+)\.(?<service>[\w-]+)\.(?<aggregate>[\w-]+(?:\.[\w-]+)?)\.(?<action>[\w-]+)$#';
     /**
      * <aggregate>.<action>
      */
