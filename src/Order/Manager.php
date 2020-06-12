@@ -19,9 +19,11 @@ use Ipedis\Rabbit\Exception\Channel\ChannelFactoryException;
 use Ipedis\Rabbit\Exception\Channel\ChannelNamingException;
 use Ipedis\Rabbit\Exception\InvalidCallableException;
 use Ipedis\Rabbit\Exception\MessagePayload\MessagePayloadFormatException;
+use Ipedis\Rabbit\Exception\MessagePayload\MessagePayloadValidatorException;
 use Ipedis\Rabbit\MessagePayload\MessagePayloadInterface;
 use Ipedis\Rabbit\MessagePayload\OrderMessagePayload;
 use Ipedis\Rabbit\MessagePayload\ReplyMessagePayload;
+use Ipedis\Rabbit\MessagePayload\Validator\ValidatorInterface;
 
 /**
  * Trait Manager
@@ -59,6 +61,7 @@ trait Manager
      * @return string
      */
     abstract protected function getExchangeName(): string;
+    abstract protected function getChannelFactory();
 
     public function resetOrdersQueue()
     {
@@ -82,6 +85,7 @@ trait Manager
      * @throws ChannelFactoryException
      * @throws ChannelNamingException
      * @throws InvalidCallableException
+     * @throws MessagePayloadValidatorException
      */
     public function publish(OrderMessagePayload $messagePayload, $callback): self
     {
@@ -90,6 +94,11 @@ trait Manager
          * construct/validate channel
          */
         $this->assertChannelFactory();
+
+        /**
+         * Message payload validator must be provided
+         */
+        $this->assertMessagePayloadValidator();
 
         /**
          * Callback provided should be a callable OR
@@ -102,6 +111,11 @@ trait Manager
          * Validate channel and return queue name
          */
         $channel = $this->getChannelName($messagePayload->getChannel());
+
+        /**
+         * Validate message payload data schema
+         */
+        $this->getMessagePayloadValidator()->validate($messagePayload);
 
         /**
          * Update headers of order message to add
@@ -407,6 +421,16 @@ trait Manager
     {
         if (!$this->getChannelFactory() instanceof ChannelFactory) {
             throw new ChannelFactoryException('Must provide channel factory {channelFactory} with version and service.');
+        }
+    }
+
+    /**
+     * @throws MessagePayloadValidatorException
+     */
+    protected function assertMessagePayloadValidator(): void
+    {
+        if (!$this->getMessagePayloadValidator() instanceof ValidatorInterface) {
+            throw new MessagePayloadValidatorException("Must provide message payload validator {messagePayloadValidator}");
         }
     }
 

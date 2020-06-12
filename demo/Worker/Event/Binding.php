@@ -5,13 +5,13 @@ namespace Ipedis\Demo\Rabbit\Worker\Event;
 
 use Closure;
 use Exception;
-use Ipedis\Demo\Rabbit\Utils\ConnectorAbstract;
+use Ipedis\Demo\Rabbit\Utils\WorkerAbstract;
 use Ipedis\Rabbit\Event\EventListener;
 use Ipedis\Rabbit\Lifecyle\Hook\OnAfterMessage;
 use Ipedis\Rabbit\Lifecyle\Hook\OnBeforeMessage;
 use Ipedis\Rabbit\MessagePayload\EventMessagePayload;
 
-class Binding extends ConnectorAbstract implements OnBeforeMessage, OnAfterMessage
+class Binding extends WorkerAbstract implements OnBeforeMessage, OnAfterMessage
 {
     use EventListener;
 

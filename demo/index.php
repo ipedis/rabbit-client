@@ -1,5 +1,6 @@
 <?php
 
+
 use Ipedis\Demo\Rabbit\Utils\MessagePayloadValidator\MessagePayloadValidator;
 use Ipedis\Demo\Rabbit\Worker\Event\Binding;
 use Ipedis\Demo\Rabbit\Worker\Event\Dispatcher;
@@ -41,7 +42,8 @@ if ( !empty($argv[1]) ) {
                 $configOrder['use'],
                 $configOrder['password'],
                 $configOrder['exchange'],
-                $configOrder['type']
+                $configOrder['type'],
+                $channelFactory
             ))->execute();
         break;
 
@@ -53,7 +55,8 @@ if ( !empty($argv[1]) ) {
                 $configOrder['password'],
                 $configOrder['exchange'],
                 $configOrder['type'],
-                $channelFactory
+                $channelFactory,
+                $messagePayloadValidator
             ))->main();
             break;
 
@@ -65,7 +68,8 @@ if ( !empty($argv[1]) ) {
                 $configOrder['use'],
                 $configOrder['password'],
                 $configOrder['exchange'],
-                $configOrder['type']
+                $configOrder['type'],
+                $channelFactory
             ))->execute();
             break;
 
@@ -76,7 +80,8 @@ if ( !empty($argv[1]) ) {
                 $configOrder['use'],
                 $configOrder['password'],
                 $configOrder['exchange'],
-                $configOrder['type']
+                $configOrder['type'],
+                $channelFactory
             ))->execute();
             break;
 
@@ -87,7 +92,8 @@ if ( !empty($argv[1]) ) {
                 $configOrder['use'],
                 $configOrder['password'],
                 $configOrder['exchange'],
-                $configOrder['type']
+                $configOrder['type'],
+                $channelFactory
             ))->execute();
             break;
 
@@ -98,7 +104,9 @@ if ( !empty($argv[1]) ) {
                 $configOrder['use'],
                 $configOrder['password'],
                 $configOrder['exchange'],
-                $configOrder['type']
+                $configOrder['type'],
+                $channelFactory,
+                $messagePayloadValidator
             ))->main();
             break;
         case 'workflow-failure':
@@ -108,7 +116,9 @@ if ( !empty($argv[1]) ) {
                 $configOrder['use'],
                 $configOrder['password'],
                 $configOrder['exchange'],
-                $configOrder['type']
+                $configOrder['type'],
+                $channelFactory,
+                $messagePayloadValidator
             ))->main();
             break;
         case 'workflow-retry-on-failure':
@@ -118,7 +128,9 @@ if ( !empty($argv[1]) ) {
                 $configOrder['use'],
                 $configOrder['password'],
                 $configOrder['exchange'],
-                $configOrder['type']
+                $configOrder['type'],
+                $channelFactory,
+                $messagePayloadValidator
             ))->main();
             break;
         case 'workflow-progress':
@@ -128,7 +140,9 @@ if ( !empty($argv[1]) ) {
                 $configOrder['use'],
                 $configOrder['password'],
                 $configOrder['exchange'],
-                $configOrder['type']
+                $configOrder['type'],
+                $channelFactory,
+                $messagePayloadValidator
             ))->main();
             break;
         case 'binding':
@@ -138,7 +152,8 @@ if ( !empty($argv[1]) ) {
                 $configEvent['use'],
                 $configEvent['password'],
                 $configEvent['exchange'],
-                $configEvent['type']
+                $configEvent['type'],
+                $channelFactory
             ))->execute();
             break;
 
