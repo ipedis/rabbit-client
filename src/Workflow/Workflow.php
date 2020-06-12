@@ -33,7 +33,7 @@ class Workflow extends Bindable
      * @throws InvalidGroupArgumentException
      * @throws InvalidWorkflowArgumentException
      */
-    public function __construct($firstStep, array $groupCallbacks = [], ?WorkflowConfig $config = null)
+    public function __construct($firstStep = null, array $groupCallbacks = [], ?WorkflowConfig $config = null)
     {
         /**
          * define config
@@ -50,7 +50,9 @@ class Workflow extends Bindable
          * - Group : add group to collection
          * - Callable : create and provide new group to callable
          */
-        $this->schedule($firstStep, $groupCallbacks);
+        if (!is_null($firstStep)) {
+            $this->schedule($firstStep, $groupCallbacks);
+        }
     }
 
     /**
@@ -213,6 +215,17 @@ class Workflow extends Bindable
     public function getProgressBag(): WorkflowProgressBag
     {
         return new WorkflowProgressBag($this->getGroups());
+    }
+
+    /**
+     * @param WorkflowConfig $config
+     * @return Workflow
+     */
+    public function setConfig(WorkflowConfig $config): self
+    {
+        $this->config = $config;
+
+        return $this;
     }
 
     /**
