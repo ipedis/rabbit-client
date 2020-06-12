@@ -483,7 +483,7 @@ class WorkflowProgressBag implements ProgressBagInterface, \JsonSerializable
         $summary = [];
         /** @var Group $group */
         foreach ($this->groups as $group) {
-            foreach ($group->getTasks() as $task) {
+            foreach ($group->getJobs() as $task) {
                 if (!isset($summary[$task->getType()])) {
                     /*
                      * Initialize counts for current task type
@@ -592,7 +592,7 @@ class WorkflowProgressBag implements ProgressBagInterface, \JsonSerializable
     {
         $tasks = [];
         foreach ($this->groups as $group) {
-            foreach ($group->getTasks() as $task) {
+            foreach ($group->getJobs() as $task) {
                 $tasks[] = TaskType::build(
                     $task->getOrderMessage()->getOrderId(),
                     $task->getType(),
@@ -630,7 +630,7 @@ class WorkflowProgressBag implements ProgressBagInterface, \JsonSerializable
                 array_values(
                     array_map(function (Task $task) {
                         return $task->getSummary();
-                    }, $group->getTasks())
+                    }, $group->getJobs())
                 )
             );
         }, $this->groups);
@@ -647,7 +647,7 @@ class WorkflowProgressBag implements ProgressBagInterface, \JsonSerializable
         $tasks = [];
 
         foreach ($this->groups as $group) {
-            $tasks = array_merge($tasks, $group->getTasks());
+            $tasks = array_merge($tasks, $group->getJobs());
         }
 
         return $tasks;

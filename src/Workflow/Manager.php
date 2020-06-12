@@ -61,8 +61,9 @@ trait Manager
     {
         $wasAtLeastOneFailure = false;
         $this->workflow[$workflow->getWorkflowId()] = $workflow;
+
         /**
-         * Each groups will be executed sequencially, we iterate on each group.
+         * Each groups will be executed sequentially, we iterate on each group.
          * call relevant callback if needed.
          */
         $workflow->call(BindableEventInterface::WORKFLOW_ON_START);
@@ -79,10 +80,15 @@ trait Manager
              */
             $this->resetOrdersQueue();
 
-            foreach ($group->getTasks() as $task) {
-                $this->publish($task, $group, $workflow);
-                $task->setTaskAsDispatched();
-                $task->call(BindableEventInterface::TASK_ON_START, $task);
+            foreach ($group->getJobs() as $task) {
+
+                if ($task instanceof Workflow) {
+
+                } else {
+                    $this->publish($task, $group, $workflow);
+                    $task->setTaskAsDispatched();
+                    $task->call(BindableEventInterface::TASK_ON_START, $task);
+                }
             }
 
             $this->replyQueue->consume([$this, 'onGroupReply']);
@@ -110,6 +116,17 @@ trait Manager
          * Re-construct message payload from request body
          */
         $message = ReplyMessagePayload::fromJson($envelope->getBody());
+
+        // Get the task
+        // Get the group
+        // Get the workflow
+
+        // If group is not completed => wait(return true)
+        // If group is complete and task's workflow is root workflow (return false)
+        // if group is complete and task's has sub workflow:
+            // Sub workflow has pending group => Get first group and loop to dispatch tasks.
+        //complete (return false)
+
 
         /**
          * Get tasks group & workflow from store
