@@ -66,4 +66,9 @@ class Failure extends WorkerAbstract implements OnBeforeMessage, OnAfterMessage
     {
         // Hook before message was handled
     }
+
+    public function getQueuePrefix(): string
+    {
+        return 'demo.workflow';
+    }
 }

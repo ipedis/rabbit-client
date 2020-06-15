@@ -60,6 +60,11 @@ class GeneratorManager extends ConnectorAbstract
         $this->run($generation);
     }
 
+    public function getQueuePrefix(): string
+    {
+        return 'demo.workflow';
+    }
+
     /**
      * In concurrency we can have html and image
      * @return Closure

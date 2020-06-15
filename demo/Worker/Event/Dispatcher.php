@@ -119,4 +119,11 @@ class Dispatcher extends ConnectorAbstract
     {
         return ['(request-target)', 'accept', 'user-agent'];
     }
+
+    public function getQueuePrefix(): string
+    {
+        return 'demo.dispatcher';
+    }
+
+
 }

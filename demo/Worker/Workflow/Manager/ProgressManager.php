@@ -70,4 +70,9 @@ class ProgressManager extends ManagerAbstract
         $write = sprintf("\033[0G\033[2K[%'={$perc}s>%-{$left}s] - $perc%% - $done/$total", "", "");
         fwrite(STDERR, $write);
     }
+
+    public function getQueuePrefix(): string
+    {
+        return 'demo.workflow';
+    }
 }

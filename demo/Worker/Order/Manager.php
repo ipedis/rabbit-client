@@ -120,4 +120,9 @@ class Manager extends ConnectorAbstract
     {
         return $this->messagePayloadValidator;
     }
+
+    public function getQueuePrefix(): string
+    {
+        return 'demo.order';
+    }
 }

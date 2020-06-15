@@ -229,11 +229,12 @@ trait Worker
      */
     protected function queueDeclare()
     {
+        $queueName = $this->getRoutingKeyWithPrefix($this->getQueueName());
         $this->queue = new AMQPQueue($this->channel);
         $this->queue->setFlags(AMQP_DURABLE);
-        $this->queue->setName($this->getQueueName());
+        $this->queue->setName($queueName);
         $this->queue->declareQueue();
-        $this->queue->bind($this->getExchangeName(), $this->getQueueName());
+        $this->queue->bind($this->getExchangeName(), $queueName);
     }
 
     /**

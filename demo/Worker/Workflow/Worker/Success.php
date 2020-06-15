@@ -71,4 +71,9 @@ class Success extends WorkerAbstract implements OnBeforeMessage, OnAfterMessage
     {
         // Hook after message was handled
     }
+
+    public function getQueuePrefix(): string
+    {
+        return 'demo.workflow';
+    }
 }
