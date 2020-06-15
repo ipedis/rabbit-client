@@ -89,6 +89,7 @@ trait Connector
             $queue->setName($queueName);
             $queue->declareQueue();
             $queue->bind($this->getExchangeName(), $queueName);
+            $this->declaredQueues[] = $queueName;
         }
     }
 
