@@ -100,6 +100,10 @@ trait Connector
      */
     protected function getRoutingKeyWithPrefix(string $routingKey)
     {
+        if (empty($this->getQueuePrefix())) {
+            return $routingKey;
+        }
+
         return sprintf('%s.%s', $this->getQueuePrefix(), $routingKey);
     }
 
@@ -154,5 +158,11 @@ trait Connector
     abstract public function getPassword(): string;
     abstract public function getExchangeName(): string;
     abstract public function getExchangeType(): string;
-    abstract public function getQueuePrefix(): string;
+
+    /**
+     * Optional prefix to attach to queue name.
+     * In case system has multiple environments using same rabbitmq server.
+     * @return string
+     */
+    abstract public function getQueuePrefix(): ?string;
 }

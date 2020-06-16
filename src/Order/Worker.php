@@ -230,6 +230,7 @@ trait Worker
     protected function queueDeclare()
     {
         $queueName = $this->getRoutingKeyWithPrefix($this->getQueueName());
+
         $this->queue = new AMQPQueue($this->channel);
         $this->queue->setFlags(AMQP_DURABLE);
         $this->queue->setName($queueName);
