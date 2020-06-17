@@ -51,5 +51,5 @@ interface ProgressBagInterface
     /**
      * @return Tasks
      */
-    public function getTasks(): Tasks;
+    public function getOrders(): Tasks;
 }

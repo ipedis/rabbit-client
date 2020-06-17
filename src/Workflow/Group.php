@@ -27,9 +27,9 @@ class Group extends Bindable
     /**
      * Group orders
      *
-     * @var $jobs[]
+     * @var $orders[]
      */
-    protected $jobs = [];
+    protected $orders = [];
 
     /**
      * @var GroupConfig
@@ -39,15 +39,15 @@ class Group extends Bindable
     /**
      * Group constructor.
      * @param string $groupId
-     * @param array $jobs
+     * @param array $orders
      * @param array $callbacks
      * @param GroupConfig|null $config
      * @throws InvalidGroupArgumentException
      */
-    protected function __construct(string $groupId, array $jobs = [], array $callbacks = [], ?GroupConfig $config = null)
+    protected function __construct(string $groupId, array $orders = [], array $callbacks = [], ?GroupConfig $config = null)
     {
         $this->groupId  = $groupId;
-        $this->prepareJobs($jobs);
+        $this->prepareOrders($orders);
         $this->callbacks = $this->assertCallbacks($callbacks);
         $this->config = $config;
     }
@@ -55,35 +55,35 @@ class Group extends Bindable
     /**
      * Factory constructor
      *
-     * @param array $jobs Array of tasks|workflow
+     * @param array $orders Array of tasks|workflow
      * @param array $callbacks Key/value array of callbacks
      * where key correspond to event name and value list of callbacks for event
      * @param GroupConfig|null $config
      * @return static
      * @throws InvalidGroupArgumentException
      */
-    public static function build(array $jobs = [], array $callbacks = [], ?GroupConfig $config = null): self
+    public static function build(array $orders = [], array $callbacks = [], ?GroupConfig $config = null): self
     {
-        return new self(uuid_create(), $jobs, $callbacks, $config);
+        return new self(uuid_create(), $orders, $callbacks, $config);
     }
 
     /**
      * Planify a job in the group
      *
-     * @param $job
+     * @param $order
      * @return Group
      * @throws InvalidGroupArgumentException
      */
-    public function planify($job): self
+    public function planify($order): self
     {
-        if (!$job instanceof Task && !$job instanceof Workflow) {
+        if (!$order instanceof Task && !$order instanceof Workflow) {
             throw new InvalidGroupArgumentException(sprintf('list of tasks must have "%s" type or "%s" type', Task::class, Workflow::class));
         }
 
-        if ($job instanceof Workflow) {
-            $this->jobs[$job->getWorkflowId()] = $job;
+        if ($order instanceof Workflow) {
+            $this->orders[$order->getWorkflowId()] = $order;
         } else {
-            $this->jobs[$job->getOrderMessage()->getOrderId()] = $job;
+            $this->orders[$order->getOrderMessage()->getOrderId()] = $order;
         }
 
         return $this;
@@ -117,21 +117,21 @@ class Group extends Bindable
     /**
      * Group has order matching orderId
      *
-     * @param string $taskId
+     * @param string $orderId
      * @return bool
      */
-    public function has(string $taskId): bool
+    public function has(string $orderId): bool
     {
-        return (!empty($this->jobs[$taskId]));
+        return (!empty($this->orders[$orderId]));
     }
 
     /**
-     * @param string $taskId
+     * @param string $orderId
      * @return Task
      */
-    public function find(string $taskId): Task
+    public function find(string $orderId): Task
     {
-        return $this->jobs[$taskId];
+        return $this->orders[$orderId];
     }
 
     /**
@@ -141,10 +141,10 @@ class Group extends Bindable
      */
     public function update(ReplyMessagePayload $message): array
     {
-        $task = $this->find($message->getOrderId());
-        $task->update($message);
+        $order = $this->find($message->getOrderId());
+        $order->update($message);
 
-        return [$this, $task];
+        return [$this, $order];
     }
 
     /**
@@ -165,9 +165,9 @@ class Group extends Bindable
      *
      * @return Task[]
      */
-    public function getJobs(): array
+    public function getOrders(): array
     {
-        return $this->jobs;
+        return $this->orders;
     }
 
     /**
@@ -216,7 +216,7 @@ class Group extends Bindable
      */
     public function getProgressBag(): GroupProgressBag
     {
-        return new GroupProgressBag($this->getJobs());
+        return new GroupProgressBag($this->getOrders());
     }
 
     /**
@@ -237,7 +237,7 @@ class Group extends Bindable
                         $task->getStatusType(),
                         $task->getTimer()
                     );
-                }, $this->getJobs())
+                }, $this->getOrders())
             )
         );
     }
@@ -262,20 +262,20 @@ class Group extends Bindable
     }
 
     /**
-     * @param array $jobs
+     * @param array $orders
      * @throws InvalidGroupArgumentException
      */
-    private function prepareJobs(array $jobs)
+    private function prepareOrders(array $orders)
     {
-        foreach ($jobs as $job) {
-            if (!$job instanceof Task && !$job instanceof Workflow) {
+        foreach ($orders as $order) {
+            if (!$order instanceof Task && !$order instanceof Workflow) {
                 throw new InvalidGroupArgumentException(sprintf('list of tasks must have "%s" type or "%s" type', Task::class, Workflow::class));
             }
 
-            if ($job instanceof Workflow) {
-                $this->jobs[$job->getWorkflowId()] = $job;
+            if ($order instanceof Workflow) {
+                $this->orders[$order->getWorkflowId()] = $order;
             } else {
-                $this->jobs[$job->getOrderMessage()->getOrderId()] = $job;
+                $this->orders[$order->getOrderMessage()->getOrderId()] = $order;
             }
         }
     }

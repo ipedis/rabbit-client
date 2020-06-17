@@ -35,6 +35,24 @@ class WorkflowProgressBag implements ProgressBagInterface, \JsonSerializable
     }
 
     /**
+     * @return bool
+     */
+    public function hasPendingGroups(): bool
+    {
+        return count($this->getPendingGroups()) > 0;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getNextPendingGroup(): Group
+    {
+        $pendingGroups = $this->getPendingGroups();
+
+        return reset($pendingGroups);
+    }
+
+    /**
      * Get collection of planified groups waiting for dispatch
      *
      * @return array
@@ -167,7 +185,7 @@ class WorkflowProgressBag implements ProgressBagInterface, \JsonSerializable
          * @var Group $group
          */
         foreach ($this->groups as $group) {
-            $totalTasks += $group->getProgressBag()->countOrdersInGroup();
+            $totalTasks += $group->getProgressBag()->countTasksInGroup();
         }
 
         return $totalTasks;
@@ -186,7 +204,7 @@ class WorkflowProgressBag implements ProgressBagInterface, \JsonSerializable
          * @var Group $group
          */
         foreach ($this->groups as $group) {
-            $totalTasks += $group->getProgressBag()->countPlanifiedOrders();
+            $totalTasks += $group->getProgressBag()->countPlanifiedTasks();
         }
 
         return $totalTasks;
@@ -205,7 +223,7 @@ class WorkflowProgressBag implements ProgressBagInterface, \JsonSerializable
          * @var Group $group
          */
         foreach ($this->groups as $group) {
-            $totalTasks += $group->getProgressBag()->countDispatchedOrders();
+            $totalTasks += $group->getProgressBag()->countDispatchedTasks();
         }
 
         return $totalTasks;
@@ -223,7 +241,7 @@ class WorkflowProgressBag implements ProgressBagInterface, \JsonSerializable
          * @var Group $group
          */
         foreach ($this->groups as $group) {
-            $totalTasks += $group->getProgressBag()->countCompletedOrders();
+            $totalTasks += $group->getProgressBag()->countCompletedTasks();
         }
 
         return $totalTasks;
@@ -242,7 +260,7 @@ class WorkflowProgressBag implements ProgressBagInterface, \JsonSerializable
          * @var Group $group
          */
         foreach ($this->groups as $group) {
-            $totalTasks += $group->getProgressBag()->countSuccessfulOrders();
+            $totalTasks += $group->getProgressBag()->countSuccessfulTasks();
         }
 
         return $totalTasks;
@@ -261,7 +279,7 @@ class WorkflowProgressBag implements ProgressBagInterface, \JsonSerializable
          * @var Group $group
          */
         foreach ($this->groups as $group) {
-            $totalTasks += $group->getProgressBag()->countFailedOrders();
+            $totalTasks += $group->getProgressBag()->countFailedTasks();
         }
 
         return $totalTasks;
@@ -483,7 +501,8 @@ class WorkflowProgressBag implements ProgressBagInterface, \JsonSerializable
         $summary = [];
         /** @var Group $group */
         foreach ($this->groups as $group) {
-            foreach ($group->getJobs() as $task) {
+            foreach ($group->getOrders() as $task) {
+
                 if (!isset($summary[$task->getType()])) {
                     /*
                      * Initialize counts for current task type
@@ -588,11 +607,11 @@ class WorkflowProgressBag implements ProgressBagInterface, \JsonSerializable
         return $summary;
     }
 
-    public function getTasks(): Tasks
+    public function getOrders(): Tasks
     {
         $tasks = [];
         foreach ($this->groups as $group) {
-            foreach ($group->getJobs() as $task) {
+            foreach ($group->getOrders() as $task) {
                 $tasks[] = TaskType::build(
                     $task->getOrderMessage()->getOrderId(),
                     $task->getType(),
@@ -630,7 +649,7 @@ class WorkflowProgressBag implements ProgressBagInterface, \JsonSerializable
                 array_values(
                     array_map(function (Task $task) {
                         return $task->getSummary();
-                    }, $group->getJobs())
+                    }, $group->getOrders())
                 )
             );
         }, $this->groups);
@@ -647,7 +666,7 @@ class WorkflowProgressBag implements ProgressBagInterface, \JsonSerializable
         $tasks = [];
 
         foreach ($this->groups as $group) {
-            $tasks = array_merge($tasks, $group->getJobs());
+            $tasks = array_merge($tasks, $group->getOrders());
         }
 
         return $tasks;

@@ -1,6 +1,5 @@
 <?php
 
-
 namespace Ipedis\Rabbit\Workflow;
 
 
@@ -22,14 +21,18 @@ trait Manager
     private $replyQueue;
 
     /**
-     * @var Workflow[]
+     * Store workflows dispatched
+     *
+     * @var array $workflowStore
      */
-    private $workflow = [];
+    private $workflowStore = [];
 
     /**
-     * @var $tickerStore[]
+     * Store tasks dispatched
+     *
+     * @var array $taskStore
      */
-    private $tickerStore;
+    private $taskStore = [];
 
     abstract protected function getExchangeName(): string;
 
@@ -38,29 +41,14 @@ trait Manager
         $this->replyQueue = $this->createAnonymousQueue($this->channel);
     }
 
-    /**
-     * Create anonymous queue
-     *
-     * @param AMQPChannel $channel
-     * @return AMQPQueue
-     * @throws AMQPChannelException
-     * @throws AMQPConnectionException
-     * @throws AMQPQueueException
-     * @throws \AMQPQueueException
-     */
-    private function createAnonymousQueue(AMQPChannel $channel): AMQPQueue
-    {
-        $queue = new AMQPQueue($channel);
-        $queue->setFlags(AMQP_EXCLUSIVE);
-        $queue->declareQueue();
-
-        return $queue;
-    }
-
     public function run(Workflow $workflow)
     {
         $wasAtLeastOneFailure = false;
-        $this->workflow[$workflow->getWorkflowId()] = $workflow;
+
+        /**
+         * Add workflow to store
+         */
+        $this->addWorkflowToStore($workflow, null);
 
         /**
          * Each groups will be executed sequentially, we iterate on each group.
@@ -80,18 +68,12 @@ trait Manager
              */
             $this->resetOrdersQueue();
 
-            foreach ($group->getJobs() as $task) {
+            /**
+             * Dispatch all orders recursively for group
+             */
+            $this->dispatchGroupOrders($group, $workflow);
 
-                if ($task instanceof Workflow) {
-
-                } else {
-                    $this->publish($task, $group, $workflow);
-                    $task->setTaskAsDispatched();
-                    $task->call(BindableEventInterface::TASK_ON_START, $task);
-                }
-            }
-
-            $this->replyQueue->consume([$this, 'onGroupReply']);
+            $this->replyQueue->consume([$this, 'onTaskReply']);
 
             $this->onGroupFinish($workflow, $group);
 
@@ -103,6 +85,7 @@ trait Manager
                 if(!$workflow->getConfig()->hasToContinueOnFailure()) break;
             }
         }
+
         /**
          * run is finish, let concluing workflow.
          */
@@ -110,33 +93,28 @@ trait Manager
         $workflow->call(BindableEventInterface::WORKFLOW_ON_FINISH);
     }
 
-    public function onGroupReply(\AMQPEnvelope $envelope, AMQPQueue $q)
+    public function onTaskReply(\AMQPEnvelope $envelope, AMQPQueue $q)
     {
         /**
          * Re-construct message payload from request body
          */
         $message = ReplyMessagePayload::fromJson($envelope->getBody());
 
-        // Get the task
-        // Get the group
-        // Get the workflow
-
-        // If group is not completed => wait(return true)
-        // If group is complete and task's workflow is root workflow (return false)
-        // if group is complete and task's has sub workflow:
-            // Sub workflow has pending group => Get first group and loop to dispatch tasks.
-        //complete (return false)
-
+        /**
+         * Get tasks from store
+         */
+        $taskMetadata = $this->findTask($message->getOrderId());
 
         /**
-         * Get tasks group & workflow from store
+         * Get workflow from store
          */
-        $ticker = $this->tickerStore[$message->getOrderId()];
+        $workflowMetadata   = $this->findWorkflow($taskMetadata['workflow']);
 
         /**
          * @var Workflow
          */
-        $workflow = $this->workflow[$ticker['workflow']];
+        $workflow           = $workflowMetadata['workflow'];
+        $parentWorkflowId   = $workflowMetadata['parent'];
 
         /**
          * @var Group $group
@@ -146,9 +124,9 @@ trait Manager
          * It will return current group and current task.
          */
         [$group, $task] = $workflow->taskReply($message);
+
         // ACK Current message.
         $q->ack($envelope->getDeliveryTag());
-
 
         /**
          * If task failed, check if retry is possible
@@ -165,13 +143,37 @@ trait Manager
         }
 
         /**
+         * Group has pending/running tasks
+         * Wait for all tasks of the group to complete
+         */
+        if (!$group->getProgressBag()->isCompleted()) {
+            return true;
+        }
+
+        /**
+         * Sub Workflow has pending/running groups
+         * Wait for all groups of the sub workflow to complete
+         */
+        if (
+            !is_null($parentWorkflowId) &&
+            !$workflow->getProgressBag()->isCompleted() &&
+            $workflow->getProgressBag()->hasPendingGroups()
+        ) {
+            $nextGroup = $workflow->getProgressBag()->getNextPendingGroup();
+            $this->dispatchGroupOrders($nextGroup, $workflow);
+
+            return true;
+        }
+
+        /**
          * Call event binded on task layer.
          */
         $this->onUpdatedTaskStatus($message, $workflow, $group, $task);
+
         /**
          * wait until entire group is finish.
          */
-        return (!$group->getProgressBag()->isCompleted());
+        return !($group->getProgressBag()->isCompleted() && is_null($parentWorkflowId));
     }
 
     /**
@@ -237,15 +239,13 @@ trait Manager
     protected function publish(Task $task, Group $group, Workflow $workflow): self
     {
         /**
-         * Add task metas to ticker store
+         * Add task metadata to store
          */
-        $this->tickerStore[$task->getTaskId()] = [
-            'group'     => $group->getGroupId(),
-            'workflow'  => $workflow->getWorkflowId()
-        ];
+        $this->addTaskToStore($task, $group, $workflow);
 
         $message = $task->getOrderMessage();
         $message->setReplyQueue($this->replyQueue->getName());
+
         /**
          * Publish task on exchange
          */
@@ -257,5 +257,98 @@ trait Manager
         );
 
         return $this;
+    }
+
+    /**
+     * Dispatch Group task recursively
+     *
+     * @param Group $group
+     * @param Workflow $workflow
+     */
+    private function dispatchGroupOrders(Group $group, Workflow $workflow)
+    {
+        foreach ($group->getOrders() as $job) {
+            if ($job instanceof Workflow) {
+                $this->addWorkflowToStore($job, $workflow);
+
+                $nextGroup = $job->getProgressBag()->getNextPendingGroup();
+                $this->dispatchGroupOrders($nextGroup, $job);
+            } else {
+                $this->publish($job, $group, $workflow);
+                $job->setTaskAsDispatched();
+                $job->call(BindableEventInterface::TASK_ON_START, $job);
+            }
+        }
+    }
+
+    /**
+     * Create anonymous queue
+     *
+     * @param AMQPChannel $channel
+     * @return AMQPQueue
+     * @throws AMQPChannelException
+     * @throws AMQPConnectionException
+     * @throws AMQPQueueException
+     * @throws \AMQPQueueException
+     */
+    private function createAnonymousQueue(AMQPChannel $channel): AMQPQueue
+    {
+        $queue = new AMQPQueue($channel);
+        $queue->setFlags(AMQP_EXCLUSIVE);
+        $queue->declareQueue();
+
+        return $queue;
+    }
+
+    /**
+     * Store workflow metadata
+     *
+     * @param Workflow $workflow
+     * @param Workflow|null $parentWorkflow
+     */
+    private function addWorkflowToStore(Workflow $workflow, ?Workflow $parentWorkflow = null)
+    {
+        $parentId = !is_null($parentWorkflow) ? $parentWorkflow->getWorkflowId() : null;
+
+        $this->workflowStore[$workflow->getWorkflowId()] = [
+            'workflow' => $workflow,
+            'parent'    => $parentId
+        ];
+    }
+
+    /**
+     * Find workflow by workflowId
+     * @param string $workflowId
+     * @return array
+     */
+    private function findWorkflow(string $workflowId): array
+    {
+        return $this->workflowStore[$workflowId];
+    }
+
+    /**
+     * Store task metadata
+     *
+     * @param Task $task
+     * @param Group $group
+     * @param Workflow $workflow
+     */
+    private function addTaskToStore(Task $task, Group $group, Workflow $workflow)
+    {
+        $this->taskStore[$task->getTaskId()] = [
+            'group'     => $group->getGroupId(),
+            'workflow'  => $workflow->getWorkflowId()
+        ];
+    }
+
+    /**
+     * Find task by task id
+     *
+     * @param string $taskId
+     * @return array
+     */
+    private function findTask(string $taskId): array
+    {
+        return $this->taskStore[$taskId];
     }
 }
