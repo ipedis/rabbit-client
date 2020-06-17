@@ -164,5 +164,8 @@ trait Connector
      * In case system has multiple environments using same rabbitmq server.
      * @return string
      */
-    abstract public function getQueuePrefix(): ?string;
+    public function getQueuePrefix(): string
+    {
+        return '';
+    }
 }
