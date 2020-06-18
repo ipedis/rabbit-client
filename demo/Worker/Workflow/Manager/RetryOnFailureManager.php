@@ -31,4 +31,9 @@ class RetryOnFailureManager extends ManagerAbstract
 
         $this->run($workflow);
     }
+
+    public function getQueuePrefix(): string
+    {
+        return 'demo.workflow';
+    }
 }

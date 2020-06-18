@@ -152,6 +152,11 @@ class AllCallbackManager extends ManagerAbstract
         return $workflow;
     }
 
+    public function getQueuePrefix(): string
+    {
+        return 'demo.workflow';
+    }
+
     /**
      * @param string $id
      * @return array

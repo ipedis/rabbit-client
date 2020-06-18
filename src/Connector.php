@@ -73,9 +73,10 @@ trait Connector
      */
     protected function publishToExchange($message, $channel, array $messageProperties = [], $persistQueue = false)
     {
+        $routingKey = $this->getRoutingKeyWithPrefix($channel);
         try {
-            if($persistQueue) $this->declareQueueBindingIfNecessary($channel);
-            $this->exchange->publish($message, $channel, AMQP_NOPARAM, $messageProperties);
+            if($persistQueue) $this->declareQueueBindingIfNecessary($routingKey);
+            $this->exchange->publish($message, $routingKey, AMQP_NOPARAM, $messageProperties);
         } catch (\Exception $exception) {
             throw new RabbitClientPublishException(sprintf('IPEDIS RABBIT CLIENT - Publishing message on exchange failed with error { %s }', $exception->getMessage()));
         }
@@ -91,6 +92,19 @@ trait Connector
             $queue->bind($this->getExchangeName(), $queueName);
             $this->declaredQueues[] = $queueName;
         }
+    }
+
+    /**
+     * @param string $routingKey
+     * @return string
+     */
+    protected function getRoutingKeyWithPrefix(string $routingKey)
+    {
+        if (empty($this->getQueuePrefix())) {
+            return $routingKey;
+        }
+
+        return sprintf('%s.%s', $this->getQueuePrefix(), $routingKey);
     }
 
     /**
@@ -144,4 +158,14 @@ trait Connector
     abstract public function getPassword(): string;
     abstract public function getExchangeName(): string;
     abstract public function getExchangeType(): string;
+
+    /**
+     * Optional prefix to attach to queue name.
+     * In case system has multiple environments using same rabbitmq server.
+     * @return string
+     */
+    public function getQueuePrefix(): string
+    {
+        return '';
+    }
 }

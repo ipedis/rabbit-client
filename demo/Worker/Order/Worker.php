@@ -72,7 +72,7 @@ class Worker extends WorkerAbstract implements OnBeforeMessage, OnAfterMessage
     protected function makeExceptionHandler(): \Closure
     {
         return function (\Exception $exception, ?OrderMessagePayload $messagePayload) {
-            printf('Inside exception handler================'.$exception->getMessage());
+            printf($exception->getMessage());
         };
     }
 
@@ -90,5 +90,10 @@ class Worker extends WorkerAbstract implements OnBeforeMessage, OnAfterMessage
     public function afterMessageHandled()
     {
         printf("WORKER LIFECYCLE HOOK : AFTER HANDLING MESSAGE..."."\n\n");
+    }
+
+    public function getQueuePrefix(): string
+    {
+        return 'demo.order';
     }
 }

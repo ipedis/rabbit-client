@@ -41,4 +41,9 @@ class ZoomableDoublePage extends ConnectorAbstract
     {
         return 'v1.admin.publication.generate-image-dbl-zoomable';
     }
+
+    public function getQueuePrefix(): string
+    {
+        return 'demo.workflow';
+    }
 }
