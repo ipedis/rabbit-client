@@ -48,7 +48,7 @@ trait Manager
         /**
          * Add workflow to store
          */
-        $this->addWorkflowToStore($workflow, null);
+        $this->addWorkflowToStore($workflow, null, null);
 
         /**
          * Each groups will be executed sequentially, we iterate on each group.
@@ -111,10 +111,11 @@ trait Manager
         $workflowMetadata   = $this->findWorkflow($taskMetadata['workflow']);
 
         /**
-         * @var Workflow
+         * @var Workflow $workflow
          */
-        $workflow           = $workflowMetadata['workflow'];
-        $parentWorkflowId   = $workflowMetadata['parent'];
+        $workflow               = $workflowMetadata['workflow'];
+        $parentWorkflowId       = $workflowMetadata['parent'];
+        $parentWorkflowGroupId  = $workflowMetadata['group'];
 
         /**
          * @var Group $group
@@ -170,10 +171,48 @@ trait Manager
          */
         $this->onUpdatedTaskStatus($message, $workflow, $group, $task);
 
+        if (is_null($parentWorkflowId) && $group->getProgressBag()->isCompleted()) {
+            return false;
+        } else {
+            $allParentsCompleted = $this->isParentWorkflowsCompleted($parentWorkflowId, $parentWorkflowGroupId);
+
+            /**
+             * wait until entire group is finish.
+             */
+            return !($group->getProgressBag()->isCompleted() && $allParentsCompleted);
+        }
+    }
+
+    /**
+     * @param $parentWorkflowId
+     * @param $parentGroupId
+     * @return bool
+     * @throws \Exception
+     */
+    private function isParentWorkflowsCompleted($parentWorkflowId, $parentGroupId)
+    {
+        $workflowMetadata = $this->findWorkflow($parentWorkflowId);
         /**
-         * wait until entire group is finish.
+         * @var Workflow $workflow
          */
-        return !($group->getProgressBag()->isCompleted() && is_null($parentWorkflowId));
+        $workflow       = $workflowMetadata['workflow'];
+        $workflowParent = $workflowMetadata['parent'];
+        $workflowGroup  = $workflowMetadata['group'];
+
+        if (is_null($workflowParent)) {
+            // Root workflow
+            $group = $workflow->findGroup($parentGroupId);
+            if ($group->getProgressBag()->isCompleted()) {
+                return true;
+            }
+        } else {
+            // Sub Workflow
+            if ($workflow->getProgressBag()->isCompleted()) {
+                return $this->isParentWorkflowsCompleted($workflowParent, $workflowGroup);
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -269,7 +308,7 @@ trait Manager
     {
         foreach ($group->getOrders() as $job) {
             if ($job instanceof Workflow) {
-                $this->addWorkflowToStore($job, $workflow);
+                $this->addWorkflowToStore($job, $workflow, $group);
 
                 $nextGroup = $job->getProgressBag()->getNextPendingGroup();
                 $this->dispatchGroupOrders($nextGroup, $job);
@@ -305,15 +344,27 @@ trait Manager
      *
      * @param Workflow $workflow
      * @param Workflow|null $parentWorkflow
+     * @param Group|null $parentGroup
      */
-    private function addWorkflowToStore(Workflow $workflow, ?Workflow $parentWorkflow = null)
+    private function addWorkflowToStore(Workflow $workflow, ?Workflow $parentWorkflow = null, ?Group $parentGroup = null)
     {
-        $parentId = !is_null($parentWorkflow) ? $parentWorkflow->getWorkflowId() : null;
+        $parentId       = !is_null($parentWorkflow) ? $parentWorkflow->getWorkflowId() : null;
+        $parentGroupId  = !is_null($parentGroup) ? $parentGroup->getGroupId() : null;
 
         $this->workflowStore[$workflow->getWorkflowId()] = [
             'workflow' => $workflow,
-            'parent'    => $parentId
+            'parent'    => $parentId,
+            'group'     => $parentGroupId
         ];
+    }
+
+    /**
+     * @param string $workflowId
+     * @return bool
+     */
+    private function hasWorkflow(string $workflowId): bool
+    {
+        return isset($this->workflowStore[$workflowId]);
     }
 
     /**

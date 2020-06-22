@@ -193,7 +193,7 @@ class Workflow extends Bindable
             throw new \Exception('Group not found');
         }
 
-        return $group[0];
+        return reset($group);
     }
 
     /**

@@ -14,6 +14,7 @@ use Ipedis\Rabbit\DTO\Type\Workflow\WorkflowType;
 use Ipedis\Rabbit\Exception\Progress\InvalidProgressBagArgumentException;
 use Ipedis\Rabbit\Workflow\Group;
 use Ipedis\Rabbit\Workflow\Task;
+use Ipedis\Rabbit\Workflow\Workflow;
 
 class WorkflowProgressBag implements ProgressBagInterface, \JsonSerializable
 {
@@ -496,25 +497,18 @@ class WorkflowProgressBag implements ProgressBagInterface, \JsonSerializable
         return (WorkflowType::buildSummary($this));
     }
 
+    /**
+     * Get summary of all taks inside workflow
+     *
+     * @return array
+     * @throws \Ipedis\Rabbit\Exception\InvalidUuidException
+     */
     public function getGroupedTasksSummary()
     {
-        $summary = [];
-        /** @var Group $group */
-        foreach ($this->groups as $group) {
-            foreach ($group->getOrders() as $task) {
-
-                if (!isset($summary[$task->getType()])) {
-                    /*
-                     * Initialize counts for current task type
-                     */
-                    $summary = $this->initializeDetailsByType($summary, $task);
-                }
-                /*
-                 * Update counts for current task type
-                 */
-                $summary = $this->updateDetailsByType($summary, $task);
-            }
-        }
+        /**
+         * Get tasks in group recursively
+         */
+        $summary = $this->getGroupTasksSummaryRecursively($this->groups);
 
         $groupedTasks = [];
         foreach ($summary as $type => $detail) {
@@ -551,60 +545,6 @@ class WorkflowProgressBag implements ProgressBagInterface, \JsonSerializable
     public function getWorkflowId(): string
     {
         return $this->workflowId;
-    }
-
-    /**
-     * @param array $summary
-     * @param Task $task
-     * @return array
-     */
-    private function initializeDetailsByType(array $summary, Task $task): array
-    {
-        if (isset($summary[$task->getType()])) {
-            return $summary;
-        }
-        $summary[$task->getType()] = [
-            'total' => 0,
-            'pending' => 0,
-            'dispatched' => 0,
-            'completed' => 0,
-            'successful' => 0,
-            'failed' => 0
-        ];
-
-        return $summary;
-    }
-
-    /**
-     * Append associated array key by 1
-     * @param array $summary
-     * @param Task $task
-     * @return array
-     */
-    private function updateDetailsByType(array $summary, Task $task): array
-    {
-        $summary[$task->getType()]['total'] ++;
-        $summary[$task->getType()]['uuids'][] = $task->getOrderMessage()->getOrderId();
-        switch ($task) {
-            case $task->isOnFailure():
-                $summary[$task->getType()]['failed'] ++;
-                $summary[$task->getType()]['completed'] ++;
-                break;
-            case $task->isSuccess():
-                $summary[$task->getType()]['successful'] ++;
-                $summary[$task->getType()]['completed'] ++;
-                break;
-            case $task->isDispatched():
-                $summary[$task->getType()]['dispatched'] ++;
-                break;
-            case $task->isCompleted():
-                $summary[$task->getType()]['completed'] ++;
-                break;
-            case $task->isPlanified():
-                $summary[$task->getType()]['pending'] ++;
-                break;
-        }
-        return $summary;
     }
 
     public function getOrders(): Tasks
@@ -682,5 +622,94 @@ class WorkflowProgressBag implements ProgressBagInterface, \JsonSerializable
         if (!uuid_is_valid($uuid)) {
             throw new InvalidProgressBagArgumentException("[WORKFLOW] {$uuid} is not a valid uuid");
         }
+    }
+
+    /**
+     * @param array $summary
+     * @param Task $task
+     * @return array
+     */
+    private function initializeDetailsByType(array $summary, Task $task): array
+    {
+        if (isset($summary[$task->getType()])) {
+            return $summary;
+        }
+        $summary[$task->getType()] = [
+            'total' => 0,
+            'pending' => 0,
+            'dispatched' => 0,
+            'completed' => 0,
+            'successful' => 0,
+            'failed' => 0
+        ];
+
+        return $summary;
+    }
+
+    /**
+     * Append associated array key by 1
+     * @param array $summary
+     * @param Task $task
+     * @return array
+     */
+    private function updateDetailsByType(array $summary, Task $task): array
+    {
+        $summary[$task->getType()]['total'] ++;
+        $summary[$task->getType()]['uuids'][] = $task->getOrderMessage()->getOrderId();
+        switch ($task) {
+            case $task->isOnFailure():
+                $summary[$task->getType()]['failed'] ++;
+                $summary[$task->getType()]['completed'] ++;
+                break;
+            case $task->isSuccess():
+                $summary[$task->getType()]['successful'] ++;
+                $summary[$task->getType()]['completed'] ++;
+                break;
+            case $task->isDispatched():
+                $summary[$task->getType()]['dispatched'] ++;
+                break;
+            case $task->isCompleted():
+                $summary[$task->getType()]['completed'] ++;
+                break;
+            case $task->isPlanified():
+                $summary[$task->getType()]['pending'] ++;
+                break;
+        }
+        return $summary;
+    }
+
+    /**
+     * Get summary of all tasks in group
+     *
+     * @param array $groups
+     * @return array
+     */
+    private function getGroupTasksSummaryRecursively(array $groups): array
+    {
+        $summary = [];
+
+        /** @var Group $group */
+        foreach ($groups as $group) {
+            foreach ($group->getOrders() as $order) {
+                if ($order instanceof Workflow) {
+                    $summary = array_merge($summary, $this->getGroupTasksSummaryRecursively($order->getGroups()));
+                } else {
+                    /**
+                     * Order is a Task
+                     * Initialize counts for current task type
+                     */
+                    if (!isset($summary[$order->getType()])) {
+                        $summary = $this->initializeDetailsByType($summary, $order);
+                    }
+
+                    /*
+                     * Update counts for current task type
+                     */
+                    $summary = $this->updateDetailsByType($summary, $order);
+                }
+            }
+        }
+
+        return $summary;
     }
 }
