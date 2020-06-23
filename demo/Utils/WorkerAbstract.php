@@ -32,4 +32,12 @@ abstract class WorkerAbstract extends ConnectorAbstract
     {
         return $this->channelFactory;
     }
+
+    /**
+     * @return string
+     */
+    public function getQueuePrefix(): string
+    {
+        return 'demo.workflow';
+    }
 }

@@ -180,7 +180,9 @@ if ( !empty($argv[1]) ) {
                 $configOrder['use'],
                 $configOrder['password'],
                 $configOrder['exchange'],
-                $configOrder['type']
+                $configOrder['type'],
+                $channelFactory,
+                $messagePayloadValidator
             ))->main();
             break;
         case 'generator-recursive':
@@ -190,7 +192,9 @@ if ( !empty($argv[1]) ) {
                 $configOrder['use'],
                 $configOrder['password'],
                 $configOrder['exchange'],
-                $configOrder['type']
+                $configOrder['type'],
+                $channelFactory,
+                $messagePayloadValidator
             ))->main();
             break;
         case 'generator.html':
@@ -200,7 +204,8 @@ if ( !empty($argv[1]) ) {
                 $configOrder['use'],
                 $configOrder['password'],
                 $configOrder['exchange'],
-                $configOrder['type']
+                $configOrder['type'],
+                $channelFactory
             ))->execute();
         break;
         case 'generator.image':
@@ -210,7 +215,8 @@ if ( !empty($argv[1]) ) {
                 $configOrder['use'],
                 $configOrder['password'],
                 $configOrder['exchange'],
-                $configOrder['type']
+                $configOrder['type'],
+                $channelFactory
             ))->execute();
         break;
         case 'generator.image-page':
@@ -220,7 +226,8 @@ if ( !empty($argv[1]) ) {
                 $configOrder['use'],
                 $configOrder['password'],
                 $configOrder['exchange'],
-                $configOrder['type']
+                $configOrder['type'],
+                $channelFactory
             ))->execute();
         break;
 
@@ -231,7 +238,8 @@ if ( !empty($argv[1]) ) {
                 $configOrder['use'],
                 $configOrder['password'],
                 $configOrder['exchange'],
-                $configOrder['type']
+                $configOrder['type'],
+                $channelFactory
             ))->execute();
             break;
         case 'generator.double-zoomable':
@@ -241,7 +249,8 @@ if ( !empty($argv[1]) ) {
                 $configOrder['use'],
                 $configOrder['password'],
                 $configOrder['exchange'],
-                $configOrder['type']
+                $configOrder['type'],
+                $channelFactory
             ))->execute();
             break;
 

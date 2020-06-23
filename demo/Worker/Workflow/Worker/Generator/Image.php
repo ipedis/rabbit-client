@@ -6,10 +6,11 @@ namespace Ipedis\Demo\Rabbit\Worker\Workflow\Worker\Generator;
 use AMQPEnvelope;
 use Closure;
 use Exception;
-use Ipedis\Demo\Rabbit\Utils\ConnectorAbstract;
+use Ipedis\Demo\Rabbit\Utils\WorkerAbstract;
 use Ipedis\Rabbit\MessagePayload\OrderMessagePayload;
 use Ipedis\Rabbit\Order\Worker as WorkerTrait;
-class Image extends ConnectorAbstract
+
+class Image extends WorkerAbstract
 {
     use WorkerTrait;
 
@@ -39,10 +40,5 @@ class Image extends ConnectorAbstract
     protected function getQueueName()
     {
         return 'v1.admin.publication.generate-image';
-    }
-
-    public function getQueuePrefix(): string
-    {
-        return 'demo.workflow';
     }
 }

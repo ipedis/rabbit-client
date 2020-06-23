@@ -1,16 +1,16 @@
 <?php
 
-
 namespace Ipedis\Demo\Rabbit\Worker\Workflow\Worker\Generator\Image;
+
 
 use AMQPEnvelope;
 use Closure;
 use Exception;
-use Ipedis\Demo\Rabbit\Utils\ConnectorAbstract;
+use Ipedis\Demo\Rabbit\Utils\WorkerAbstract;
 use Ipedis\Rabbit\MessagePayload\OrderMessagePayload;
 use Ipedis\Rabbit\Order\Worker as WorkerTrait;
 
-class SimplePage extends ConnectorAbstract
+class SimplePage extends WorkerAbstract
 {
     use WorkerTrait;
 
@@ -41,10 +41,4 @@ class SimplePage extends ConnectorAbstract
     {
         return 'v1.admin.publication.generate-image-page';
     }
-
-    public function getQueuePrefix(): string
-    {
-        return 'demo.workflow';
-    }
-
 }

@@ -320,11 +320,11 @@ trait Manager
         /**
          * Publish task on exchange
          */
-        $this->exchange->publish(
+        $this->publishToExchange(
             json_encode($message),
             $channel,
-            AMQP_NOPARAM,
-            $message->getMessageProperties()
+            $message->getMessageProperties(),
+            true
         );
 
         return $this;

@@ -2,42 +2,18 @@
 
 namespace Ipedis\Demo\Rabbit\Worker\Workflow\Manager;
 
-
 use Closure;
-use Ipedis\Demo\Rabbit\Utils\ConnectorAbstract;
 use Ipedis\Rabbit\DTO\Type\Group\GroupedTaskType;
 use Ipedis\Rabbit\Exception\Group\InvalidGroupArgumentException;
 use Ipedis\Rabbit\Exception\Workflow\InvalidWorkflowArgumentException;
 use Ipedis\Rabbit\MessagePayload\OrderMessagePayload;
 use Ipedis\Rabbit\Workflow\Event\BindableEventInterface;
 use Ipedis\Rabbit\Workflow\Group;
-use Ipedis\Rabbit\Workflow\Manager;
 use Ipedis\Rabbit\Workflow\Workflow;
 
-
-class RecursiveGeneratorManager extends ConnectorAbstract
+class RecursiveGeneratorManager extends ManagerAbstract
 {
-    use Manager;
-
     const COUNT_PAGE = 3;
-
-    public function __construct(
-        string $host,
-        int $port,
-        string $user,
-        string $password,
-        string $exchange,
-        string $type
-    ) {
-        parent::__construct($host, $port, $user, $password, $exchange, $type);
-
-        $this->connect();
-
-        /**
-         * Initialise order queue
-         */
-        $this->resetOrdersQueue();
-    }
 
     public function main()
     {
