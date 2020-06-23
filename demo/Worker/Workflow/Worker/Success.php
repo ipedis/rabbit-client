@@ -6,18 +6,20 @@ namespace Ipedis\Demo\Rabbit\Worker\Workflow\Worker;
 use AMQPEnvelope;
 use Closure;
 use Exception;
-use Ipedis\Demo\Rabbit\Utils\ConnectorAbstract;
+use Ipedis\Demo\Rabbit\Utils\WorkerAbstract;
 use Ipedis\Rabbit\Consumer\Handler\MessageHandlerInterface;
+use Ipedis\Rabbit\Lifecyle\Hook\OnAfterMessage;
+use Ipedis\Rabbit\Lifecyle\Hook\OnBeforeMessage;
 use Ipedis\Rabbit\MessagePayload\OrderMessagePayload;
 use Ipedis\Rabbit\MessagePayload\ReplyMessagePayload;
 use Ipedis\Rabbit\Order\Worker as WorkerTrait;
 
 
-class Success extends ConnectorAbstract
+class Success extends WorkerAbstract implements OnBeforeMessage, OnAfterMessage
 {
     use WorkerTrait;
 
-    protected function makeMessageHandler(): \Closure
+    protected function makeMessageHandler(): Closure
     {
         return function (AMQPEnvelope $message, OrderMessagePayload $messagePayload) {
             $params = $messagePayload->getData();
@@ -58,5 +60,20 @@ class Success extends ConnectorAbstract
     protected function getQueueName()
     {
         return 'v1.admin.publication.success';
+    }
+
+    public function beforeMessageHandled()
+    {
+        // Hook before message was handled
+    }
+
+    public function afterMessageHandled()
+    {
+        // Hook after message was handled
+    }
+
+    public function getQueuePrefix(): string
+    {
+        return 'demo.workflow';
     }
 }

@@ -41,4 +41,10 @@ class SimplePage extends ConnectorAbstract
     {
         return 'v1.admin.publication.generate-image-page';
     }
+
+    public function getQueuePrefix(): string
+    {
+        return 'demo.workflow';
+    }
+
 }

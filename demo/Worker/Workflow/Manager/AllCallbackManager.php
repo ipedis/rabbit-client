@@ -4,31 +4,21 @@ namespace Ipedis\Demo\Rabbit\Worker\Workflow\Manager;
 
 
 use Closure;
-use Ipedis\Demo\Rabbit\Utils\ConnectorAbstract;
 use Ipedis\Rabbit\Channel\OrderChannel;
+use Ipedis\Rabbit\Exception\Group\InvalidGroupArgumentException;
+use Ipedis\Rabbit\Exception\Workflow\InvalidWorkflowArgumentException;
 use Ipedis\Rabbit\MessagePayload\OrderMessagePayload;
-use Ipedis\Rabbit\Workflow\Config\WorkflowConfig;
 use Ipedis\Rabbit\Workflow\Event\BindableEventInterface;
-use Ipedis\Rabbit\Workflow\Manager;
 use Ipedis\Rabbit\Workflow\Task;
 use Ipedis\Rabbit\Workflow\Workflow;
 use Ipedis\Rabbit\Workflow\Group;
 
-class AllCallbackManager extends ConnectorAbstract
+class AllCallbackManager extends ManagerAbstract
 {
-    use Manager;
-
-    public function __construct(string $host, int $port, string $user, string $password, string $exchange, string $type)
-    {
-        parent::__construct($host, $port, $user, $password, $exchange, $type);
-        $this->connect();
-
-        /**
-         * Initialise order queue
-         */
-        $this->resetOrdersQueue();
-    }
-
+    /**
+     * @throws InvalidGroupArgumentException
+     * @throws InvalidWorkflowArgumentException
+     */
     public function main()
     {
         $workflow = (
@@ -46,6 +36,9 @@ class AllCallbackManager extends ConnectorAbstract
         print_r(sprintf("Summary : %s", json_encode($workflow->getProgressBag()->getSummary())));
     }
 
+    /**
+     * @return Closure
+     */
     private function craftFirstStep(): Closure
     {
         return function (Group $group) {
@@ -157,6 +150,11 @@ class AllCallbackManager extends ConnectorAbstract
                 $this->print("WORKFLOW TASKS FINISH \n");
             });
         return $workflow;
+    }
+
+    public function getQueuePrefix(): string
+    {
+        return 'demo.workflow';
     }
 
     /**

@@ -3,31 +3,16 @@
 namespace Ipedis\Demo\Rabbit\Worker\Workflow\Manager;
 
 
-use Ipedis\Demo\Rabbit\Utils\ConnectorAbstract;
 use Ipedis\Rabbit\Channel\OrderChannel;
 use Ipedis\Rabbit\MessagePayload\OrderMessagePayload;
 use Ipedis\Rabbit\Workflow\Config\WorkflowConfig;
-use Ipedis\Rabbit\Workflow\Manager;
 use Ipedis\Rabbit\Workflow\Event\BindableEventInterface;
 use Ipedis\Rabbit\Workflow\Group;
 use Ipedis\Rabbit\Workflow\Task;
 use Ipedis\Rabbit\Workflow\Workflow;
 
-class RetryOnFailureManager extends ConnectorAbstract
+class RetryOnFailureManager extends ManagerAbstract
 {
-    use Manager;
-
-    public function __construct(string $host, int $port, string $user, string $password, string $exchange, string $type)
-    {
-        parent::__construct($host, $port, $user, $password, $exchange, $type);
-        $this->connect();
-
-        /**
-         * Initialise order queue
-         */
-        $this->resetOrdersQueue();
-    }
-
     public function main()
     {
         $workflow = new Workflow(
@@ -45,5 +30,10 @@ class RetryOnFailureManager extends ConnectorAbstract
         });
 
         $this->run($workflow);
+    }
+
+    public function getQueuePrefix(): string
+    {
+        return 'demo.workflow';
     }
 }

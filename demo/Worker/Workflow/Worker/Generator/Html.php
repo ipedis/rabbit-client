@@ -45,4 +45,9 @@ class Html extends ConnectorAbstract
     {
         return 'v1.admin.publication.generate-html';
     }
+
+    public function getQueuePrefix(): string
+    {
+        return 'demo.workflow';
+    }
 }

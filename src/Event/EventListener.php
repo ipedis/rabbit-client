@@ -7,11 +7,14 @@ use AMQPEnvelope;
 use AMQPQueue;
 use Closure;
 use Exception;
+use Ipedis\Rabbit\Channel\Factory\ChannelFactory;
 use Ipedis\Rabbit\Connector;
+use Ipedis\Rabbit\Exception\Channel\ChannelFactoryException;
 use Ipedis\Rabbit\Exception\MessagePayload\MessagePayloadFormatException;
 use Ipedis\Rabbit\Lifecyle\Hook\OnAfterMessage;
 use Ipedis\Rabbit\Lifecyle\Hook\OnBeforeMessage;
 use Ipedis\Rabbit\MessagePayload\EventMessagePayload;
+
 
 trait EventListener
 {
@@ -35,6 +38,15 @@ trait EventListener
      */
     public function execute()
     {
+        /**
+         * Before stating worker
+         * Check if channel factory is defined
+         * to validate event naming
+         */
+        if (!$this->getChannelFactory() instanceof ChannelFactory) {
+            throw new ChannelFactoryException('Must provide channel factory {channelFactory} with version and service.');
+        }
+
         $this->worker_id = uniqid("worker_id_");
         $this->connect();
         $this->declareQueueIfNecessary();
@@ -90,10 +102,30 @@ trait EventListener
      */
     private function consumeReceivedMessage(AMQPEnvelope $message)
     {
+        /**
+         * Ignore if message not proper json
+         */
+        if (!$this->isValidMessageFormat($message->getBody())) {
+            return;
+        }
+
         $messagePayload = EventMessagePayload::fromJson($message->getBody());
 
         try {
+            /**
+             * 1. Validate channel naming and return event name
+             */
+            if (!$this->isValidChannelName($messagePayload->getChannel())) {
+                return;
+            }
+
+            /**
+             * 2. Check if message is to be consumed
+             */
             if ($this->isSubscribed($messagePayload->getChannel())) {
+                /**
+                 * 3. Process the message
+                 */
                 $this->handleReceivedMessage($messagePayload);
             }
         } catch (Exception $exception) {
@@ -166,28 +198,6 @@ trait EventListener
     }
 
     /**
-     * Bind listener to multiple events
-     *
-     * @throws \AMQPChannelException
-     * @throws \AMQPConnectionException
-     */
-    private function resolveRoutingKeys()
-    {
-        $routingKey = $this->getBindingKey();
-
-        // If is string, we cast it to array.
-        if(is_string($routingKey)) $routingKey = [$routingKey];
-
-        if(is_array($routingKey)) {
-            foreach ($routingKey as $key) {
-                if(is_string($key)) {
-                    $this->queue->bind($this->exchange->getName(), $key);
-                }
-            }
-        }
-    }
-
-    /**
      * Define callback to be executed
      * when consuming message from queue
      */
@@ -199,6 +209,7 @@ trait EventListener
     abstract protected function makeMessageHandler(): Closure;
     abstract protected function makeExceptionHandler(): Closure;
     abstract protected function getBindingKey();
+    abstract protected function getChannelFactory();
 
     /**
      * If you want to limit the call of callback for each message, you can filter by white list here.
@@ -225,4 +236,48 @@ trait EventListener
      * @param Exception $exception
      */
     protected function logException(\Exception $exception){}
+
+    /**
+     * Check if message is valid json
+     *
+     * @param $message
+     * @return bool
+     */
+    private function isValidMessageFormat(string $message): bool
+    {
+        return json_decode($message) != null;
+    }
+
+    /**
+     * Check if channel name follows proper naming
+     *
+     * @param string $channelName
+     * @return bool
+     */
+    private function isValidChannelName(string $channelName): bool
+    {
+        return $this->getChannelFactory()->match($channelName);
+    }
+
+    /**
+     * Bind listener to multiple events
+     *
+     * @throws \AMQPChannelException
+     * @throws \AMQPConnectionException
+     */
+    private function resolveRoutingKeys()
+    {
+        $routingKey = $this->getBindingKey();
+
+        // If is string, we cast it to array.
+        if(is_string($routingKey)) $routingKey = [$routingKey];
+
+        if(is_array($routingKey)) {
+            foreach ($routingKey as $key) {
+                if(is_string($key)) {
+                    $this->queue->bind($this->exchange->getName(), $this->getRoutingKeyWithPrefix($key));
+                }
+            }
+        }
+    }
 }

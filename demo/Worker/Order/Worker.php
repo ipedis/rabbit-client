@@ -4,7 +4,7 @@ namespace Ipedis\Demo\Rabbit\Worker\Order;
 
 
 use AMQPEnvelope;
-use Ipedis\Demo\Rabbit\Utils\ConnectorAbstract;
+use Ipedis\Demo\Rabbit\Utils\WorkerAbstract;
 use Ipedis\Rabbit\Consumer\Handler\MessageHandlerInterface;
 use Ipedis\Rabbit\Lifecyle\Hook\OnAfterMessage;
 use Ipedis\Rabbit\Lifecyle\Hook\OnBeforeMessage;
@@ -13,7 +13,7 @@ use Ipedis\Rabbit\MessagePayload\ReplyMessagePayload;
 use Ipedis\Rabbit\Order\Worker as WorkerTrait;
 
 
-class Worker extends ConnectorAbstract implements OnBeforeMessage, OnAfterMessage
+class Worker extends WorkerAbstract implements OnBeforeMessage, OnAfterMessage
 {
     use WorkerTrait;
 
@@ -72,7 +72,7 @@ class Worker extends ConnectorAbstract implements OnBeforeMessage, OnAfterMessag
     protected function makeExceptionHandler(): \Closure
     {
         return function (\Exception $exception, ?OrderMessagePayload $messagePayload) {
-            printf('Inside exception handler================'.$exception->getMessage());
+            printf($exception->getMessage());
         };
     }
 
@@ -90,5 +90,10 @@ class Worker extends ConnectorAbstract implements OnBeforeMessage, OnAfterMessag
     public function afterMessageHandled()
     {
         printf("WORKER LIFECYCLE HOOK : AFTER HANDLING MESSAGE..."."\n\n");
+    }
+
+    public function getQueuePrefix(): string
+    {
+        return 'demo.order';
     }
 }

@@ -32,10 +32,9 @@ class Workflow extends Bindable
      * @param Group|callable $firstStep
      * @param array $groupCallbacks
      * @param WorkflowConfig|null $config
-     * @throws InvalidGroupArgumentException
-     * @throws InvalidWorkflowArgumentException
+     * @param string|null $workflowId
      */
-    public function __construct($firstStep, array $groupCallbacks = [], ?WorkflowConfig $config = null, ?string $workflowId = null)
+    public function __construct($firstStep = null, array $groupCallbacks = [], ?WorkflowConfig $config = null, ?string $workflowId = null)
     {
         /**
          * define config
@@ -52,10 +51,11 @@ class Workflow extends Bindable
          * - Group : add group to collection
          * - Callable : create and provide new group to callable
          */
-        $this->schedule($firstStep, $groupCallbacks);
-
         if ($workflowId) $this->assertUuid($workflowId);
         $this->workflowId = $workflowId ?? uuid_create();
+        if (!is_null($firstStep)) {
+            $this->schedule($firstStep, $groupCallbacks);
+        }
     }
 
     /**
@@ -235,6 +235,17 @@ class Workflow extends Bindable
     public function getWorkflowId(): ?string
     {
         return $this->workflowId;
+    }
+
+    /**
+     * @param WorkflowConfig $config
+     * @return Workflow
+     */
+    public function setConfig(WorkflowConfig $config): self
+    {
+        $this->config = $config;
+
+        return $this;
     }
 
     /**

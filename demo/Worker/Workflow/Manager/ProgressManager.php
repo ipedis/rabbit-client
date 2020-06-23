@@ -3,32 +3,15 @@
 namespace Ipedis\Demo\Rabbit\Worker\Workflow\Manager;
 
 
-use Closure;
-use Ipedis\Demo\Rabbit\Utils\ConnectorAbstract;
 use Ipedis\Rabbit\Channel\OrderChannel;
 use Ipedis\Rabbit\MessagePayload\OrderMessagePayload;
 use Ipedis\Rabbit\Workflow\Event\BindableEventInterface;
-use Ipedis\Rabbit\Workflow\Manager;
 use Ipedis\Rabbit\Workflow\ProgressBag\WorkflowProgressBag;
 use Ipedis\Rabbit\Workflow\Workflow;
 use Ipedis\Rabbit\Workflow\Group;
 
-class ProgressManager extends ConnectorAbstract
+class ProgressManager extends ManagerAbstract
 {
-    use Manager;
-
-
-    public function __construct(string $host, int $port, string $user, string $password, string $exchange, string $type)
-    {
-        parent::__construct($host, $port, $user, $password, $exchange, $type);
-        $this->connect();
-
-        /**
-         * Initialise order queue
-         */
-        $this->resetOrdersQueue();
-    }
-
     public function main()
     {
         /**
@@ -86,5 +69,10 @@ class ProgressManager extends ConnectorAbstract
         $left = 100 - $perc;
         $write = sprintf("\033[0G\033[2K[%'={$perc}s>%-{$left}s] - $perc%% - $done/$total", "", "");
         fwrite(STDERR, $write);
+    }
+
+    public function getQueuePrefix(): string
+    {
+        return 'demo.workflow';
     }
 }

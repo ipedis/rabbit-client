@@ -4,33 +4,22 @@ namespace Ipedis\Demo\Rabbit\Worker\Workflow\Manager;
 
 
 use Closure;
-use Ipedis\Demo\Rabbit\Utils\ConnectorAbstract;
 use Ipedis\Rabbit\Channel\OrderChannel;
 use Ipedis\Rabbit\MessagePayload\OrderMessagePayload;
 use Ipedis\Rabbit\Workflow\Config\WorkflowConfig;
 use Ipedis\Rabbit\Workflow\Event\BindableEventInterface;
-use Ipedis\Rabbit\Workflow\Manager;
 use Ipedis\Rabbit\Workflow\Task;
 use Ipedis\Rabbit\Workflow\Workflow;
 use Ipedis\Rabbit\Workflow\Group;
 
-class NoFailureManager extends ConnectorAbstract
+class NoFailureManager extends ManagerAbstract
 {
-    use Manager;
-
     const ACTIVATE_FULL_LOG = true;
 
-    public function __construct(string $host, int $port, string $user, string $password, string $exchange, string $type)
-    {
-        parent::__construct($host, $port, $user, $password, $exchange, $type);
-        $this->connect();
-
-        /**
-         * Initialise order queue
-         */
-        $this->resetOrdersQueue();
-    }
-
+    /**
+     * @throws \Ipedis\Rabbit\Exception\Group\InvalidGroupArgumentException
+     * @throws \Ipedis\Rabbit\Exception\Workflow\InvalidWorkflowArgumentException
+     */
     public function main()
     {
         $workflow = new Workflow(
@@ -52,6 +41,14 @@ class NoFailureManager extends ConnectorAbstract
         print_r(sprintf("Summary : %s", json_encode($workflow->getProgressBag()->getSummary())));
     }
 
+    public function getQueuePrefix(): string
+    {
+        return 'demo.workflow';
+    }
+
+    /**
+     * @return Closure
+     */
     private function craftFirstStep(): Closure
     {
         return function (Group $group) {
