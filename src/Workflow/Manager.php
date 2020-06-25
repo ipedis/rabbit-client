@@ -553,7 +553,7 @@ trait Manager
         ) {
             $workflowParentMeta = $this->findWorkflow($workflowMeta->getParent());
             $workflowParent     = $workflowParentMeta->getWorkflow();
-            $workflowParent->call($event, $task);
+            $this->callWorkflowHookRecursively($workflowParent, $event, $task);
         }
     }
 
