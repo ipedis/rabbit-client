@@ -11,6 +11,8 @@ use AMQPQueueException;
 use Ipedis\Rabbit\Channel\Factory\ChannelFactory;
 use Ipedis\Rabbit\Channel\OrderChannel;
 use Ipedis\Rabbit\Consumer\Handler\MessageHandlerInterface;
+use Ipedis\Rabbit\DTO\Store\TaskMeta;
+use Ipedis\Rabbit\DTO\Store\WorkflowMeta;
 use Ipedis\Rabbit\Exception\Channel\ChannelFactoryException;
 use Ipedis\Rabbit\Exception\Channel\ChannelNamingException;
 use Ipedis\Rabbit\Exception\MessagePayload\MessagePayloadValidatorException;
@@ -144,19 +146,13 @@ trait Manager
         /**
          * Get tasks from store
          */
-        $taskMetadata = $this->findTask($message->getOrderId());
+        $taskMeta = $this->findTask($message->getOrderId());
 
         /**
          * Get workflow from store
          */
-        $workflowMetadata   = $this->findWorkflow($taskMetadata['workflow']);
-
-        /**
-         * @var Workflow $workflow
-         */
-        $workflow               = $workflowMetadata['workflow'];
-        $parentWorkflowId       = $workflowMetadata['parent'];
-        $parentWorkflowGroupId  = $workflowMetadata['group'];
+        $workflowMeta = $this->findWorkflow($taskMeta->getWorkflowId());
+        $workflow     = $workflowMeta->getWorkflow();
 
         /**
          * @var Group $group
@@ -167,7 +163,9 @@ trait Manager
          */
         [$group, $task] = $workflow->taskReply($message);
 
-        // ACK Current message.
+        /**
+         * ACK Current message.
+         */
         $q->ack($envelope->getDeliveryTag());
 
         /**
@@ -191,7 +189,7 @@ trait Manager
 
         /**
          * Group has pending/running tasks
-         * Wait for all tasks of the group to complete
+         * Wait for all tasks of the current group to complete
          */
         if (!$group->getProgressBag()->isCompleted()) {
             return true;
@@ -202,7 +200,7 @@ trait Manager
          * Wait for all groups of the sub workflow to complete
          */
         if (
-            !is_null($parentWorkflowId) &&
+            !$workflowMeta->isRootWorkflow() &&
             !$workflow->getProgressBag()->isCompleted() &&
             $workflow->getProgressBag()->hasPendingGroups()
         ) {
@@ -212,10 +210,22 @@ trait Manager
             return true;
         }
 
-        if (is_null($parentWorkflowId) && $group->getProgressBag()->isCompleted()) {
+        if (
+            $workflowMeta->isRootWorkflow()&&
+            $group->getProgressBag()->isCompleted()
+        ) {
+            /**
+             * Stop waiting as root workflow group has completed
+             */
             return false;
         } else {
-            $allParentsCompleted = $this->isParentWorkflowsCompleted($parentWorkflowId, $parentWorkflowGroupId);
+            /**
+             * Check if all parent workflows are completed
+             */
+            $allParentsCompleted = $this->isParentWorkflowsCompleted(
+                $workflowMeta->getParent(),
+                $workflowMeta->getGroup()
+            );
 
             /**
              * wait until entire group is finish.
@@ -360,15 +370,13 @@ trait Manager
      */
     private function isParentWorkflowsCompleted($parentWorkflowId, $parentGroupId)
     {
-        $workflowMetadata = $this->findWorkflow($parentWorkflowId);
         /**
-         * @var Workflow $workflow
+         * Find workflow from store
          */
-        $workflow       = $workflowMetadata['workflow'];
-        $workflowParent = $workflowMetadata['parent'];
-        $workflowGroup  = $workflowMetadata['group'];
+        $workflowMeta = $this->findWorkflow($parentWorkflowId);
+        $workflow     = $workflowMeta->getWorkflow();
 
-        if (is_null($workflowParent)) {
+        if ($workflowMeta->isRootWorkflow()) {
             // Root workflow
             $group = $workflow->findGroup($parentGroupId);
             if ($group->getProgressBag()->isCompleted()) {
@@ -377,7 +385,10 @@ trait Manager
         } else {
             // Sub Workflow
             if ($workflow->getProgressBag()->isCompleted()) {
-                return $this->isParentWorkflowsCompleted($workflowParent, $workflowGroup);
+                return $this->isParentWorkflowsCompleted(
+                    $workflowMeta->getParent(),
+                    $workflowMeta->getGroup()
+                );
             }
         }
 
@@ -438,11 +449,7 @@ trait Manager
         $parentId       = !is_null($parentWorkflow) ? $parentWorkflow->getWorkflowId() : null;
         $parentGroupId  = !is_null($parentGroup) ? $parentGroup->getGroupId() : null;
 
-        $this->workflowStore[$workflow->getWorkflowId()] = [
-            'workflow' => $workflow,
-            'parent'    => $parentId,
-            'group'     => $parentGroupId
-        ];
+        $this->workflowStore[$workflow->getWorkflowId()] = WorkflowMeta::build($workflow, $parentId, $parentGroupId);
     }
 
     /**
@@ -457,9 +464,9 @@ trait Manager
     /**
      * Find workflow by workflowId
      * @param string $workflowId
-     * @return array
+     * @return WorkflowMeta
      */
-    private function findWorkflow(string $workflowId): array
+    private function findWorkflow(string $workflowId): WorkflowMeta
     {
         return $this->workflowStore[$workflowId];
     }
@@ -473,19 +480,19 @@ trait Manager
      */
     private function addTaskToStore(Task $task, Group $group, Workflow $workflow)
     {
-        $this->taskStore[$task->getTaskId()] = [
-            'group'     => $group->getGroupId(),
-            'workflow'  => $workflow->getWorkflowId()
-        ];
+        $this->taskStore[$task->getTaskId()] = TaskMeta::build(
+            $group->getGroupId(),
+            $workflow->getWorkflowId()
+        );
     }
 
     /**
      * Find task by task id
      *
      * @param string $taskId
-     * @return array
+     * @return TaskMeta
      */
-    private function findTask(string $taskId): array
+    private function findTask(string $taskId): TaskMeta
     {
         return $this->taskStore[$taskId];
     }
@@ -532,21 +539,20 @@ trait Manager
         $workflow->call($event, $task);
 
         /**
-         * Get current workflow metadata(parent workflow)
+         * Get current workflow meta from store
          */
-        $workflowMetadata = $this->findWorkflow($workflow->getWorkflowId());
+        $workflowMeta = $this->findWorkflow($workflow->getWorkflowId());
 
         /**
-         * Run parent workflow's hook for event
+         * Run parent workflow hook for event
          * unless disabled in config
          */
         if (
             !$workflow->getConfig()->ignoreParentHooks() &&
-            !is_null($workflowMetadata['parent'])
+            !$workflowMeta->isRootWorkflow()
         ) {
-            $workflowParentMetadata = $this->findWorkflow($workflowMetadata['parent']);
-
-            $workflowParent = $workflowParentMetadata['workflow'];
+            $workflowParentMeta = $this->findWorkflow($workflowMeta->getParent());
+            $workflowParent     = $workflowParentMeta->getWorkflow();
             $workflowParent->call($event, $task);
         }
     }
