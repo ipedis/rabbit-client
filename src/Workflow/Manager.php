@@ -144,13 +144,9 @@ trait Manager
         $message = ReplyMessagePayload::fromJson($envelope->getBody());
 
         /**
-         * Get tasks from store
+         * Get tasks & workflow from store
          */
-        $taskMeta = $this->findTask($message->getOrderId());
-
-        /**
-         * Get workflow from store
-         */
+        $taskMeta     = $this->findTask($message->getOrderId());
         $workflowMeta = $this->findWorkflow($taskMeta->getWorkflowId());
         $workflow     = $workflowMeta->getWorkflow();
 
