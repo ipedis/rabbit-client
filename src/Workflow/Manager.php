@@ -41,21 +41,20 @@ trait Manager
      */
     private $taskStore = [];
 
-    abstract protected function getExchangeName(): string;
-
-    protected function resetOrdersQueue()
-    {
-        $this->replyQueue = $this->createAnonymousQueue($this->channel);
-    }
-
+    /**
+     * Run workflow recursively
+     *
+     * @param Workflow $workflow
+     * @throws AMQPChannelException
+     * @throws AMQPConnectionException
+     * @throws AMQPQueueException
+     * @throws ChannelFactoryException
+     * @throws MessagePayloadValidatorException
+     * @throws \AMQPEnvelopeException
+     */
     public function run(Workflow $workflow)
     {
         $wasAtLeastOneFailure = false;
-
-        /**
-         * Add workflow to store
-         */
-        $this->addWorkflowToStore($workflow, null, null);
 
         /**
          * Channel factory must be provided to
@@ -69,12 +68,20 @@ trait Manager
         $this->assertMessagePayloadValidator();
 
         /**
-         * Each groups will be executed sequentially, we iterate on each group.
-         * call relevant callback if needed.
+         * Add workflow to store
+         */
+        $this->addWorkflowToStore($workflow, null, null);
+
+        /**
+         * HOOK WORKFLOW ON START
+         * Call registered callbacks
          */
         $workflow->call(BindableEventInterface::WORKFLOW_ON_START);
 
-        /** @var Group $group */
+        /**
+         * Each groups will be executed sequentially, we iterate on each group.
+         * @var Group $group
+         */
         foreach ($workflow->getGroups() as $group) {
             /**
              * We start to run current group.
@@ -87,10 +94,13 @@ trait Manager
             $this->resetOrdersQueue();
 
             /**
-             * Dispatch all orders recursively for group
+             * Dispatch all orders of group recursively
              */
             $this->dispatchGroupOrders($group, $workflow);
 
+            /**
+             * Wait for all orders of current group to finish
+             */
             $this->replyQueue->consume([$this, 'onTaskReply']);
 
             $this->onGroupFinish($workflow, $group);
@@ -111,6 +121,19 @@ trait Manager
         $workflow->call(BindableEventInterface::WORKFLOW_ON_FINISH);
     }
 
+    /**
+     * Executed when worker replies back
+     *
+     * @param \AMQPEnvelope $envelope
+     * @param AMQPQueue $q
+     * @return bool
+     * @throws AMQPChannelException
+     * @throws AMQPConnectionException
+     * @throws ChannelFactoryException
+     * @throws MessagePayloadValidatorException
+     * @throws \Ipedis\Rabbit\Exception\MessagePayload\MessagePayloadFormatException
+     * @throws \Ipedis\Rabbit\Exception\Task\InvalidStatusException
+     */
     public function onTaskReply(\AMQPEnvelope $envelope, AMQPQueue $q)
     {
         /**
@@ -162,6 +185,11 @@ trait Manager
         }
 
         /**
+         * Call event binded on task layer.
+         */
+        $this->onUpdatedTaskStatus($message, $workflow, $group, $task);
+
+        /**
          * Group has pending/running tasks
          * Wait for all tasks of the group to complete
          */
@@ -184,11 +212,6 @@ trait Manager
             return true;
         }
 
-        /**
-         * Call event binded on task layer.
-         */
-        $this->onUpdatedTaskStatus($message, $workflow, $group, $task);
-
         if (is_null($parentWorkflowId) && $group->getProgressBag()->isCompleted()) {
             return false;
         } else {
@@ -199,6 +222,134 @@ trait Manager
              */
             return !($group->getProgressBag()->isCompleted() && $allParentsCompleted);
         }
+    }
+
+    /**
+     * Create anonymous queue for workers to reply
+     *
+     * @throws AMQPChannelException
+     * @throws AMQPConnectionException
+     * @throws AMQPQueueException
+     */
+    protected function resetOrdersQueue()
+    {
+        $this->replyQueue = $this->createAnonymousQueue($this->channel);
+    }
+
+    /**
+     * @param Task $task
+     * @param Group $group
+     * @param Workflow $workflow
+     * @return $this
+     * @throws ChannelFactoryException
+     * @throws MessagePayloadValidatorException
+     */
+    protected function publish(Task $task, Group $group, Workflow $workflow): self
+    {
+        /**
+         * Add task metadata to store
+         */
+        $this->addTaskToStore($task, $group, $workflow);
+
+        $message = $task->getOrderMessage();
+
+        /**
+         * Validate channel and return queue name
+         */
+        $channel = $this->getChannelName($message->getChannel());
+
+        /**
+         * Validate message payload data schema
+         */
+        $this->getMessagePayloadValidator()->validate($message);
+
+        $message->setReplyQueue($this->replyQueue->getName());
+
+        /**
+         * Publish task on exchange
+         */
+        $this->publishToExchange(
+            json_encode($message),
+            $channel,
+            $message->getMessageProperties(),
+            true
+        );
+
+        return $this;
+    }
+
+    /**
+     * @throws ChannelFactoryException
+     */
+    protected function assertChannelFactory(): void
+    {
+        if (!$this->getChannelFactory() instanceof ChannelFactory) {
+            throw new ChannelFactoryException('Must provide channel factory {channelFactory} with version and service.');
+        }
+    }
+
+    /**
+     * @throws MessagePayloadValidatorException
+     */
+    protected function assertMessagePayloadValidator(): void
+    {
+        if (!$this->getMessagePayloadValidator() instanceof ValidatorInterface) {
+            throw new MessagePayloadValidatorException("Must provide message payload validator {messagePayloadValidator}");
+        }
+    }
+
+    /**
+     * notify callback
+     *
+     * @param ReplyMessagePayload $message
+     * @param Workflow $workflow
+     * @param Group $group
+     * @param Task $task
+     */
+    private function onUpdatedTaskStatus(
+        ReplyMessagePayload $message,
+        Workflow $workflow,
+        Group $group,
+        Task $task
+    ) {
+        switch ($message->getStatus())
+        {
+            case MessageHandlerInterface::TYPE_SUCCESS :
+                $task->call(BindableEventInterface::TASK_ON_SUCCESS, $task);
+                $task->call(BindableEventInterface::TASK_ON_FINISH, $task);
+
+                $group->call(BindableEventInterface::GROUP_ON_TASKS_SUCCESS, $task);
+                $group->call(BindableEventInterface::GROUP_ON_TASKS_FINISH, $task);
+
+                $this->callWorkflowHookRecursively($workflow, BindableEventInterface::WORKFLOW_ON_TASKS_SUCCESS, $task);
+                $this->callWorkflowHookRecursively($workflow, BindableEventInterface::WORKFLOW_ON_TASKS_FINISH, $task);
+                break;
+            case MessageHandlerInterface::TYPE_ERROR :
+                $task->call(BindableEventInterface::TASK_ON_FAILURE, $task);
+                $task->call(BindableEventInterface::TASK_ON_FINISH, $task);
+
+                $group->call(BindableEventInterface::GROUP_ON_TASKS_FAILURE, $task);
+                $group->call(BindableEventInterface::GROUP_ON_TASKS_FINISH, $task);
+
+                $this->callWorkflowHookRecursively($workflow, BindableEventInterface::WORKFLOW_ON_TASKS_FAILURE, $task);
+                $this->callWorkflowHookRecursively($workflow, BindableEventInterface::WORKFLOW_ON_TASKS_FINISH, $task);
+                break;
+            case MessageHandlerInterface::TYPE_PROGRESS :
+                $task->call(BindableEventInterface::TASK_ON_PROGRESS, $task);
+                break;
+        }
+    }
+
+    /**
+     * @param Workflow $workflow
+     * @param Group $group
+     */
+    private function onGroupFinish(Workflow $workflow, Group $group)
+    {
+        $group->call($group->getProgressBag()->hasFailure() ? BindableEventInterface::GROUP_ON_FAILURE : BindableEventInterface::GROUP_ON_SUCCESS, $group);
+        $group->call(BindableEventInterface::GROUP_ON_FINISH, $group);
+        $workflow->call($group->getProgressBag()->hasFailure() ? BindableEventInterface::WORKFLOW_ON_GROUPS_FAILURE : BindableEventInterface::WORKFLOW_ON_GROUPS_SUCCESS, $group);
+        $workflow->call(BindableEventInterface::WORKFLOW_ON_GROUPS_FINISH, $group);
     }
 
     /**
@@ -234,107 +385,12 @@ trait Manager
     }
 
     /**
-     * notify callback
-     *
-     * @param ReplyMessagePayload $message
-     * @param Workflow $workflow
-     * @param Group $group
-     * @param Task $task
-     */
-    private function onUpdatedTaskStatus(
-        ReplyMessagePayload $message,
-        Workflow $workflow,
-        Group $group,
-        Task $task
-    ) {
-        switch ($message->getStatus())
-        {
-            case MessageHandlerInterface::TYPE_SUCCESS :
-                $task->call(BindableEventInterface::TASK_ON_SUCCESS, $task);
-                $task->call(BindableEventInterface::TASK_ON_FINISH, $task);
-
-                $group->call(BindableEventInterface::GROUP_ON_TASKS_SUCCESS, $task);
-                $group->call(BindableEventInterface::GROUP_ON_TASKS_FINISH, $task);
-
-                $workflow->call(BindableEventInterface::WORKFLOW_ON_TASKS_SUCCESS, $task);
-                $workflow->call(BindableEventInterface::WORKFLOW_ON_TASKS_FINISH, $task);
-            break;
-            case MessageHandlerInterface::TYPE_ERROR :
-                $task->call(BindableEventInterface::TASK_ON_FAILURE, $task);
-                $task->call(BindableEventInterface::TASK_ON_FINISH, $task);
-
-                $group->call(BindableEventInterface::GROUP_ON_TASKS_FAILURE, $task);
-                $group->call(BindableEventInterface::GROUP_ON_TASKS_FINISH, $task);
-
-                $workflow->call(BindableEventInterface::WORKFLOW_ON_TASKS_FAILURE, $task);
-                $workflow->call(BindableEventInterface::WORKFLOW_ON_TASKS_FINISH, $task);
-            break;
-            case MessageHandlerInterface::TYPE_PROGRESS :
-                $task->call(BindableEventInterface::TASK_ON_PROGRESS, $task);
-            break;
-        }
-    }
-
-    /**
-     * @param Workflow $workflow
-     * @param Group $group
-     */
-    private function onGroupFinish(Workflow $workflow, Group $group)
-    {
-        $group->call($group->getProgressBag()->hasFailure() ? BindableEventInterface::GROUP_ON_FAILURE : BindableEventInterface::GROUP_ON_SUCCESS, $group);
-        $group->call(BindableEventInterface::GROUP_ON_FINISH, $group);
-        $workflow->call($group->getProgressBag()->hasFailure() ? BindableEventInterface::WORKFLOW_ON_GROUPS_FAILURE : BindableEventInterface::WORKFLOW_ON_GROUPS_SUCCESS, $group);
-        $workflow->call(BindableEventInterface::WORKFLOW_ON_GROUPS_FINISH, $group);
-    }
-
-    /**
-     * @param Task $task
-     * @param Group $group
-     * @param Workflow $workflow
-     * @return $this
-     * @throws ChannelFactoryException
-     * @throws MessagePayloadValidatorException
-     */
-    protected function publish(Task $task, Group $group, Workflow $workflow): self
-    {
-        /**
-         * Add task metadata to store
-         */
-        $this->addTaskToStore($task, $group, $workflow);
-
-        $message = $task->getOrderMessage();
-
-        /**
-         * Validate channel and return queue name
-         */
-        $channel = $this->getChannelName($message->getChannel());
-
-        /**
-         * Validate message payload data schema
-         */
-        $this->getMessagePayloadValidator()->validate($message);
-
-
-        $message->setReplyQueue($this->replyQueue->getName());
-
-        /**
-         * Publish task on exchange
-         */
-        $this->publishToExchange(
-            json_encode($message),
-            $channel,
-            $message->getMessageProperties(),
-            true
-        );
-
-        return $this;
-    }
-
-    /**
      * Dispatch Group task recursively
      *
      * @param Group $group
      * @param Workflow $workflow
+     * @throws ChannelFactoryException
+     * @throws MessagePayloadValidatorException
      */
     private function dispatchGroupOrders(Group $group, Workflow $workflow)
     {
@@ -461,22 +517,41 @@ trait Manager
         throw new ChannelNamingException('Invalid channel provided.');
     }
 
-    protected function assertChannelFactory(): void
-    {
-        if (!$this->getChannelFactory() instanceof ChannelFactory) {
-            throw new ChannelFactoryException('Must provide channel factory {channelFactory} with version and service.');
-        }
-    }
-
     /**
-     * @throws MessagePayloadValidatorException
+     * Call workflow Hook recursively
+     *
+     * @param Workflow $workflow
+     * @param string $event
+     * @param Task $task
      */
-    protected function assertMessagePayloadValidator(): void
+    private function callWorkflowHookRecursively(Workflow $workflow, string $event, Task $task)
     {
-        if (!$this->getMessagePayloadValidator() instanceof ValidatorInterface) {
-            throw new MessagePayloadValidatorException("Must provide message payload validator {messagePayloadValidator}");
+        /**
+         * Call workflow hook
+         */
+        $workflow->call($event, $task);
+
+        /**
+         * Get current workflow metadata(parent workflow)
+         */
+        $workflowMetadata = $this->findWorkflow($workflow->getWorkflowId());
+
+        /**
+         * Run parent workflow's hook for event
+         * unless disabled in config
+         */
+        if (
+            !$workflow->getConfig()->ignoreParentHooks() &&
+            !is_null($workflowMetadata['parent'])
+        ) {
+            $workflowParentMetadata = $this->findWorkflow($workflowMetadata['parent']);
+
+            $workflowParent = $workflowParentMetadata['workflow'];
+            $workflowParent->call($event, $task);
         }
     }
 
     abstract protected function getChannelFactory();
+
+    abstract protected function getExchangeName(): string;
 }
