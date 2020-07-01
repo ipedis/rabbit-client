@@ -12,6 +12,7 @@ abstract class ChannelAbstract
      * <protocol>.<service>.<aggregate>.<action>
      */
     const CHANNEL_PATTERN = '#^(?<protocol>v\d+)\.(?<service>[\w-]+)\.(?<aggregate>[\w-]+(?:\.[\w-]+)?)\.(?<action>[\w-]+)$#';
+
     /**
      * <aggregate>.<action>
      */
@@ -21,14 +22,17 @@ abstract class ChannelAbstract
      * @var string
      */
     private $protocol;
+
     /**
      * @var string
      */
     private $service;
+
     /**
      * @var string
      */
     private $aggregate;
+
     /**
      * @var string
      */
@@ -143,7 +147,6 @@ abstract class ChannelAbstract
             $action
         );
     }
-
 
     private function assertProtocol(string $protocol)
     {

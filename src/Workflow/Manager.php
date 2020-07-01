@@ -184,6 +184,16 @@ trait Manager
         $this->onUpdatedTaskStatus($message, $workflow, $group, $task);
 
         /**
+         * Current group has pending tasks to be dispatched
+         * (because of concurrency limit)
+         */
+        if ($group->getProgressBag()->hasPendingTasks()) {
+            $this->dispatchGroupOrders($group, $workflow);
+
+            return true;
+        }
+
+        /**
          * Group has pending/running tasks
          * Wait for all tasks of the current group to complete
          */
@@ -403,14 +413,33 @@ trait Manager
     {
         foreach ($group->getOrders() as $job) {
             if ($job instanceof Workflow) {
+                /**
+                 * If workflow, dispatch next pending orders of workflow recursively
+                 */
                 $this->addWorkflowToStore($job, $workflow, $group);
 
                 $nextGroup = $job->getProgressBag()->getNextPendingGroup();
                 $this->dispatchGroupOrders($nextGroup, $job);
             } else {
-                $this->publish($job, $group, $workflow);
-                $job->setTaskAsDispatched();
-                $job->call(BindableEventInterface::TASK_ON_START, $job);
+                if ($workflow->getConfig()->hasConcurrencyLimitForChannel($job->getType())) {
+                    /**
+                     * Case when limited workers allocated per channel(task type)
+                     * Publish orders until matches number of channel available for order
+                     */
+                    $limitForChannel = $workflow->getConfig()->getConcurrencyLimitForChannel($job->getType());
+                    if (
+                        $job->isPlanified() &&
+                        $group->getProgressBag()->countDispatchedTasks($job->getType()) < $limitForChannel
+                    ) {
+                        $this->publish($job, $group, $workflow);
+                        $job->setTaskAsDispatched();
+                        $job->call(BindableEventInterface::TASK_ON_START, $job);
+                    }
+                } else {
+                    $this->publish($job, $group, $workflow);
+                    $job->setTaskAsDispatched();
+                    $job->call(BindableEventInterface::TASK_ON_START, $job);
+                }
             }
         }
     }
