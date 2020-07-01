@@ -27,9 +27,9 @@ class Group extends Bindable
     /**
      * Group orders
      *
-     * @var Task[] $tasks
+     * @var $orders[]
      */
-    protected $tasks = [];
+    protected $orders = [];
 
     /**
      * @var GroupConfig
@@ -39,15 +39,15 @@ class Group extends Bindable
     /**
      * Group constructor.
      * @param string $groupId
-     * @param array $tasks
+     * @param array $orders
      * @param array $callbacks
      * @param GroupConfig|null $config
      * @throws InvalidGroupArgumentException
      */
-    protected function __construct(string $groupId, array $tasks = [], array $callbacks = [], ?GroupConfig $config = null)
+    protected function __construct(string $groupId, array $orders = [], array $callbacks = [], ?GroupConfig $config = null)
     {
         $this->groupId  = $groupId;
-        $this->prepareTasks($tasks);
+        $this->prepareOrders($orders);
         $this->callbacks = $this->assertCallbacks($callbacks);
         $this->config = $config;
     }
@@ -55,28 +55,36 @@ class Group extends Bindable
     /**
      * Factory constructor
      *
-     * @param array $tasks Array of tasks
+     * @param array $orders Array of tasks|workflow
      * @param array $callbacks Key/value array of callbacks
      * where key correspond to event name and value list of callbacks for event
      * @param GroupConfig|null $config
      * @return static
      * @throws InvalidGroupArgumentException
      */
-    public static function build(array $tasks = [], array $callbacks = [], ?GroupConfig $config = null): self
+    public static function build(array $orders = [], array $callbacks = [], ?GroupConfig $config = null): self
     {
-        return new self(uuid_create(), $tasks, $callbacks, $config);
+        return new self(uuid_create(), $orders, $callbacks, $config);
     }
 
     /**
-     * Planify a task in the group
+     * Planify a job in the group
      *
-     * @param Task $task
+     * @param $order
      * @return Group
+     * @throws InvalidGroupArgumentException
      */
-    public function planify(Task $task): self
+    public function planify($order): self
     {
-        // TODO : we should probably check if index does not exist, otherwise we will erease another task.
-        $this->tasks[$task->getOrderMessage()->getOrderId()] = $task;
+        if (!$order instanceof Task && !$order instanceof Workflow) {
+            throw new InvalidGroupArgumentException(sprintf('list of tasks must have "%s" type or "%s" type', Task::class, Workflow::class));
+        }
+
+        if ($order instanceof Workflow) {
+            $this->orders[$order->getWorkflowId()] = $order;
+        } else {
+            $this->orders[$order->getOrderMessage()->getOrderId()] = $order;
+        }
 
         return $this;
     }
@@ -87,6 +95,7 @@ class Group extends Bindable
      * @param OrderMessagePayload $order
      * @param array $callbacks
      * @return Group
+     * @throws InvalidGroupArgumentException
      */
     public function planifyOrder(OrderMessagePayload $order, array $callbacks = []): self
     {
@@ -94,23 +103,35 @@ class Group extends Bindable
     }
 
     /**
-     * Group has order matching orderId
+     * Planify a workflow in the group
      *
-     * @param string $taskId
-     * @return bool
+     * @param Workflow $workflow
+     * @return Group
+     * @throws InvalidGroupArgumentException
      */
-    public function has(string $taskId): bool
+    public function planifyWorkflow(Workflow $workflow): self
     {
-        return (!empty($this->tasks[$taskId]));
+        return $this->planify($workflow);
     }
 
     /**
-     * @param string $taskId
+     * Group has order matching orderId
+     *
+     * @param string $orderId
+     * @return bool
+     */
+    public function has(string $orderId): bool
+    {
+        return (!empty($this->orders[$orderId]));
+    }
+
+    /**
+     * @param string $orderId
      * @return Task
      */
-    public function find(string $taskId): Task
+    public function find(string $orderId): Task
     {
-        return $this->tasks[$taskId];
+        return $this->orders[$orderId];
     }
 
     /**
@@ -120,10 +141,10 @@ class Group extends Bindable
      */
     public function update(ReplyMessagePayload $message): array
     {
-        $task = $this->find($message->getOrderId());
-        $task->update($message);
+        $order = $this->find($message->getOrderId());
+        $order->update($message);
 
-        return [$this, $task];
+        return [$this, $order];
     }
 
     /**
@@ -144,9 +165,9 @@ class Group extends Bindable
      *
      * @return Task[]
      */
-    public function getTasks(): array
+    public function getOrders(): array
     {
-        return $this->tasks;
+        return $this->orders;
     }
 
     /**
@@ -195,7 +216,7 @@ class Group extends Bindable
      */
     public function getProgressBag(): GroupProgressBag
     {
-        return new GroupProgressBag($this->getTasks());
+        return new GroupProgressBag($this->getOrders());
     }
 
     /**
@@ -216,7 +237,7 @@ class Group extends Bindable
                         $task->getStatusType(),
                         $task->getTimer()
                     );
-                }, $this->getTasks())
+                }, $this->getOrders())
             )
         );
     }
@@ -241,16 +262,21 @@ class Group extends Bindable
     }
 
     /**
-     * @param array $tasks
+     * @param array $orders
      * @throws InvalidGroupArgumentException
      */
-    private function prepareTasks(array $tasks)
+    private function prepareOrders(array $orders)
     {
-        foreach ($tasks as $task) {
-            if (!($task instanceof Task)) {
-                throw new InvalidGroupArgumentException(sprintf('list of tasks must have "%s" type', Task::class));
+        foreach ($orders as $order) {
+            if (!$order instanceof Task && !$order instanceof Workflow) {
+                throw new InvalidGroupArgumentException(sprintf('list of tasks must have "%s" type or "%s" type', Task::class, Workflow::class));
             }
-            $this->tasks[$task->getOrderMessage()->getOrderId()] = $task;
+
+            if ($order instanceof Workflow) {
+                $this->orders[$order->getWorkflowId()] = $order;
+            } else {
+                $this->orders[$order->getOrderMessage()->getOrderId()] = $order;
+            }
         }
     }
 

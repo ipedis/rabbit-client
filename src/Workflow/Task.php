@@ -73,6 +73,14 @@ final class Task extends Bindable
     }
 
     /**
+     * @return string
+     */
+    public function getTaskId(): string
+    {
+        return $this->getOrderMessage()->getOrderId();
+    }
+
+    /**
      * @param ReplyMessagePayload $message
      * @return $this
      * @throws InvalidStatusException

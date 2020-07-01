@@ -4,24 +4,26 @@ namespace Ipedis\Demo\Rabbit\Worker\Workflow\Manager;
 
 use Closure;
 use Ipedis\Rabbit\DTO\Type\Group\GroupedTaskType;
+use Ipedis\Rabbit\Exception\Group\InvalidGroupArgumentException;
+use Ipedis\Rabbit\Exception\Workflow\InvalidWorkflowArgumentException;
 use Ipedis\Rabbit\MessagePayload\OrderMessagePayload;
-
 use Ipedis\Rabbit\Workflow\Event\BindableEventInterface;
 use Ipedis\Rabbit\Workflow\Group;
-use Ipedis\Rabbit\Workflow\Manager;
 use Ipedis\Rabbit\Workflow\Workflow;
 
-class GeneratorManager extends ManagerAbstract
+class RecursiveGeneratorManager extends ManagerAbstract
 {
-    const COUNT_PAGE = 10;
+    const COUNT_PAGE = 3;
 
     public function main()
     {
         $generation = (new Workflow($this->craftFirstGroup()))
             ->then($this->craftSecondGroup())
-            ->then($this->crafThirdGroup())
         ;
 
+        /**
+         * Callback
+         */
         $generation->bind(BindableEventInterface::WORKFLOW_ON_TASKS_FINISH, function () use ($generation) {
             printf(
                 "Generation PoC: Each table is one tick of generation - %.2f%% done\n----\n\n",
@@ -41,31 +43,36 @@ class GeneratorManager extends ManagerAbstract
                 );
             }
             printf("\n\n");
-         });
+        });
 
         $this->run($generation);
     }
 
-    public function getQueuePrefix(): string
-    {
-        return 'demo.workflow';
-    }
-
     /**
-     * In concurrency we can have html and image
      * @return Closure
      */
-    private function craftFirstGroup(): Closure {
-        return function (Group $group) {
+    private function craftFirstGroup(): Closure
+    {
+        return function(Group $group) {
             $group->planifyOrder(
                 OrderMessagePayload::build(
-                    'v1.admin.publication.generate-html',
+                'v1.admin.publication.generate-html',
                     [
                         'publication' => ['sid' => 1024]
                     ]
                 )
             );
+        };
+    }
 
+    /**
+     * @return Closure
+     * @throws InvalidGroupArgumentException
+     * @throws InvalidWorkflowArgumentException
+     */
+    private function craftSecondGroup(): Closure
+    {
+        $imageWorkflow = (new Workflow(function (Group $group) {
             $group->planifyOrder(
                 OrderMessagePayload::build(
                     'v1.admin.publication.generate-image',
@@ -74,28 +81,8 @@ class GeneratorManager extends ManagerAbstract
                     ]
                 )
             );
-        };
-    }
-
-    private function craftSecondGroup(): Closure {
-        return function (Group $group) {
-            for ($page = 1; $page <= self::COUNT_PAGE; $page++) {
-                $group->planifyOrder(
-                    OrderMessagePayload::build(
-                        'v1.admin.publication.generate-image-page',
-                        [
-                            'publication' => ['sid' => 1024],
-                            'page' => ['sid' => $page],
-                        ]
-                    )
-                );
-            }
-        };
-    }
-
-    private function crafThirdGroup(): Closure {
-        return function (Group $group) {
-
+        }))
+        ->then(function (Group $group) {
             foreach ([1, self::COUNT_PAGE] as $page) {
                 $group->planifyOrder(
                     OrderMessagePayload::build(
@@ -139,6 +126,10 @@ class GeneratorManager extends ManagerAbstract
                     )
                 );
             }
+        });
+
+        return function (Group $group) use ($imageWorkflow) {
+            $group->planifyWorkflow($imageWorkflow);
         };
     }
 }

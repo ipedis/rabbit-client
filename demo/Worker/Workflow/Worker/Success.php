@@ -1,7 +1,5 @@
 <?php
-
 namespace Ipedis\Demo\Rabbit\Worker\Workflow\Worker;
-
 
 use AMQPEnvelope;
 use Closure;
@@ -70,10 +68,5 @@ class Success extends WorkerAbstract implements OnBeforeMessage, OnAfterMessage
     public function afterMessageHandled()
     {
         // Hook after message was handled
-    }
-
-    public function getQueuePrefix(): string
-    {
-        return 'demo.workflow';
     }
 }

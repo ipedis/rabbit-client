@@ -14,6 +14,7 @@ use Ipedis\Rabbit\DTO\Type\Workflow\WorkflowType;
 use Ipedis\Rabbit\Exception\Progress\InvalidProgressBagArgumentException;
 use Ipedis\Rabbit\Workflow\Group;
 use Ipedis\Rabbit\Workflow\Task;
+use Ipedis\Rabbit\Workflow\Workflow;
 
 class WorkflowProgressBag implements ProgressBagInterface, \JsonSerializable
 {
@@ -32,6 +33,24 @@ class WorkflowProgressBag implements ProgressBagInterface, \JsonSerializable
         $this->assertUuid($workflowId);
         $this->workflowId = $workflowId;
         $this->groups = $groups;
+    }
+
+    /**
+     * @return bool
+     */
+    public function hasPendingGroups(): bool
+    {
+        return count($this->getPendingGroups()) > 0;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getNextPendingGroup(): Group
+    {
+        $pendingGroups = $this->getPendingGroups();
+
+        return reset($pendingGroups);
     }
 
     /**
@@ -167,7 +186,7 @@ class WorkflowProgressBag implements ProgressBagInterface, \JsonSerializable
          * @var Group $group
          */
         foreach ($this->groups as $group) {
-            $totalTasks += $group->getProgressBag()->countOrdersInGroup();
+            $totalTasks += $group->getProgressBag()->countTasksInGroup();
         }
 
         return $totalTasks;
@@ -186,7 +205,7 @@ class WorkflowProgressBag implements ProgressBagInterface, \JsonSerializable
          * @var Group $group
          */
         foreach ($this->groups as $group) {
-            $totalTasks += $group->getProgressBag()->countPlanifiedOrders();
+            $totalTasks += $group->getProgressBag()->countPlanifiedTasks();
         }
 
         return $totalTasks;
@@ -205,7 +224,7 @@ class WorkflowProgressBag implements ProgressBagInterface, \JsonSerializable
          * @var Group $group
          */
         foreach ($this->groups as $group) {
-            $totalTasks += $group->getProgressBag()->countDispatchedOrders();
+            $totalTasks += $group->getProgressBag()->countDispatchedTasks();
         }
 
         return $totalTasks;
@@ -223,7 +242,7 @@ class WorkflowProgressBag implements ProgressBagInterface, \JsonSerializable
          * @var Group $group
          */
         foreach ($this->groups as $group) {
-            $totalTasks += $group->getProgressBag()->countCompletedOrders();
+            $totalTasks += $group->getProgressBag()->countCompletedTasks();
         }
 
         return $totalTasks;
@@ -242,7 +261,7 @@ class WorkflowProgressBag implements ProgressBagInterface, \JsonSerializable
          * @var Group $group
          */
         foreach ($this->groups as $group) {
-            $totalTasks += $group->getProgressBag()->countSuccessfulOrders();
+            $totalTasks += $group->getProgressBag()->countSuccessfulTasks();
         }
 
         return $totalTasks;
@@ -261,7 +280,7 @@ class WorkflowProgressBag implements ProgressBagInterface, \JsonSerializable
          * @var Group $group
          */
         foreach ($this->groups as $group) {
-            $totalTasks += $group->getProgressBag()->countFailedOrders();
+            $totalTasks += $group->getProgressBag()->countFailedTasks();
         }
 
         return $totalTasks;
@@ -478,24 +497,18 @@ class WorkflowProgressBag implements ProgressBagInterface, \JsonSerializable
         return (WorkflowType::buildSummary($this));
     }
 
+    /**
+     * Get summary of all taks inside workflow
+     *
+     * @return array
+     * @throws \Ipedis\Rabbit\Exception\InvalidUuidException
+     */
     public function getGroupedTasksSummary()
     {
-        $summary = [];
-        /** @var Group $group */
-        foreach ($this->groups as $group) {
-            foreach ($group->getTasks() as $task) {
-                if (!isset($summary[$task->getType()])) {
-                    /*
-                     * Initialize counts for current task type
-                     */
-                    $summary = $this->initializeDetailsByType($summary, $task);
-                }
-                /*
-                 * Update counts for current task type
-                 */
-                $summary = $this->updateDetailsByType($summary, $task);
-            }
-        }
+        /**
+         * Get tasks in group recursively
+         */
+        $summary = $this->getGroupTasksSummaryRecursively($this->groups);
 
         $groupedTasks = [];
         foreach ($summary as $type => $detail) {
@@ -532,6 +545,83 @@ class WorkflowProgressBag implements ProgressBagInterface, \JsonSerializable
     public function getWorkflowId(): string
     {
         return $this->workflowId;
+    }
+
+    public function getOrders(): Tasks
+    {
+        $tasks = [];
+        foreach ($this->groups as $group) {
+            foreach ($group->getOrders() as $task) {
+                $tasks[] = TaskType::build(
+                    $task->getOrderMessage()->getOrderId(),
+                    $task->getType(),
+                    $task->getStatusType(),
+                    $task->getTimer()
+                );
+            }
+        }
+
+        return new Tasks($tasks, $this->getPercentage());
+    }
+
+    /**
+     * Get groups details
+     * @return Groups
+     */
+    public function getGroups(): Groups
+    {
+        $status = $this->getStatus();
+        $summary = SummaryType::build(
+            $this->countGroupsInWorkflow(),
+            $this->countPendingGroups(),
+            $this->countRunningGroups(),
+            $this->countCompletedGroups(),
+            $this->countSuccessfulGroups(),
+            $this->countFailedGroups()
+        );
+
+        $groups = array_map(function (Group $group) {
+            return GroupType::build(
+                $group->getGroupId(),
+                $group->getStatus(),
+                $group->getTimer(),
+                $group->getPercentage(),
+                array_values(
+                    array_map(function (Task $task) {
+                        return $task->getSummary();
+                    }, $group->getOrders())
+                )
+            );
+        }, $this->groups);
+
+        return new Groups($this->getWorkflowId(), $status, $summary, $this->getPercentage(),$groups);
+    }
+
+    /**
+     * Get all tasks in the workflow
+     * @return array
+     */
+    public function getOrdersInWorkflow()
+    {
+        $tasks = [];
+
+        foreach ($this->groups as $group) {
+            $tasks = array_merge($tasks, $group->getOrders());
+        }
+
+        return $tasks;
+    }
+
+    public function jsonSerialize()
+    {
+        return $this->getSummary()->jsonSerialize();
+    }
+
+    protected function assertUuid(string $uuid)
+    {
+        if (!uuid_is_valid($uuid)) {
+            throw new InvalidProgressBagArgumentException("[WORKFLOW] {$uuid} is not a valid uuid");
+        }
     }
 
     /**
@@ -588,80 +678,38 @@ class WorkflowProgressBag implements ProgressBagInterface, \JsonSerializable
         return $summary;
     }
 
-    public function getTasks(): Tasks
+    /**
+     * Get summary of all tasks in group
+     *
+     * @param array $groups
+     * @return array
+     */
+    private function getGroupTasksSummaryRecursively(array $groups): array
     {
-        $tasks = [];
-        foreach ($this->groups as $group) {
-            foreach ($group->getTasks() as $task) {
-                $tasks[] = TaskType::build(
-                    $task->getOrderMessage()->getOrderId(),
-                    $task->getType(),
-                    $task->getStatusType(),
-                    $task->getTimer()
-                );
+        $summary = [];
+
+        /** @var Group $group */
+        foreach ($groups as $group) {
+            foreach ($group->getOrders() as $order) {
+                if ($order instanceof Workflow) {
+                    $summary = array_merge($summary, $this->getGroupTasksSummaryRecursively($order->getGroups()));
+                } else {
+                    /**
+                     * Order is a Task
+                     * Initialize counts for current task type
+                     */
+                    if (!isset($summary[$order->getType()])) {
+                        $summary = $this->initializeDetailsByType($summary, $order);
+                    }
+
+                    /*
+                     * Update counts for current task type
+                     */
+                    $summary = $this->updateDetailsByType($summary, $order);
+                }
             }
         }
 
-        return new Tasks($tasks, $this->getPercentage());
-    }
-
-    /**
-     * Get groups details
-     * @return Groups
-     */
-    public function getGroups(): Groups
-    {
-        $status = $this->getStatus();
-        $summary = SummaryType::build(
-            $this->countGroupsInWorkflow(),
-            $this->countPendingGroups(),
-            $this->countRunningGroups(),
-            $this->countCompletedGroups(),
-            $this->countSuccessfulGroups(),
-            $this->countFailedGroups()
-        );
-
-        $groups = array_map(function (Group $group) {
-            return GroupType::build(
-                $group->getGroupId(),
-                $group->getStatus(),
-                $group->getTimer(),
-                $group->getPercentage(),
-                array_values(
-                    array_map(function (Task $task) {
-                        return $task->getSummary();
-                    }, $group->getTasks())
-                )
-            );
-        }, $this->groups);
-
-        return new Groups($this->getWorkflowId(), $status, $summary, $this->getPercentage(),$groups);
-    }
-
-    /**
-     * Get all tasks in the workflow
-     * @return array
-     */
-    public function getOrdersInWorkflow()
-    {
-        $tasks = [];
-
-        foreach ($this->groups as $group) {
-            $tasks = array_merge($tasks, $group->getTasks());
-        }
-
-        return $tasks;
-    }
-
-    public function jsonSerialize()
-    {
-        return $this->getSummary()->jsonSerialize();
-    }
-
-    protected function assertUuid(string $uuid)
-    {
-        if (!uuid_is_valid($uuid)) {
-            throw new InvalidProgressBagArgumentException("[WORKFLOW] {$uuid} is not a valid uuid");
-        }
+        return $summary;
     }
 }

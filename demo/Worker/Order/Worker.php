@@ -91,9 +91,4 @@ class Worker extends WorkerAbstract implements OnBeforeMessage, OnAfterMessage
     {
         printf("WORKER LIFECYCLE HOOK : AFTER HANDLING MESSAGE..."."\n\n");
     }
-
-    public function getQueuePrefix(): string
-    {
-        return 'demo.order';
-    }
 }
