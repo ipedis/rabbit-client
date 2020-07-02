@@ -1,18 +1,14 @@
 <?php
 
-namespace Ipedis\Rabbit\Workflow\ProgressBag;
+namespace Ipedis\Rabbit\Workflow\ProgressBag\Contract;
 
 
 use Ipedis\Rabbit\DTO\Order\Tasks;
-use Ipedis\Rabbit\DTO\Type\ProgressType;
-use Ipedis\Rabbit\DTO\Type\StatusType;
+use Ipedis\Rabbit\Workflow\ProgressBag\Property\Percentage;
+use Ipedis\Rabbit\Workflow\ProgressBag\Property\Status;
 
 interface ProgressBagInterface
 {
-    const STATUS_PENDING  = 'pending';
-    const STATUS_RUNNING  = 'running';
-    const STATUS_FINISHED = 'finished';
-
     /**
      * @return bool
      */
@@ -34,9 +30,9 @@ interface ProgressBagInterface
     public function hasFailure(): bool;
 
     /**
-     * @return StatusType
+     * @return Status
      */
-    public function getStatus(): StatusType;
+    public function getStatus(): Status;
 
     /**
      * @return float
@@ -44,9 +40,9 @@ interface ProgressBagInterface
     public function getExecutionTime(): float;
 
     /**
-     * @return ProgressType
+     * @return Percentage
      */
-    public function getPercentage(): ProgressType;
+    public function getPercentage(): Percentage;
 
     /**
      * @return Tasks

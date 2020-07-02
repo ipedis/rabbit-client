@@ -13,6 +13,9 @@ use Ipedis\Rabbit\DTO\Type\TaskType;
 use Ipedis\Rabbit\DTO\Type\Workflow\WorkflowType;
 use Ipedis\Rabbit\Exception\Progress\InvalidProgressBagArgumentException;
 use Ipedis\Rabbit\Workflow\Group;
+use Ipedis\Rabbit\Workflow\ProgressBag\Contract\ProgressBagInterface;
+use Ipedis\Rabbit\Workflow\ProgressBag\Property\Percentage;
+use Ipedis\Rabbit\Workflow\ProgressBag\Property\Status;
 use Ipedis\Rabbit\Workflow\Task;
 use Ipedis\Rabbit\Workflow\Workflow;
 
@@ -332,20 +335,20 @@ class WorkflowProgressBag implements ProgressBagInterface, \JsonSerializable
      * - PENDING : no tasks of any group yet dispatched
      * - RUNNING : at least one task of a group has been dispatched
      * - FINISHED : all tasks of all groups have completed
-     * @return StatusType
+     * @return Status
      */
-    public function getStatus(): StatusType
+    public function getStatus(): Status
     {
         if ($this->isCompleted()) {
             if ($this->hasFailure()) {
-                return StatusType::buildFailed();
+                return Status::buildFailed();
             }
 
-            return StatusType::buildSuccess();
+            return Status::buildSuccess();
         } elseif ($this->isRunning()) {
-            return StatusType::buildRunning();
+            return Status::buildRunning();
         }
-        return StatusType::buildPending();
+        return Status::buildPending();
     }
 
     /**
@@ -453,11 +456,12 @@ class WorkflowProgressBag implements ProgressBagInterface, \JsonSerializable
     /**
      * Get percentage progression of workflow
      *
-     * @return ProgressType
+     * @return Percentage
+     * @throws \Ipedis\Rabbit\Exception\Progress\InvalidProgressValueException
      */
-    public function getPercentage(): ProgressType
+    public function getPercentage(): Percentage
     {
-        return ProgressType::build(
+        return Percentage::build(
             (100 * $this->countTotalCompletedOrders())/ $this->countTotalOrders(),
             (100 * $this->countTotalSuccessfulOrders())/ $this->countTotalOrders(),
             (100 * $this->countTotalFailedOrders())/ $this->countTotalOrders()

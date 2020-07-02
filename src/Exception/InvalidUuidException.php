@@ -4,7 +4,7 @@
 namespace Ipedis\Rabbit\Exception;
 
 
-class InvalidUuidException extends \Exception
+class InvalidUuidException extends RabbitClientException
 {
 
 }

@@ -8,6 +8,9 @@ use Ipedis\Rabbit\DTO\Type\StatusType;
 use Ipedis\Rabbit\DTO\Type\SummaryType;
 use Ipedis\Rabbit\DTO\Type\TaskType;
 use Ipedis\Rabbit\DTO\Type\TimerType;
+use Ipedis\Rabbit\Workflow\ProgressBag\Contract\ProgressBagInterface;
+use Ipedis\Rabbit\Workflow\ProgressBag\Property\Percentage;
+use Ipedis\Rabbit\Workflow\ProgressBag\Property\Status;
 use Ipedis\Rabbit\Workflow\Task;
 use Ipedis\Rabbit\Workflow\Workflow;
 
@@ -237,20 +240,20 @@ class GroupProgressBag implements ProgressBagInterface
      * - RUNNING : at least one task has been dispatched
      * - FINISHED : all tasks in group have completed
      *
-     * @return StatusType
+     * @return Status
      */
-    public function getStatus(): StatusType
+    public function getStatus(): Status
     {
         if ($this->isCompleted()) {
             if ($this->hasFailure()) {
-                return StatusType::buildFailed();
+                return Status::buildFailed();
             }
 
-            return StatusType::buildSuccess();
+            return Status::buildSuccess();
         }  elseif($this->isPending()) {
-            return StatusType::buildPending();
+            return Status::buildPending();
         } elseif ($this->isRunning()) {
-            return StatusType::buildRunning();
+            return Status::buildRunning();
         }
     }
 
@@ -360,11 +363,12 @@ class GroupProgressBag implements ProgressBagInterface
     /**
      * Get percentage progression of group
      *
-     * @return ProgressType
+     * @return Percentage
+     * @throws \Ipedis\Rabbit\Exception\Progress\InvalidProgressValueException
      */
-    public function getPercentage(): ProgressType
+    public function getPercentage(): Percentage
     {
-        return ProgressType::build(
+        return Percentage::build(
             (100 * $this->countCompletedTasks())/ $this->countTasksInGroup(),
             (100 * $this->countSuccessfulTasks())/ $this->countTasksInGroup(),
             (100 * $this->countFailedTasks())/ $this->countTasksInGroup()
