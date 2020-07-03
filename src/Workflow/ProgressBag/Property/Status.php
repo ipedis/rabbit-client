@@ -84,6 +84,38 @@ class Status implements \JsonSerializable
     }
 
     /**
+     * @return bool
+     */
+    public function isRunning(): bool
+    {
+        return $this->status === self::STATUS_RUNNING;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isSuccess(): bool
+    {
+        return $this->status === self::STATUS_SUCCESS;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isFailed(): bool
+    {
+        return $this->status === self::STATUS_FAILED;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isPending(): bool
+    {
+        return $this->status === self::STATUS_PENDING;
+    }
+
+    /**
      * @return string
      */
     public function getStatus(): string

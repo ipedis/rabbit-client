@@ -9,6 +9,7 @@ use Ipedis\Rabbit\MessagePayload\OrderMessagePayload;
 use Ipedis\Rabbit\Workflow\Event\BindableEventInterface;
 use Ipedis\Rabbit\Workflow\Group;
 use Ipedis\Rabbit\Workflow\Manager;
+use Ipedis\Rabbit\Workflow\ProgressBag\Model\GroupedTasksProgress;
 use Ipedis\Rabbit\Workflow\Workflow;
 
 class GeneratorManager extends ManagerAbstract
@@ -30,7 +31,10 @@ class GeneratorManager extends ManagerAbstract
 
             printf("| name | status | pourcentage of done |\n|---|---|---|\n");
             /** @var GroupedTaskType[] $types */
-            $types = $generation->getProgressBag()->getSummary()->getGroupedTasks()['types'];
+            $types = $generation->getProgressBag()->getWorkflowProgress()->getGroupedTasksSummary()->getGroupedTasksCollection();
+            /**
+             * @var GroupedTasksProgress $type
+             */
             foreach ($types as $name => $type) {
                 $pourcentageDone = $type->getSummary()->getCompleted() * 100 / $type->getSummary()->getTotal();
                 printf(
@@ -42,6 +46,13 @@ class GeneratorManager extends ManagerAbstract
             }
             printf("\n\n");
          });
+
+        $generation->bind(BindableEventInterface::WORKFLOW_ON_FINISH, function () use ($generation) {
+            print_r(sprintf("Summary : %s", json_encode($generation->getProgressBag()->getWorkflowProgress(), JSON_PRETTY_PRINT)));
+        })->bind(BindableEventInterface::WORKFLOW_ON_GROUPS_FINISH, function () use ($generation) {
+            print_r(sprintf("Summary : %s", json_encode($generation->getProgressBag()->getWorkflowProgress()->getGroupProgressSummary(), JSON_PRETTY_PRINT)));
+        })
+        ;
 
         $this->run($generation);
     }

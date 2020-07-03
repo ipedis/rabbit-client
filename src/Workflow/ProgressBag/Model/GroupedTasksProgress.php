@@ -6,7 +6,7 @@ use Ipedis\Rabbit\Validator\UuidValidator;
 use Ipedis\Rabbit\Workflow\ProgressBag\Property\Status;
 use Ipedis\Rabbit\Workflow\ProgressBag\Summary;
 
-class GroupedTasks implements \JsonSerializable
+class GroupedTasksProgress implements \JsonSerializable
 {
     /**
      * @var string
@@ -39,7 +39,7 @@ class GroupedTasks implements \JsonSerializable
      * @param Status $status
      * @param Summary $summary
      * @param array $taskUuids
-     * @return GroupedTasks
+     * @return GroupedTasksProgress
      */
     public static function build(string $type, Status $status, Summary $summary, array $taskUuids): self
     {
@@ -84,12 +84,10 @@ class GroupedTasks implements \JsonSerializable
     public function jsonSerialize()
     {
         return [
-            $this->getType() => [
-                'type' => $this->getType(),
-                'status' => $this->getStatus(),
-                'summary' => $this->getSummary(),
-                'contain' => $this->getTaskUuids()
-            ]
+            'type' => $this->getType(),
+            'status' => $this->getStatus(),
+            'summary' => $this->getSummary(),
+            'contain' => $this->getTaskUuids()
         ];
     }
 

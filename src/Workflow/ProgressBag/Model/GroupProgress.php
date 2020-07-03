@@ -1,13 +1,14 @@
 <?php
 namespace Ipedis\Rabbit\Workflow\ProgressBag\Model;
 
+use Ipedis\Rabbit\Exception\InvalidUuidException;
 use Ipedis\Rabbit\Validator\UuidValidator;
-use Ipedis\Rabbit\Workflow\ProgressBag\Model\Collection\TaskCollection;
+use Ipedis\Rabbit\Workflow\ProgressBag\Model\Collection\TaskProgressCollection;
 use Ipedis\Rabbit\Workflow\ProgressBag\Property\Percentage;
 use Ipedis\Rabbit\Workflow\ProgressBag\Property\Status;
 use Ipedis\Rabbit\Workflow\ProgressBag\Property\Timer;
 
-class Group implements \JsonSerializable
+class GroupProgress implements \JsonSerializable
 {
     private string $uuid;
     /**
@@ -19,9 +20,9 @@ class Group implements \JsonSerializable
      */
     private Timer $timer;
     /**
-     * @var TaskCollection
+     * @var TaskProgressCollection
      */
-    private TaskCollection $tasks;
+    private TaskProgressCollection $tasks;
     /**
      * @var Percentage
      */
@@ -33,10 +34,10 @@ class Group implements \JsonSerializable
      * @param Status $status
      * @param Timer $timer
      * @param Percentage $percentage
-     * @param TaskCollection $tasks
-     * @throws \Ipedis\Rabbit\Exception\InvalidUuidException
+     * @param TaskProgressCollection $tasks
+     * @throws InvalidUuidException
      */
-    private function __construct(string $uuid, Status $status, Timer $timer, Percentage $percentage, TaskCollection $tasks)
+    private function __construct(string $uuid, Status $status, Timer $timer, Percentage $percentage, TaskProgressCollection $tasks)
     {
         $this->validateInputs($uuid, $tasks);
         $this->uuid = $uuid;
@@ -44,6 +45,20 @@ class Group implements \JsonSerializable
         $this->timer = $timer;
         $this->tasks = $tasks;
         $this->percentage = $percentage;
+    }
+
+    /**
+     * @param string $uuid
+     * @param Status $status
+     * @param Timer $timer
+     * @param Percentage $percentage
+     * @param TaskProgressCollection $tasks
+     * @return GroupProgress
+     * @throws InvalidUuidException
+     */
+    public static function build(string $uuid, Status $status, Timer $timer, Percentage $percentage, TaskProgressCollection $tasks): self 
+    {
+        return new self($uuid, $status, $timer, $percentage, $tasks);
     }
 
     /**
@@ -79,9 +94,9 @@ class Group implements \JsonSerializable
     }
 
     /**
-     * @return TaskCollection
+     * @return TaskProgressCollection
      */
-    public function getTasks(): TaskCollection
+    public function getTasks(): TaskProgressCollection
     {
         return $this->tasks;
     }
@@ -99,10 +114,10 @@ class Group implements \JsonSerializable
 
     /**
      * @param string $uuid
-     * @param TaskCollection $taskCollection
-     * @throws \Ipedis\Rabbit\Exception\InvalidUuidException
+     * @param TaskProgressCollection $taskCollection
+     * @throws InvalidUuidException
      */
-    private function validateInputs(string $uuid, TaskCollection $taskCollection)
+    private function validateInputs(string $uuid, TaskProgressCollection $taskCollection)
     {
         $this->assertUuid($uuid);
         $this->assertTasks($taskCollection);
@@ -110,18 +125,18 @@ class Group implements \JsonSerializable
 
     /**
      * @param string $uuid
-     * @throws \Ipedis\Rabbit\Exception\InvalidUuidException
+     * @throws InvalidUuidException
      */
     private function assertUuid(string $uuid)
     {
         (new UuidValidator())->validate($uuid);
     }
 
-    private function assertTasks(TaskCollection $tasks)
+    private function assertTasks(TaskProgressCollection $tasks)
     {
         foreach ($tasks as $task) {
-            if (!$task instanceof Task) {
-                throw new \InvalidArgumentException(sprintf('Object of %s expected.', Task::class));
+            if (!$task instanceof TaskProgress) {
+                throw new \InvalidArgumentException(sprintf('Object of %s expected.', TaskProgress::class));
             }
         }
     }

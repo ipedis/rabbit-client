@@ -2,7 +2,7 @@
 
 namespace Ipedis\Rabbit\Workflow\ProgressBag\Model\Collection;
 
-class GroupCollection extends CollectionAbstract implements \JsonSerializable
+class GroupProgressCollection extends CollectionAbstract implements \JsonSerializable
 {
     public function jsonSerialize()
     {

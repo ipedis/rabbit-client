@@ -6,7 +6,7 @@ use Ipedis\Rabbit\Validator\UuidValidator;
 use Ipedis\Rabbit\Workflow\ProgressBag\Property\Status;
 use Ipedis\Rabbit\Workflow\ProgressBag\Property\Timer;
 
-class Task
+class TaskProgress implements \JsonSerializable
 {
     /**
      * @var string
@@ -47,7 +47,7 @@ class Task
      * @param string $type
      * @param Status $status
      * @param Timer $timer
-     * @return Task
+     * @return TaskProgress
      * @throws InvalidUuidException
      */
     public static function build(string $uuid, string $type, Status $status, Timer $timer): self
@@ -85,6 +85,16 @@ class Task
     public function getTimer(): Timer
     {
         return $this->timer;
+    }
+
+    public function jsonSerialize()
+    {
+        return [
+            'uuid' => $this->getUuid(),
+            'type' => $this->getType(),
+            'status' => $this->getStatus(),
+            'timer' => $this->getTimer()
+        ];
     }
 
     /**

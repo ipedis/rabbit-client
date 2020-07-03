@@ -8,12 +8,15 @@ use Ipedis\Rabbit\DTO\Type\TaskType;
 use Ipedis\Rabbit\DTO\Type\TimerType;
 use Ipedis\Rabbit\Exception\Group\InvalidGroupArgumentException;
 use Ipedis\Rabbit\Exception\Task\InvalidStatusException;
+use Ipedis\Rabbit\Exception\Timer\InvalidSpentTimeException;
+use Ipedis\Rabbit\Exception\Timer\InvalidTimeException;
 use Ipedis\Rabbit\MessagePayload\OrderMessagePayload;
 use Ipedis\Rabbit\MessagePayload\ReplyMessagePayload;
 use Ipedis\Rabbit\Workflow\Config\GroupConfig;
 use Ipedis\Rabbit\Workflow\Event\Bindable;
 use Ipedis\Rabbit\Workflow\Event\BindableEventInterface;
 use Ipedis\Rabbit\Workflow\ProgressBag\GroupProgressBag;
+use Ipedis\Rabbit\Workflow\ProgressBag\Property\Timer;
 
 class Group extends Bindable
 {
@@ -216,7 +219,7 @@ class Group extends Bindable
      */
     public function getProgressBag(): GroupProgressBag
     {
-        return new GroupProgressBag($this->getOrders());
+        return new GroupProgressBag($this->getOrders(), $this->getGroupId());
     }
 
     /**
@@ -252,9 +255,14 @@ class Group extends Bindable
         return $this->getProgressBag()->getPercentage();
     }
 
-    public function getTimer()
+    /**
+     * @return Timer
+     * @throws InvalidSpentTimeException
+     * @throws InvalidTimeException
+     */
+    public function getTimer(): Timer
     {
-        return TimerType::build(
+        return Timer::build(
             $this->getProgressBag()->getExecutionTime(),
             $this->getProgressBag()->getStartedAt(),
             $this->getProgressBag()->getFinishedAt()

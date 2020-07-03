@@ -3,7 +3,7 @@ namespace Ipedis\Rabbit\Workflow\ProgressBag;
 
 use Ipedis\Rabbit\Exception\Progress\InvalidProgressValueException;
 
-class Summary
+class Summary implements \JsonSerializable
 {
     /**
      * @var int
@@ -52,6 +52,21 @@ class Summary
     }
 
     /**
+     * @param int $total
+     * @param int $pending
+     * @param int $dispatched
+     * @param int $completed
+     * @param int $successful
+     * @param int $failed
+     * @return Summary
+     * @throws InvalidProgressValueException
+     */
+    public static function build(int $total, int $pending, int $dispatched, int $completed, int $successful, int $failed): self
+    {
+        return new self($total, $pending, $dispatched, $completed, $successful, $failed);
+    }
+
+    /**
      * @return int
      */
     public function getTotal(): int
@@ -97,6 +112,21 @@ class Summary
     public function getFailed(): int
     {
         return $this->failed;
+    }
+
+    /**
+     * @return array
+     */
+    public function jsonSerialize(): array
+    {
+        return [
+            'total' => $this->getTotal(),
+            'pending' => $this->getPending(),
+            'dispatched' => $this->getDispatched(),
+            'completed' => $this->getCompleted(),
+            'successful' => $this->getSuccessful(),
+            'failed' => $this->getFailed()
+        ];
     }
 
     /**

@@ -4,24 +4,34 @@
 namespace Ipedis\Rabbit\Workflow\ProgressBag\Property;
 
 
+use DateTime;
 use Ipedis\Rabbit\Exception\Timer\InvalidSpentTimeException;
 use Ipedis\Rabbit\Exception\Timer\InvalidTimeException;
 
 class Timer implements \JsonSerializable
 {
+    /**
+     * @var float
+     */
     private float $spent;
-    private ?float $startedAt;
-    private ?float $finishedAt;
+    /**
+     * @var DateTime|null
+     */
+    private ?DateTime $startedAt;
+    /**
+     * @var DateTime|null
+     */
+    private ?DateTime $finishedAt;
 
     /**
      * Timer constructor.
      * @param float $spent - Duration in milliseconds
-     * @param float|null $startedAt - Timestamp for start time with microseconds
-     * @param float|null $finishedAt - Timestamp for end time with microseconds
+     * @param DateTime|null $startedAt - Timestamp for start time with microseconds
+     * @param DateTime|null $finishedAt - Timestamp for end time with microseconds
      * @throws InvalidSpentTimeException
      * @throws InvalidTimeException
      */
-    private function __construct(float $spent, ?float $startedAt = null, ?float $finishedAt = null)
+    private function __construct(float $spent, ?DateTime $startedAt = null, ?DateTime $finishedAt = null)
     {
         $this->validateInputs($spent, $startedAt, $finishedAt);
         $this->spent = $spent;
@@ -31,13 +41,13 @@ class Timer implements \JsonSerializable
 
     /**
      * @param float $spent - Duration in milliseconds
-     * @param float|null $startedAt - Timestamp for start time with microseconds
-     * @param float|null $finishedAt - Timestamp for end time with microseconds
+     * @param DateTime|null $startedAt - Timestamp for start time with microseconds
+     * @param DateTime|null $finishedAt - Timestamp for end time with microseconds
      * @return Timer
      * @throws InvalidSpentTimeException
      * @throws InvalidTimeException
      */
-    public static function build(float $spent, ?float $startedAt = null, ?float $finishedAt = null): self
+    public static function build(float $spent, ?DateTime $startedAt = null, ?DateTime $finishedAt = null): self
     {
         return new self($spent, $startedAt, $finishedAt);
     }
@@ -51,17 +61,17 @@ class Timer implements \JsonSerializable
     }
 
     /**
-     * @return float|null
+     * @return DateTime|null
      */
-    public function getStartedAt(): ?float
+    public function getStartedAt(): ?DateTime
     {
         return $this->startedAt;
     }
 
     /**
-     * @return float|null
+     * @return DateTime|null
      */
-    public function getFinishedAt(): ?float
+    public function getFinishedAt(): ?DateTime
     {
         return $this->finishedAt;
     }
@@ -73,19 +83,20 @@ class Timer implements \JsonSerializable
     {
         return [
             'spent' => $this->getSpent(),
-            'startedAt' => $this->getStartedAt(),
-            'finishedAt' => $this->getFinishedAt()
+            'spentTime' => sprintf('%s ms', $this->getSpent()*1000),
+            'startedAt' => (null !== $this->getStartedAt()) ? $this->getStartedAt()->format('U.u') : null,
+            'finishedAt' => (null !== $this->getFinishedAt()) ? $this->getFinishedAt()->format('U.u') : null
         ];
     }
 
     /**
      * @param float $spent
-     * @param float|null $startedAt
-     * @param float|null $finishedAt
-     * @throws InvalidTimeException
+     * @param DateTime|null $startedAt
+     * @param DateTime|null $finishedAt
      * @throws InvalidSpentTimeException
+     * @throws InvalidTimeException
      */
-    private function validateInputs(float $spent, ?float $startedAt = null, ?float $finishedAt = null)
+    private function validateInputs(float $spent, ?DateTime $startedAt = null, ?DateTime $finishedAt = null)
     {
         // validate duration
         $this->assertSpentTime($spent);
@@ -93,19 +104,18 @@ class Timer implements \JsonSerializable
         // validate start and finish time
         $this->assertTime($startedAt, $finishedAt);
     }
+
     /**
-     * @param float|null $startedAt
-     * @param float|null $finishedAt
+     * @param DateTime|null $startedAt
+     * @param DateTime|null $finishedAt
      * @throws InvalidTimeException
      */
-    private function assertTime(?float $startedAt = null, ?float $finishedAt = null)
+    private function assertTime(?DateTime $startedAt = null, ?DateTime $finishedAt = null)
     {
-        if ($startedAt === null && $finishedAt === null) {
-            return;
-        }
-
-        if ($startedAt > $finishedAt) {
-            throw new InvalidTimeException('[TIMER] Start time is greater than end time. Unless you have "time stone" with you, its not possible.');
+        if ($startedAt !== null && $finishedAt !== null) {
+            if ($startedAt->getTimestamp() > $finishedAt->getTimestamp()) {
+                throw new InvalidTimeException('Start time is greater than end time. Unless you have "time stone" with you, its not possible.');
+            }
         }
     }
 

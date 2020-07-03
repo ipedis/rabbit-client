@@ -3,7 +3,6 @@
 namespace Ipedis\Rabbit\Workflow\ProgressBag\Contract;
 
 
-use Ipedis\Rabbit\DTO\Order\Tasks;
 use Ipedis\Rabbit\Workflow\ProgressBag\Property\Percentage;
 use Ipedis\Rabbit\Workflow\ProgressBag\Property\Status;
 
@@ -43,9 +42,4 @@ interface ProgressBagInterface
      * @return Percentage
      */
     public function getPercentage(): Percentage;
-
-    /**
-     * @return Tasks
-     */
-    public function getOrders(): Tasks;
 }

@@ -3,7 +3,7 @@
 namespace Ipedis\Rabbit\Workflow\ProgressBag\Model\Collection;
 
 
-class TaskCollection extends CollectionAbstract implements \JsonSerializable
+class TaskProgressCollection extends CollectionAbstract implements \JsonSerializable
 {
     public function jsonSerialize()
     {

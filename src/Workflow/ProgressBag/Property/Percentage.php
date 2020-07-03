@@ -57,6 +57,16 @@ class Percentage implements \JsonSerializable
     }
 
     /**
+     * @param int $completed
+     * @param int $total
+     * @return float
+     */
+    public static function calculate(int $completed, int $total): float
+    {
+        return (100 * $completed)/$total;
+    }
+
+    /**
      * @return float
      */
     public function getCompleted(): float
