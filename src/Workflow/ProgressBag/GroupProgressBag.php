@@ -2,11 +2,6 @@
 
 namespace Ipedis\Rabbit\Workflow\ProgressBag;
 
-use Ipedis\Rabbit\DTO\Type\ProgressType;
-use Ipedis\Rabbit\DTO\Type\StatusType;
-use Ipedis\Rabbit\DTO\Type\SummaryType;
-use Ipedis\Rabbit\DTO\Type\TaskType;
-use Ipedis\Rabbit\DTO\Type\TimerType;
 use Ipedis\Rabbit\Exception\InvalidUuidException;
 use Ipedis\Rabbit\Exception\Progress\InvalidProgressValueException;
 use Ipedis\Rabbit\Exception\Timer\InvalidSpentTimeException;
