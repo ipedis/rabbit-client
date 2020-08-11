@@ -17,9 +17,10 @@ class Html extends WorkerAbstract
     protected function makeMessageHandler(): Closure
     {
         return function (AMQPEnvelope $message, OrderMessagePayload $messagePayload) {
+            $this->printStatus($messagePayload, 'START');
             $params = $messagePayload->getData();
-            var_dump('message received');
-            sleep(rand(5, 10));
+            sleep(rand(1, 5));
+            $this->printStatus($messagePayload, 'FINISH');
             return ["step" => "html finished"];
         };
     }
@@ -39,5 +40,10 @@ class Html extends WorkerAbstract
     protected function getQueueName()
     {
         return 'v1.admin.publication.generate-html';
+    }
+
+    private function printStatus(OrderMessagePayload $message, string $status)
+    {
+        file_put_contents('flow.log', sprintf("%s - %s \n", $message->getUuid(), $status), FILE_APPEND);
     }
 }

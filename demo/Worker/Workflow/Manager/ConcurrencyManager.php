@@ -21,7 +21,7 @@ class ConcurrencyManager extends ManagerAbstract
             3,
             false,
             [
-                ChannelConfig::build('v1.admin.publication.generate-html', 2)
+                ChannelConfig::build('v1.admin.publication.generate-html', 1)
             ]
         );
 
