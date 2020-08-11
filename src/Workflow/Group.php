@@ -4,6 +4,8 @@ namespace Ipedis\Rabbit\Workflow;
 
 
 use Ipedis\Rabbit\DTO\Type\Group\GroupType;
+use Ipedis\Rabbit\DTO\Type\ProgressType;
+use Ipedis\Rabbit\DTO\Type\StatusType;
 use Ipedis\Rabbit\DTO\Type\TaskType;
 use Ipedis\Rabbit\DTO\Type\TimerType;
 use Ipedis\Rabbit\Exception\Group\InvalidGroupArgumentException;
@@ -242,16 +244,25 @@ class Group extends Bindable
         );
     }
 
+    /**
+     * @return StatusType
+     */
     public function getStatus()
     {
         return $this->getProgressBag()->getStatus();
     }
 
+    /**
+     * @return ProgressType
+     */
     public function getPercentage()
     {
         return $this->getProgressBag()->getPercentage();
     }
 
+    /**
+     * @return TimerType
+     */
     public function getTimer()
     {
         return TimerType::build(
