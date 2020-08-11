@@ -19,9 +19,7 @@ class Html extends WorkerAbstract
         return function (AMQPEnvelope $message, OrderMessagePayload $messagePayload) {
             $params = $messagePayload->getData();
             var_dump('message received');
-
             sleep(rand(5, 10));
-
             return ["step" => "html finished"];
         };
     }

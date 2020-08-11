@@ -4,11 +4,11 @@ namespace Ipedis\Demo\Rabbit\Worker\Workflow\Manager;
 
 use Closure;
 use Ipedis\Rabbit\Channel\Config\ChannelConfig;
-use Ipedis\Rabbit\DTO\Type\Group\GroupedTaskType;
 use Ipedis\Rabbit\MessagePayload\OrderMessagePayload;
 use Ipedis\Rabbit\Workflow\Config\WorkflowConfig;
 use Ipedis\Rabbit\Workflow\Event\BindableEventInterface;
 use Ipedis\Rabbit\Workflow\Group;
+use Ipedis\Rabbit\Workflow\ProgressBag\Model\GroupedTasksProgress;
 use Ipedis\Rabbit\Workflow\Workflow;
 
 class ConcurrencyManager extends ManagerAbstract
@@ -27,9 +27,6 @@ class ConcurrencyManager extends ManagerAbstract
 
         $generation = (new Workflow($this->craftFirstGroup(), [], $workflowConfig));
 
-        /**
-         * Callback
-         */
         $generation->bind(BindableEventInterface::WORKFLOW_ON_TASKS_FINISH, function () use ($generation) {
             printf(
                 "Generation PoC: Each table is one tick of generation - %.2f%% done\n----\n\n",
@@ -37,8 +34,10 @@ class ConcurrencyManager extends ManagerAbstract
             );
 
             printf("| name | status | pourcentage of done |\n|---|---|---|\n");
-            /** @var GroupedTaskType[] $types */
-            $types = $generation->getProgressBag()->getSummary()->getGroupedTasks()['types'];
+            $types = $generation->getProgressBag()->getWorkflowProgress()->getGroupedTasksSummary()->getGroupedTasksCollection();
+            /**
+             * @var GroupedTasksProgress $type
+             */
             foreach ($types as $name => $type) {
                 $pourcentageDone = $type->getSummary()->getCompleted() * 100 / $type->getSummary()->getTotal();
                 printf(
