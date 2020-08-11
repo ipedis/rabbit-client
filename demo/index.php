@@ -9,6 +9,7 @@ use Ipedis\Demo\Rabbit\Worker\Workflow\Manager\GeneratorManager;
 use Ipedis\Demo\Rabbit\Worker\Workflow\Manager\NoFailureManager;
 use Ipedis\Demo\Rabbit\Worker\Workflow\Manager\ProgressManager;
 use Ipedis\Demo\Rabbit\Worker\Workflow\Manager\RecursiveGeneratorManager;
+use Ipedis\Demo\Rabbit\Worker\Workflow\Manager\ConcurrencyManager;
 use Ipedis\Demo\Rabbit\Worker\Workflow\Manager\RetryOnFailureManager;
 use Ipedis\Demo\Rabbit\Worker\Workflow\Worker\Generator\Html;
 use Ipedis\Demo\Rabbit\Worker\Workflow\Worker\Generator\Image;
@@ -187,6 +188,18 @@ if ( !empty($argv[1]) ) {
             break;
         case 'generator-recursive':
             (new RecursiveGeneratorManager(
+                $configOrder['host'],
+                $configOrder['port'],
+                $configOrder['use'],
+                $configOrder['password'],
+                $configOrder['exchange'],
+                $configOrder['type'],
+                $channelFactory,
+                $messagePayloadValidator
+            ))->main();
+            break;
+        case 'concurrency-manager':
+            (new ConcurrencyManager(
                 $configOrder['host'],
                 $configOrder['port'],
                 $configOrder['use'],

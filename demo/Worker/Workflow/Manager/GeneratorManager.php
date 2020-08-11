@@ -3,7 +3,6 @@
 namespace Ipedis\Demo\Rabbit\Worker\Workflow\Manager;
 
 use Closure;
-use Ipedis\Rabbit\DTO\Type\Group\GroupedTaskType;
 use Ipedis\Rabbit\MessagePayload\OrderMessagePayload;
 
 use Ipedis\Rabbit\Workflow\Event\BindableEventInterface;
@@ -30,7 +29,6 @@ class GeneratorManager extends ManagerAbstract
             );
 
             printf("| name | status | pourcentage of done |\n|---|---|---|\n");
-            /** @var GroupedTaskType[] $types */
             $types = $generation->getProgressBag()->getWorkflowProgress()->getGroupedTasksSummary()->getGroupedTasksCollection();
             /**
              * @var GroupedTasksProgress $type

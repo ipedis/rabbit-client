@@ -10,15 +10,16 @@ class GroupConfig
      * @var bool
      */
     private $retry;
+
     /**
      * @var int
      */
     private $maxRetry;
 
-    public function __construct(bool $hasToRetry = false, $maxRetry = 3)
+    public function __construct(bool $hasToRetry = false, int $maxRetry = 3)
     {
-        $this->retry = $hasToRetry;
-        $this->maxRetry = $maxRetry;
+        $this->retry            = $hasToRetry;
+        $this->maxRetry         = $maxRetry;
     }
 
     public function hasToRetry(): bool

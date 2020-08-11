@@ -70,7 +70,6 @@ class GroupProgressBag implements ProgressBagInterface
         }, []);
     }
 
-
     /**
      * Get collection of planified tasks
      * waiting to be dispatched
@@ -86,11 +85,16 @@ class GroupProgressBag implements ProgressBagInterface
 
     /**
      * Get Collection of dispatched tasks
+     * @param string|null $taskType
      * @return array
      */
-    public function getDispatchedTasks(): array
+    public function getDispatchedTasks(?string $taskType = null): array
     {
-        return array_filter($this->getTasksInGroup(), function(Task $task) {
+        return array_filter($this->getTasksInGroup(), function(Task $task) use ($taskType) {
+            if (!is_null($taskType)) {
+                return $task->isDispatched() && $task->getType() === $taskType;
+            }
+
             return $task->isDispatched();
         });
     }
@@ -144,6 +148,14 @@ class GroupProgressBag implements ProgressBagInterface
     }
 
     /**
+     * @return bool
+     */
+    public function hasPendingTasks(): bool
+    {
+        return $this->countPlanifiedTasks() > 0;
+    }
+
+    /**
      * Count of orders in group
      *
      * @return int
@@ -167,9 +179,9 @@ class GroupProgressBag implements ProgressBagInterface
      * Count of dispatched tasks
      * @return int
      */
-    public function countDispatchedTasks(): int
+    public function countDispatchedTasks(?string $taskType = null): int
     {
-        return count($this->getDispatchedTasks());
+        return count($this->getDispatchedTasks($taskType));
     }
 
     /**
