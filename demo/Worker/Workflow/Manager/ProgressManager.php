@@ -9,6 +9,7 @@ use Ipedis\Rabbit\Workflow\Event\BindableEventInterface;
 use Ipedis\Rabbit\Workflow\ProgressBag\WorkflowProgressBag;
 use Ipedis\Rabbit\Workflow\Workflow;
 use Ipedis\Rabbit\Workflow\Group;
+use Closure;
 
 class ProgressManager extends ManagerAbstract
 {
@@ -55,7 +56,7 @@ class ProgressManager extends ManagerAbstract
     public function json(Workflow $workflow): Closure {
         return function () use ($workflow) {
             echo "\n\n\n\n";
-            echo json_encode($workflow->getProgressBag()->getSummary(), JSON_PRETTY_PRINT);
+            echo json_encode($workflow->getProgressBag()->getWorkflowProgress(), JSON_PRETTY_PRINT);
             echo "\n\n\n\n";
         };
     }

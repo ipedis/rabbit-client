@@ -2,21 +2,22 @@
 
 namespace Ipedis\Rabbit\Workflow\ProgressBag;
 
-use Ipedis\Rabbit\DTO\Group\Groups;
-use Ipedis\Rabbit\DTO\Type\Group\GroupedTaskType;
-use Ipedis\Rabbit\DTO\Type\Group\GroupType;
-use Ipedis\Rabbit\DTO\Type\ProgressType;
-use Ipedis\Rabbit\DTO\Type\StatusType;
-use Ipedis\Rabbit\DTO\Type\SummaryType;
-use Ipedis\Rabbit\DTO\Order\Tasks;
-use Ipedis\Rabbit\DTO\Type\TaskType;
-use Ipedis\Rabbit\DTO\Type\Workflow\WorkflowType;
-use Ipedis\Rabbit\Exception\Progress\InvalidProgressBagArgumentException;
+use Ipedis\Rabbit\Exception\InvalidUuidException;
+use Ipedis\Rabbit\Exception\Progress\InvalidProgressValueException;
+use Ipedis\Rabbit\Exception\Timer\InvalidSpentTimeException;
+use Ipedis\Rabbit\Exception\Timer\InvalidTimeException;
+use Ipedis\Rabbit\Validator\UuidValidator;
 use Ipedis\Rabbit\Workflow\Group;
+use Ipedis\Rabbit\Workflow\ProgressBag\Contract\ProgressBagInterface;
+use Ipedis\Rabbit\Workflow\ProgressBag\Model\Collection\GroupedTasksProgressCollection;
+use Ipedis\Rabbit\Workflow\ProgressBag\Model\GroupedTasksProgress;
+use Ipedis\Rabbit\Workflow\ProgressBag\Model\WorkflowProgress;
+use Ipedis\Rabbit\Workflow\ProgressBag\Property\Percentage;
+use Ipedis\Rabbit\Workflow\ProgressBag\Property\Status;
 use Ipedis\Rabbit\Workflow\Task;
 use Ipedis\Rabbit\Workflow\Workflow;
 
-class WorkflowProgressBag implements ProgressBagInterface, \JsonSerializable
+class WorkflowProgressBag implements ProgressBagInterface
 {
     /**
      * @var Group[] $groups
@@ -332,20 +333,23 @@ class WorkflowProgressBag implements ProgressBagInterface, \JsonSerializable
      * - PENDING : no tasks of any group yet dispatched
      * - RUNNING : at least one task of a group has been dispatched
      * - FINISHED : all tasks of all groups have completed
-     * @return StatusType
+     * @return Status
      */
-    public function getStatus(): StatusType
+    public function getStatus(): Status
     {
         if ($this->isCompleted()) {
             if ($this->hasFailure()) {
-                return StatusType::buildFailed();
+                return Status::buildFailed();
             }
 
-            return StatusType::buildSuccess();
-        } elseif ($this->isRunning()) {
-            return StatusType::buildRunning();
+            return Status::buildSuccess();
         }
-        return StatusType::buildPending();
+
+        if ($this->isRunning()) {
+            return Status::buildRunning();
+        }
+
+        return Status::buildPending();
     }
 
     /**
@@ -453,14 +457,17 @@ class WorkflowProgressBag implements ProgressBagInterface, \JsonSerializable
     /**
      * Get percentage progression of workflow
      *
-     * @return ProgressType
+     * @return Percentage
+     * @throws InvalidProgressValueException
      */
-    public function getPercentage(): ProgressType
+    public function getPercentage(): Percentage
     {
-        return ProgressType::build(
-            (100 * $this->countTotalCompletedOrders())/ $this->countTotalOrders(),
-            (100 * $this->countTotalSuccessfulOrders())/ $this->countTotalOrders(),
-            (100 * $this->countTotalFailedOrders())/ $this->countTotalOrders()
+        $totalOrders = $this->countTotalOrders();
+
+        return Percentage::build(
+            Percentage::calculate($this->countTotalCompletedOrders(), $totalOrders),
+            Percentage::calculate($this->countTotalSuccessfulOrders(), $totalOrders),
+            Percentage::calculate($this->countTotalFailedOrders(), $totalOrders)
         );
     }
 
@@ -472,38 +479,44 @@ class WorkflowProgressBag implements ProgressBagInterface, \JsonSerializable
         return $this->groups;
     }
 
-    public function getGroupsState()
+    /**
+     * @return Status
+     */
+    public function getGroupsStatus(): Status
     {
         if ($this->countTotalOrders() === $this->countTotalCompletedOrders()) {
             if ($this->countFailedGroups() !== 0) {
-                return StatusType::buildFailed();
+                return Status::buildFailed();
             }
 
-            return StatusType::buildSuccess();
+            return Status::buildSuccess();
         }
 
         if ($this->countRunningGroups() !== 0) {
-            return StatusType::buildRunning();
+            return Status::buildRunning();
         }
 
-        return StatusType::buildPending();
+        return Status::buildPending();
     }
 
     /**
-     * @return WorkflowType
+     * @return WorkflowProgress
+     * @throws InvalidProgressValueException
+     * @throws InvalidSpentTimeException
+     * @throws InvalidTimeException
      */
-    public function getSummary(): WorkflowType
+    public function getWorkflowProgress(): WorkflowProgress
     {
-        return (WorkflowType::buildSummary($this));
+        return WorkflowProgress::fromWorkflowProgressBag($this);
     }
 
     /**
-     * Get summary of all taks inside workflow
+     * Get summary of all tasks group by task type inside workflow
      *
-     * @return array
-     * @throws \Ipedis\Rabbit\Exception\InvalidUuidException
+     * @return GroupedTasksProgressCollection
+     * @throws InvalidProgressValueException
      */
-    public function getGroupedTasksSummary()
+    public function getGroupedTasks(): GroupedTasksProgressCollection
     {
         /**
          * Get tasks in group recursively
@@ -513,17 +526,18 @@ class WorkflowProgressBag implements ProgressBagInterface, \JsonSerializable
         $groupedTasks = [];
         foreach ($summary as $type => $detail) {
             if ($detail['failed'] !== 0) {
-                $status = StatusType::buildFailed();
+                $status = Status::buildFailed();
             } elseif ($detail['completed'] === $detail['successful'] && $detail['completed'] === $detail['total']) {
-                $status = StatusType::buildSuccess();
+                $status = Status::buildSuccess();
             } elseif ($detail['total'] === $detail['pending']) {
-                $status = StatusType::buildPending();
+                $status = Status::buildPending();
             } else {
-                $status = StatusType::buildRunning();
+                $status = Status::buildRunning();
             }
-            $groupedTasks[$type] = GroupedTaskType::build(
+            $groupedTasks[$type] = GroupedTasksProgress::build(
+                $type,
                 $status,
-                SummaryType::build(
+                Summary::build(
                     $detail['total'],
                     $detail['pending'],
                     $detail['dispatched'],
@@ -531,12 +545,11 @@ class WorkflowProgressBag implements ProgressBagInterface, \JsonSerializable
                     $detail['successful'],
                     $detail['failed']
                 ),
-                $type,
                 $detail['uuids']
             );
         }
 
-        return $groupedTasks;
+        return new GroupedTasksProgressCollection($groupedTasks);
     }
 
     /**
@@ -545,56 +558,6 @@ class WorkflowProgressBag implements ProgressBagInterface, \JsonSerializable
     public function getWorkflowId(): string
     {
         return $this->workflowId;
-    }
-
-    public function getOrders(): Tasks
-    {
-        $tasks = [];
-        foreach ($this->groups as $group) {
-            foreach ($group->getOrders() as $task) {
-                $tasks[] = TaskType::build(
-                    $task->getOrderMessage()->getOrderId(),
-                    $task->getType(),
-                    $task->getStatusType(),
-                    $task->getTimer()
-                );
-            }
-        }
-
-        return new Tasks($tasks, $this->getPercentage());
-    }
-
-    /**
-     * Get groups details
-     * @return Groups
-     */
-    public function getGroups(): Groups
-    {
-        $status = $this->getStatus();
-        $summary = SummaryType::build(
-            $this->countGroupsInWorkflow(),
-            $this->countPendingGroups(),
-            $this->countRunningGroups(),
-            $this->countCompletedGroups(),
-            $this->countSuccessfulGroups(),
-            $this->countFailedGroups()
-        );
-
-        $groups = array_map(function (Group $group) {
-            return GroupType::build(
-                $group->getGroupId(),
-                $group->getStatus(),
-                $group->getTimer(),
-                $group->getPercentage(),
-                array_values(
-                    array_map(function (Task $task) {
-                        return $task->getSummary();
-                    }, $group->getOrders())
-                )
-            );
-        }, $this->groups);
-
-        return new Groups($this->getWorkflowId(), $status, $summary, $this->getPercentage(),$groups);
     }
 
     /**
@@ -612,16 +575,13 @@ class WorkflowProgressBag implements ProgressBagInterface, \JsonSerializable
         return $tasks;
     }
 
-    public function jsonSerialize()
-    {
-        return $this->getSummary()->jsonSerialize();
-    }
-
+    /**
+     * @param string $uuid
+     * @throws InvalidUuidException
+     */
     protected function assertUuid(string $uuid)
     {
-        if (!uuid_is_valid($uuid)) {
-            throw new InvalidProgressBagArgumentException("[WORKFLOW] {$uuid} is not a valid uuid");
-        }
+        (new UuidValidator())->validate($uuid);
     }
 
     /**

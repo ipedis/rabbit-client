@@ -9,6 +9,7 @@ use Ipedis\Rabbit\Exception\Workflow\InvalidWorkflowArgumentException;
 use Ipedis\Rabbit\MessagePayload\OrderMessagePayload;
 use Ipedis\Rabbit\Workflow\Event\BindableEventInterface;
 use Ipedis\Rabbit\Workflow\Group;
+use Ipedis\Rabbit\Workflow\ProgressBag\Model\GroupedTasksProgress;
 use Ipedis\Rabbit\Workflow\Workflow;
 
 class RecursiveGeneratorManager extends ManagerAbstract
@@ -31,8 +32,11 @@ class RecursiveGeneratorManager extends ManagerAbstract
             );
 
             printf("| name | status | pourcentage of done |\n|---|---|---|\n");
-            /** @var GroupedTaskType[] $types */
-            $types = $generation->getProgressBag()->getSummary()->getGroupedTasks()['types'];
+            $types = $generation->getProgressBag()->getWorkflowProgress()->getGroupedTasksSummary()->getGroupedTasksCollection();
+            /**
+             * @var string $name
+             * @var GroupedTasksProgress $type
+             */
             foreach ($types as $name => $type) {
                 $pourcentageDone = $type->getSummary()->getCompleted() * 100 / $type->getSummary()->getTotal();
                 printf(

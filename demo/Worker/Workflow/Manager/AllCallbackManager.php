@@ -33,7 +33,7 @@ class AllCallbackManager extends ManagerAbstract
 
         $this->run($workflow);
 
-        print_r(sprintf("Summary : %s", json_encode($workflow->getProgressBag()->getSummary())));
+        print_r(sprintf("Summary : %s", json_encode($workflow->getProgressBag()->getWorkflowProgress(), JSON_PRETTY_PRINT)));
     }
 
     /**
@@ -74,7 +74,7 @@ class AllCallbackManager extends ManagerAbstract
              * You can create your own task from scratch, bind manually your callback.
              * It is useful for conditional and programmatic creation.
              */
-            $task1 = (Task::build(OrderMessagePayload::build(OrderChannel::fromString('v1.admin.publication.success'))));
+            $task1 = (Task::build(OrderMessagePayload::build(OrderChannel::fromString('v1.admin.publication.waiter'))));
             foreach ($this->getTaskEvents('2.1') as $eventType => $closure) {
                 $task1->bind($eventType, $closure);
             }
