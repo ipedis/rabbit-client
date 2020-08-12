@@ -184,6 +184,13 @@ trait Manager
         $this->onUpdatedTaskStatus($message, $workflow, $group, $task);
 
         /**
+         * Wait for task to complete
+         */
+        if (!$task->isCompleted()) {
+            return true;
+        }
+
+        /**
          * Current group has pending tasks to be dispatched
          * (because of concurrency limit)
          */
@@ -429,7 +436,7 @@ trait Manager
                     $limitForChannel = $workflow->getConfig()->getConcurrencyLimitForChannel($job->getType());
                     if (
                         $job->isPlanified() &&
-                        $group->getProgressBag()->countDispatchedTasks($job->getType()) < $limitForChannel
+                        $group->canDispatchTask($job->getType(), $limitForChannel)
                     ) {
                         $this->publish($job, $group, $workflow);
                         $job->setTaskAsDispatched();
