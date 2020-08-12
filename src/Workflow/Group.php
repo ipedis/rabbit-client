@@ -210,6 +210,21 @@ class Group extends Bindable
     }
 
     /**
+     * Check if further tasks can be dispatched for channel
+     *
+     * @param string $channelName
+     * @param $maxWorkers
+     * @return bool
+     */
+    public function canDispatchTask(string $channelName, $maxWorkers): bool
+    {
+        return
+            $this->getProgressBag()->countDispatchedTasks($channelName) < $maxWorkers &&
+            $this->getProgressBag()->countInProgressTasks($channelName) < $maxWorkers
+        ;
+    }
+
+    /**
      * Get progress bag for tasks
      *
      * @return GroupProgressBag
