@@ -68,7 +68,6 @@ trait EventDispatcher
             /**
              * Publish message on exchange
              */
-            throw new RabbitClientConnectException('oups');
             $this->publishToExchange(json_encode($messagePayload), $eventName);
         } catch (RabbitClientConnectException | RabbitClientPublishException $exception) {
             /**
