@@ -6,6 +6,7 @@ namespace Ipedis\Rabbit;
 use AMQPChannel;
 use AMQPConnection;
 use AMQPExchange;
+use AMQPQueue;
 use Ipedis\Rabbit\Exception\RabbitClientConnectException;
 use Ipedis\Rabbit\Exception\RabbitClientPublishException;
 
@@ -25,7 +26,9 @@ trait Connector
      * @var AMQPExchange $exchange
      */
     protected $exchange = null;
-
+    /**
+     * @var AMQPQueue[] Cached queue declaration indexed by queue name
+     */
     protected $declaredQueues = [];
 
     /**
@@ -83,13 +86,14 @@ trait Connector
     protected function declareQueueBindingIfNecessary(string $queueName)
     {
         if($this->exchange === null) $this->connect();
-        if(!in_array($queueName, $this->declaredQueues)) {
-            $queue = new \AMQPQueue(new AMQPChannel($this->connection));
+        if(!empty($this->declaredQueues[$queueName])) {
+            $queue = new AMQPQueue(new AMQPChannel($this->connection));
             $queue->setFlags(AMQP_DURABLE);
             $queue->setName($queueName);
             $queue->declareQueue();
             $queue->bind($this->getExchangeName(), $queueName);
-            $this->declaredQueues[] = $queueName;
+            // wW index queue declaration to easily find it back. also we keep reference of the object to be sure than queue are not destroyed
+            $this->declaredQueues[$queueName] = $queue;
         }
     }
 

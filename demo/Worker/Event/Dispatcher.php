@@ -102,21 +102,11 @@ class Dispatcher extends ConnectorAbstract
      */
     public function getRecoveryEventStoreEndpoint(): string
     {
-        return 'http://backup.publispeak.local/api/event/store';
+        return 'http://recovery.publispeak.local/api/event/store';
     }
 
-    public function getSecretKey(): string
+    public function getSignatureKey(): string
     {
         return 'ThisIsNotASecretKey';
-    }
-
-    public function getHashingAlgorithm(): string
-    {
-        return 'hmac-sha256';
-    }
-
-    public function getHeadersList(): array
-    {
-        return ['(request-target)', 'accept', 'user-agent'];
     }
 }

@@ -3,7 +3,7 @@
 namespace Ipedis\Rabbit\Event;
 
 
-use GuzzleHttp\Client;
+use Ipedis\HttpSignature\HttpClient\HttpClient;
 use Ipedis\Rabbit\Channel\EventChannel;
 use Ipedis\Rabbit\Channel\Factory\ChannelFactory;
 use Ipedis\Rabbit\Connector;
@@ -14,7 +14,6 @@ use Ipedis\Rabbit\Exception\RabbitClientConnectException;
 use Ipedis\Rabbit\Exception\RabbitClientPublishException;
 use Ipedis\Rabbit\MessagePayload\EventMessagePayload;
 use Ipedis\Rabbit\MessagePayload\Validator\ValidatorInterface;
-use Ipedis\Rabbit\Signer\RequestSigner;
 
 /**
  * Trait EventDispatcher
@@ -25,7 +24,7 @@ use Ipedis\Rabbit\Signer\RequestSigner;
 trait EventDispatcher
 {
     use Connector;
-    use RequestSigner;
+    use HttpClient;
 
     public function __destruct()
     {
@@ -40,7 +39,6 @@ trait EventDispatcher
      * @throws ChannelFactoryException
      * @throws ChannelNamingException
      * @throws MessagePayloadValidatorException
-     * @throws \HttpSignatures\Exception
      */
     public function dispatch(EventMessagePayload $messagePayload)
     {
@@ -70,6 +68,7 @@ trait EventDispatcher
             /**
              * Publish message on exchange
              */
+            throw new RabbitClientConnectException('oups');
             $this->publishToExchange(json_encode($messagePayload), $eventName);
         } catch (RabbitClientConnectException | RabbitClientPublishException $exception) {
             /**
@@ -114,11 +113,10 @@ trait EventDispatcher
      * Store event on recovery
      *
      * @param EventMessagePayload $payload
-     * @throws \HttpSignatures\Exception
      */
     private function storeEventOnRecovery(EventMessagePayload $payload)
     {
-        $this->getClientWithSignHandler()
+        $this->getClient()
             ->post($this->getRecoveryEventStoreEndpoint(), [
                 'body' => json_encode($payload),
                 'headers' => [

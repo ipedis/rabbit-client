@@ -4,7 +4,7 @@
     "type": "library",
     "authors": [
         {
-            "name": "yanis",
+            "name": "Yanis Ghidouche",
             "email": "yanis@ipedis.com"
         }
     ],
@@ -16,12 +16,18 @@
         "opis/json-schema": "^1.0",
         "ext-amqp": "^1.9",
         "guzzlehttp/guzzle": "~6.0",
-        "99designs/http-signatures-guzzlehttp": "^2.0"
+        "ipedis/http-signature": "^1.0.0"
     },
     "autoload": {
         "psr-4": {
             "Ipedis\\Rabbit\\": "src/",
             "Ipedis\\Demo\\Rabbit\\": "demo/"
         }
-    }
+    },
+    "repositories": [
+        {
+            "type": "vcs",
+            "url": "bitbucket:ipedis/http-signature.git"
+        }
+    ]
 }
