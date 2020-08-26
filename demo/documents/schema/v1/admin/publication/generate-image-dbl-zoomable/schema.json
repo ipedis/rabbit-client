@@ -1,0 +1,36 @@
+{
+  "$schema":"http://json-schema.org/draft-07/schema#",
+  "$id":"v1.admin.publication.generate-image-dbl-zoomable",
+  "type":"object",
+  "properties":{
+    "publication":{
+      "type":"object",
+      "properties":{
+        "sid":{
+          "type":"number"
+        }
+      },
+      "required":[
+        "sid"
+      ],
+      "additionalProperties":false
+    },
+    "page":{
+      "type":"object",
+      "properties":{
+        "sid":{
+          "type":"number"
+        }
+      },
+      "required":[
+        "sid"
+      ],
+      "additionalProperties":false
+    }
+  },
+  "required":[
+    "publication",
+    "page"
+  ],
+  "additionalProperties":false
+}

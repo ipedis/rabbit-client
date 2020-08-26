@@ -275,7 +275,7 @@ trait EventListener
         if(is_array($routingKey)) {
             foreach ($routingKey as $key) {
                 if(is_string($key)) {
-                    $this->queue->bind($this->exchange->getName(), $key);
+                    $this->queue->bind($this->exchange->getName(), $this->getRoutingKeyWithPrefix($key));
                 }
             }
         }

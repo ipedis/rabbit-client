@@ -109,4 +109,10 @@ class Dispatcher extends ConnectorAbstract
     {
         return 'ThisIsNotASecretKey';
     }
+
+
+    public function getQueuePrefix(): string
+    {
+        return 'demo.dispatcher';
+    }
 }

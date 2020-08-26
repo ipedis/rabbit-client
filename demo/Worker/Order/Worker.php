@@ -72,7 +72,7 @@ class Worker extends WorkerAbstract implements OnBeforeMessage, OnAfterMessage
     protected function makeExceptionHandler(): \Closure
     {
         return function (\Exception $exception, ?OrderMessagePayload $messagePayload) {
-            printf('Inside exception handler================'.$exception->getMessage());
+            printf($exception->getMessage());
         };
     }
 

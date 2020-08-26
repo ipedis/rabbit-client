@@ -6,25 +6,21 @@ namespace Ipedis\Demo\Rabbit\Worker\Workflow\Worker\Generator;
 use AMQPEnvelope;
 use Closure;
 use Exception;
-use Ipedis\Demo\Rabbit\Utils\ConnectorAbstract;
-use Ipedis\Rabbit\Consumer\Handler\MessageHandlerInterface;
+use Ipedis\Demo\Rabbit\Utils\WorkerAbstract;
 use Ipedis\Rabbit\MessagePayload\OrderMessagePayload;
-use Ipedis\Rabbit\MessagePayload\ReplyMessagePayload;
 use Ipedis\Rabbit\Order\Worker as WorkerTrait;
 
-class Html extends ConnectorAbstract
+class Html extends WorkerAbstract
 {
     use WorkerTrait;
-
 
     protected function makeMessageHandler(): Closure
     {
         return function (AMQPEnvelope $message, OrderMessagePayload $messagePayload) {
+            $this->printStatus($messagePayload, 'START');
             $params = $messagePayload->getData();
-            var_dump('message received');
-
-            sleep(rand(5, 10));
-
+            sleep(rand(1, 5));
+            $this->printStatus($messagePayload, 'FINISH');
             return ["step" => "html finished"];
         };
     }
@@ -32,7 +28,7 @@ class Html extends ConnectorAbstract
     protected function makeExceptionHandler(): Closure
     {
         return function (Exception $exception, OrderMessagePayload $payload) {
-
+            printf("ERROR : %s", $exception->getMessage());
         };
     }
 
@@ -44,5 +40,10 @@ class Html extends ConnectorAbstract
     protected function getQueueName()
     {
         return 'v1.admin.publication.generate-html';
+    }
+
+    private function printStatus(OrderMessagePayload $message, string $status)
+    {
+        file_put_contents('flow.log', sprintf("%s - %s \n", $message->getUuid(), $status), FILE_APPEND);
     }
 }

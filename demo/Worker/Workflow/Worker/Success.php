@@ -1,7 +1,5 @@
 <?php
-
 namespace Ipedis\Demo\Rabbit\Worker\Workflow\Worker;
-
 
 use AMQPEnvelope;
 use Closure;

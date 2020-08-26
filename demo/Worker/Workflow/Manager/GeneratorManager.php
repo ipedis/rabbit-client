@@ -1,33 +1,19 @@
 <?php
 
-
 namespace Ipedis\Demo\Rabbit\Worker\Workflow\Manager;
 
-
 use Closure;
-use Ipedis\Demo\Rabbit\Utils\ConnectorAbstract;
-use Ipedis\Rabbit\DTO\Type\Group\GroupedTaskType;
 use Ipedis\Rabbit\MessagePayload\OrderMessagePayload;
+
 use Ipedis\Rabbit\Workflow\Event\BindableEventInterface;
 use Ipedis\Rabbit\Workflow\Group;
 use Ipedis\Rabbit\Workflow\Manager;
+use Ipedis\Rabbit\Workflow\ProgressBag\Model\GroupedTasksProgress;
 use Ipedis\Rabbit\Workflow\Workflow;
 
-class GeneratorManager extends ConnectorAbstract
+class GeneratorManager extends ManagerAbstract
 {
-    use Manager;
-
     const COUNT_PAGE = 10;
-
-    public function __construct(string $host, int $port, string $user, string $password, string $exchange, string $type)
-    {
-        parent::__construct($host, $port, $user, $password, $exchange, $type);
-        $this->connect();
-        /**
-         * Initialise order queue
-         */
-        $this->resetOrdersQueue();
-    }
 
     public function main()
     {
@@ -43,8 +29,10 @@ class GeneratorManager extends ConnectorAbstract
             );
 
             printf("| name | status | pourcentage of done |\n|---|---|---|\n");
-            /** @var GroupedTaskType[] $types */
-            $types = $generation->getProgressBag()->getSummary()->getGroupedTasks()['types'];
+            $types = $generation->getProgressBag()->getWorkflowProgress()->getGroupedTasksSummary()->getGroupedTasksCollection();
+            /**
+             * @var GroupedTasksProgress $type
+             */
             foreach ($types as $name => $type) {
                 $pourcentageDone = $type->getSummary()->getCompleted() * 100 / $type->getSummary()->getTotal();
                 printf(
@@ -57,7 +45,19 @@ class GeneratorManager extends ConnectorAbstract
             printf("\n\n");
          });
 
+        $generation->bind(BindableEventInterface::WORKFLOW_ON_FINISH, function () use ($generation) {
+            print_r(sprintf("Summary : %s", json_encode($generation->getProgressBag()->getWorkflowProgress(), JSON_PRETTY_PRINT)));
+        })->bind(BindableEventInterface::WORKFLOW_ON_GROUPS_FINISH, function () use ($generation) {
+            print_r(sprintf("Summary : %s", json_encode($generation->getProgressBag()->getWorkflowProgress()->getGroupProgressSummary(), JSON_PRETTY_PRINT)));
+        })
+        ;
+
         $this->run($generation);
+    }
+
+    public function getQueuePrefix(): string
+    {
+        return 'demo.workflow';
     }
 
     /**

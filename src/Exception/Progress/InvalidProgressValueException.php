@@ -4,7 +4,9 @@
 namespace Ipedis\Rabbit\Exception\Progress;
 
 
-class InvalidProgressValueException extends \Exception
+use Ipedis\Rabbit\Exception\RabbitClientException;
+
+class InvalidProgressValueException extends RabbitClientException
 {
 
 }

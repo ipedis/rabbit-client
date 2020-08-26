@@ -1,8 +1,6 @@
 <?php
 
-
 namespace Ipedis\Rabbit\Workflow\Event;
-
 
 
 abstract class Bindable
@@ -47,7 +45,7 @@ abstract class Bindable
     {
         // Ignore undefined array.
         if(empty($this->callbacks[$eventType])) return $this;
-        // If is not array but pur callable, cast it to array.
+        // If is not array but pure callable, cast it to array.
         if(is_callable($this->callbacks[$eventType])) $this->callbacks[$eventType] = [$this->callbacks[$eventType]];
 
         foreach ($this->callbacks[$eventType] as $callback)

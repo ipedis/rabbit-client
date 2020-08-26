@@ -6,10 +6,11 @@ namespace Ipedis\Demo\Rabbit\Worker\Workflow\Worker\Generator;
 use AMQPEnvelope;
 use Closure;
 use Exception;
-use Ipedis\Demo\Rabbit\Utils\ConnectorAbstract;
+use Ipedis\Demo\Rabbit\Utils\WorkerAbstract;
 use Ipedis\Rabbit\MessagePayload\OrderMessagePayload;
 use Ipedis\Rabbit\Order\Worker as WorkerTrait;
-class Image extends ConnectorAbstract
+
+class Image extends WorkerAbstract
 {
     use WorkerTrait;
 

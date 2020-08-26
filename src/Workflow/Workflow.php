@@ -3,10 +3,14 @@
 namespace Ipedis\Rabbit\Workflow;
 
 
+use Exception;
 use Ipedis\Rabbit\Exception\Group\InvalidGroupArgumentException;
+use Ipedis\Rabbit\Exception\InvalidUuidException;
+use Ipedis\Rabbit\Exception\Progress\InvalidProgressValueException;
 use Ipedis\Rabbit\Exception\Task\InvalidStatusException;
 use Ipedis\Rabbit\Exception\Workflow\InvalidWorkflowArgumentException;
 use Ipedis\Rabbit\MessagePayload\ReplyMessagePayload;
+use Ipedis\Rabbit\Validator\UuidValidator;
 use Ipedis\Rabbit\Workflow\Config\WorkflowConfig;
 use Ipedis\Rabbit\Workflow\Event\Bindable;
 use Ipedis\Rabbit\Workflow\Event\BindableEventInterface;
@@ -181,7 +185,7 @@ class Workflow extends Bindable
      *
      * @param string $groupId
      * @return Group
-     * @throws \Exception
+     * @throws Exception
      */
     public function findGroup(string $groupId): Group
     {
@@ -190,10 +194,10 @@ class Workflow extends Bindable
         });
 
         if (count($group) === 0) {
-            throw new \Exception('Group not found');
+            throw new Exception('Group not found');
         }
 
-        return $group[0];
+        return reset($group);
     }
 
     /**
@@ -223,6 +227,7 @@ class Workflow extends Bindable
     /**
      * get current workflow progress percentage
      * @return float
+     * @throws InvalidProgressValueException
      */
     public function getProgressPercentage(): float
     {
@@ -270,10 +275,12 @@ class Workflow extends Bindable
         return BindableEventInterface::WORKFLOW_ALLOW_TYPES;
     }
 
+    /**
+     * @param string $uuid
+     * @throws InvalidUuidException
+     */
     protected function assertUuid(string $uuid)
     {
-        if (!uuid_is_valid($uuid)) {
-            throw new InvalidWorkflowArgumentException("[WORKFLOW] {$uuid} is not a valid uuid");
-        }
+        (new UuidValidator())->validate($uuid);
     }
 }

@@ -8,14 +8,23 @@ use Ipedis\Rabbit\Consumer\Handler\MessageHandlerInterface;
 use Ipedis\Rabbit\DTO\Type\StatusType;
 use Ipedis\Rabbit\DTO\Type\TaskType;
 use Ipedis\Rabbit\DTO\Type\TimerType;
+use Ipedis\Rabbit\Exception\InvalidUuidException;
 use Ipedis\Rabbit\Exception\Task\InvalidStatusException;
+use Ipedis\Rabbit\Exception\Timer\InvalidSpentTimeException;
+use Ipedis\Rabbit\Exception\Timer\InvalidTimeException;
 use Ipedis\Rabbit\MessagePayload\OrderMessagePayload;
 use Ipedis\Rabbit\MessagePayload\ReplyMessagePayload;
+use Ipedis\Rabbit\Utils\Helper\DateTimeHelper;
 use Ipedis\Rabbit\Workflow\Event\Bindable;
 use Ipedis\Rabbit\Workflow\Event\BindableEventInterface;
+use Ipedis\Rabbit\Workflow\ProgressBag\Model\TaskProgress;
+use Ipedis\Rabbit\Workflow\ProgressBag\Property\Status;
+use Ipedis\Rabbit\Workflow\ProgressBag\Property\Timer;
 
 final class Task extends Bindable
 {
+    use DateTimeHelper;
+
     /**
      * @var string
      */
@@ -70,6 +79,14 @@ final class Task extends Bindable
     public function getOrderMessage(): OrderMessagePayload
     {
         return $this->orderMessage;
+    }
+
+    /**
+     * @return string
+     */
+    public function getTaskId(): string
+    {
+        return $this->getOrderMessage()->getOrderId();
     }
 
     /**
@@ -205,27 +222,32 @@ final class Task extends Bindable
         return $this->getStatus() === MessageHandlerInterface::TYPE_PLANIFIED;
     }
 
-    public function getStatusType()
+    /**
+     * @return Status
+     */
+    public function getProgressStatus(): Status
     {
         switch ($this->getStatus()) {
             case MessageHandlerInterface::TYPE_PLANIFIED:
-                return StatusType::buildPending();
+                return Status::buildPending();
             case MessageHandlerInterface::TYPE_SUCCESS:
-                return StatusType::buildSuccess();
+                return Status::buildSuccess();
             case MessageHandlerInterface::TYPE_ERROR:
-                return StatusType::buildFailed();
+                return Status::buildFailed();
             case MessageHandlerInterface::TYPE_PROGRESS:
             case MessageHandlerInterface::TYPE_DISPATCHED:
-                return StatusType::buildRunning();
+                return Status::buildRunning();
         }
     }
 
     /**
-     * @return TimerType
+     * @return Timer
+     * @throws InvalidSpentTimeException
+     * @throws InvalidTimeException
      */
     public function getTimer()
     {
-        return TimerType::build(
+        return Timer::build(
             $this->getExecutionTime(),
             $this->getStartTime(),
             $this->getFinishedTime()
@@ -250,7 +272,7 @@ final class Task extends Bindable
             return 0;
         }
 
-        return $this->timeFinished->getTimestamp() - $this->timeStart->getTimestamp();
+        return $this->getDifferenceWithMicroseconds($this->timeStart, $this->timeFinished);
     }
 
     /**
@@ -277,12 +299,18 @@ final class Task extends Bindable
         return $this->retryCount;
     }
 
-    public function getSummary()
+    /**
+     * @return TaskProgress
+     * @throws InvalidSpentTimeException
+     * @throws InvalidTimeException
+     * @throws InvalidUuidException
+     */
+    public function getTaskProgress(): TaskProgress
     {
-        return TaskType::build(
+        return TaskProgress::build(
             $this->getOrderMessage()->getOrderId(),
             $this->getType(),
-            $this->getStatusType(),
+            $this->getProgressStatus(),
             $this->getTimer()
         );
     }
@@ -322,7 +350,7 @@ final class Task extends Bindable
      */
     private function taskExecutionStarted(): void
     {
-        $this->timeStart = new \DateTime();
+        $this->timeStart = $this->getCurrentDateTimeWithMicroseconds();
     }
 
     /**
@@ -330,7 +358,7 @@ final class Task extends Bindable
      */
     private function taskExecutionCompleted(): void
     {
-        $this->timeFinished = new \DateTime();
+        $this->timeFinished = $this->getCurrentDateTimeWithMicroseconds();
     }
 
 }
