@@ -66,6 +66,11 @@ trait EventDispatcher
             $this->getMessagePayloadValidator()->validate($messagePayload);
 
             /**
+             *  ensure that payload data is correctly encoded to utf-8 before json encode it
+             */
+            $messagePayload = $this->preparePayloadData($messagePayload);
+
+            /**
              * Publish message on exchange
              */
             $this->publishToExchange(json_encode($messagePayload), $eventName);
@@ -123,6 +128,29 @@ trait EventDispatcher
                 ]
             ])
         ;
+    }
+
+    /**
+     * prepare data of message payload
+     *
+     * @param EventMessagePayload $payload
+     * @return EventMessagePayload
+     */
+    private function preparePayloadData(EventMessagePayload $payload): EventMessagePayload
+    {
+        //json encode payload data with ignore invalid utf8 and decode after to ensure that we get data as array
+        $data = json_encode($payload->getData(), JSON_INVALID_UTF8_IGNORE);
+        $data = json_decode($data, true);
+
+        //ensure that all string in payload are encoded to utf-8
+        array_walk_recursive($data, function (&$value) {
+            if (is_string($value)) {
+                $value = mb_convert_encoding($value, 'UTF-8', 'UTF-8');
+            }
+        });
+
+        //rebuild payload with encoded data
+        return EventMessagePayload::build($payload->getChannel(), $data, $payload->getHeaders());
     }
 
     abstract public function getRecoveryEventStoreEndpoint(): string;
