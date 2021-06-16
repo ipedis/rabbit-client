@@ -37,7 +37,7 @@ class Success extends WorkerAbstract implements OnBeforeMessage, OnAfterMessage
                     ['status' => 'PROGRESS', 'step' => 1]
                 )
             );
-            sleep(rand(0, 10));
+            sleep(rand(0, 1));
 
             return ["step" => "step1 finished"];
         };

@@ -14,6 +14,13 @@ class Dispatcher extends ConnectorAbstract
 {
     use EventDispatcher;
 
+    const EVENTS_TO_DISPATCH = [
+        'v1.admin.publication.was-created',
+        'v1.admin.publication.was-exported',
+        'v1.preview.publication.was-updated',
+        'v1.admin.publication.was-deleted'
+    ];
+
     /**
      * @var ChannelFactory $channelFactory
      */
@@ -42,41 +49,20 @@ class Dispatcher extends ConnectorAbstract
 
     public function main()
     {
-        $this->dispatch(EventMessagePayload::build(
-            EventChannel::fromString('v1.admin.publication.was-created'),
-            [
-                'publication' => [
-                    'sid' => 1
+        foreach (self::EVENTS_TO_DISPATCH as $eventType) {
+            // we construct the event message by providing channel and payload.
+            $eventType = EventMessagePayload::build(
+                EventChannel::fromString($eventType),
+                [
+                    'publication' => [
+                        'sid' => 1
+                    ]
                 ]
-            ]
-        ));
+            );
 
-        $this->dispatch(EventMessagePayload::build(
-            EventChannel::fromString('v1.admin.publication.was-exported'),
-            [
-                'publication' => [
-                    'sid' => 1
-                ]
-            ]
-        ));
-
-        $this->dispatch(EventMessagePayload::build(
-            EventChannel::fromString('v1.preview.publication.was-updated'),
-            [
-                'publication' => [
-                    'sid' => 2
-                ]
-            ]
-        ));
-
-        $this->dispatch(EventMessagePayload::build(
-            EventChannel::fromString('v1.admin.publication.was-deleted'),
-            [
-                'publication' => [
-                    'sid' => 3
-                ]
-            ]
-        ));
+            // now we can dispatch the event through our message broker.
+            $this->dispatch($eventType);
+        }
     }
 
     /**
@@ -113,6 +99,6 @@ class Dispatcher extends ConnectorAbstract
 
     public function getQueuePrefix(): string
     {
-        return 'demo.dispatcher';
+        return 'demo.event';
     }
 }

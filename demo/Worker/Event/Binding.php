@@ -15,6 +15,8 @@ class Binding extends WorkerAbstract implements OnBeforeMessage, OnAfterMessage
 {
     use EventListener;
 
+    const ENABLE_LIFE_CYCLE_PRINTING = true;
+
     /**
      * Process messages coming from queue
      *
@@ -23,19 +25,19 @@ class Binding extends WorkerAbstract implements OnBeforeMessage, OnAfterMessage
     protected function makeMessageHandler(): Closure
     {
         return function (EventMessagePayload $messagePayload) {
-            var_dump($messagePayload->getChannel(), 'default handler');
+            printf("%s - %s \n\n", 'makeMessageHandler', $messagePayload->getChannel());
         };
     }
 
     protected function onExportedPublication(EventMessagePayload $messagePayload)
     {
-        var_dump($messagePayload->getChannel(), 'dedicated handler');
+        printf("%s - %s \n\n", 'onExportedPublication specific handler', $messagePayload->getChannel());
     }
 
     protected function onUpdatedPublication() : Closure
     {
         return function (EventMessagePayload $messagePayload) {
-            var_dump($messagePayload->getChannel(), 'dedicated handler with Closure');
+            printf("%s - %s \n\n", 'onUpdatedPublication specific handler with Closure', $messagePayload->getChannel());
         };
     }
 
@@ -89,7 +91,7 @@ class Binding extends WorkerAbstract implements OnBeforeMessage, OnAfterMessage
      */
     public function beforeMessageHandled()
     {
-        printf("WORKER LIFECYCLE HOOK : BEFORE HANDLING MESSAGE..."."\n\n");
+        if (self::ENABLE_LIFE_CYCLE_PRINTING) printf("Worker lifecycle hook : before handling message..."."\n\n");
     }
 
     /**
@@ -97,11 +99,11 @@ class Binding extends WorkerAbstract implements OnBeforeMessage, OnAfterMessage
      */
     public function afterMessageHandled()
     {
-        printf("WORKER LIFECYCLE HOOK : AFTER HANDLING MESSAGE..."."\n\n");
+        if (self::ENABLE_LIFE_CYCLE_PRINTING) printf("Worker lifecycle hook : after handling message..."."\n\n");
     }
 
     public function getQueuePrefix(): string
     {
-        return 'demo.binding';
+        return 'demo.event';
     }
 }
