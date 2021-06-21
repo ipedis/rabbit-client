@@ -23,6 +23,7 @@ use Ipedis\Rabbit\MessagePayload\MessagePayloadInterface;
 use Ipedis\Rabbit\MessagePayload\OrderMessagePayload;
 use Ipedis\Rabbit\MessagePayload\ReplyMessagePayload;
 use Ipedis\Rabbit\MessagePayload\Validator\ValidatorInterface;
+use function GuzzleHttp\default_user_agent;
 
 /**
  * Trait Manager
@@ -337,14 +338,14 @@ trait Manager
     /**
      * Helper function to execute handlers for event
      *
-     * @param string $event
-     * @param MessagePayloadInterface $messagePayload
+     * @param string $status
+     * @param MessagePayloadInterface $message
      */
-    private function executeEventHandler(string $event, MessagePayloadInterface $messagePayload)
+    private function executeEventHandler(string $status, MessagePayloadInterface $message)
     {
-        if (isset($this->eventHandlers[$event])) {
-            $handler = $this->eventHandlers[$event];
-            $handler($messagePayload);
+        if (isset($this->eventHandlers[$status])) {
+            $handler = $this->eventHandlers[$status];
+            $handler($message);
         }
     }
 

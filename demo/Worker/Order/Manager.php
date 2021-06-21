@@ -17,6 +17,8 @@ class Manager extends ConnectorAbstract
 {
     use ManagerTrait;
 
+    const IS_VERBOSE = false;
+
     /**
      * @var ChannelFactory $channelFactory
      */
@@ -71,7 +73,7 @@ class Manager extends ConnectorAbstract
         /**
          * Example of binding a handler to an event
          */
-        $messageHandler = new ManagerHandler();
+        $messageHandler = new ManagerHandler(1);
 
         /**
          * We publish N Tasks on queue "Worker" who should be consume by this Worker.
@@ -88,22 +90,33 @@ class Manager extends ConnectorAbstract
             ]);
 
             $this->publish($orderMessagePayload, $messageHandler)
-                ->bind(MessageHandlerInterface::TYPE_PROGRESS, function (ReplyMessagePayload $message) {
-                    printf("[[ ----------- PROGRESSION PERCENTAGE %s%% COMPLETED ---------- ]]\n\n", (string) $this->getPercentageProgression());
+                ->bind(MessageHandlerInterface::TYPE_ERROR, function (ReplyMessagePayload $message, $error) {
+                    var_dump($error);
                 })
             ;
+
+            if (self::IS_VERBOSE) {
+                $this->bind(MessageHandlerInterface::TYPE_PROGRESS, function (ReplyMessagePayload $message) {
+                    printf("[[ ----------- PROGRESSION PERCENTAGE %s%% COMPLETED ---------- ]]\n\n", (string) $this->getPercentageProgression());
+                });
+
+            }
         }
 
-        printf("%s messages are published on queue\n\n", count($this->getDispatchedOrders()));
+        if (self::IS_VERBOSE) {
+            printf("%s messages are published on queue\n\n", count($this->getDispatchedOrders()));
+        }
 
         $this->run();
 
-        printf(
-            "All orders(%s in total) executed with %s orders as success and %s orders as error :). \n",
-            count($this->getCompletedOrders()),
-            count($this->getSuccessfulOrders()),
-            count($this->getFailedOrders())
-        );
+        if (self::IS_VERBOSE) {
+            printf(
+                "All orders(%s in total) executed with %s orders as success and %s orders as error :). \n",
+                count($this->getCompletedOrders()),
+                count($this->getSuccessfulOrders()),
+                count($this->getFailedOrders())
+            );
+        }
     }
 
     /**

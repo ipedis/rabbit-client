@@ -10,11 +10,11 @@ class ManagerHandler extends MessageHandler
     /**
      * @var int
      */
-    protected $numberTask;
+    protected int $numberTask;
 
-    public function __construct()
+    public function __construct(int $numberTask)
     {
-        $this->numberTask = 10;
+        $this->numberTask = $numberTask;
     }
 
     public function getNumberTask(): int
