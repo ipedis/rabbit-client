@@ -1,6 +1,5 @@
 <?php
 
-
 namespace Ipedis\Demo\Rabbit\Worker\Workflow\Worker\Generator;
 
 use AMQPEnvelope;
@@ -28,7 +27,6 @@ class Image extends WorkerAbstract
     protected function makeExceptionHandler(): Closure
     {
         return function (Exception $exception, OrderMessagePayload $payload) {
-
         };
     }
 

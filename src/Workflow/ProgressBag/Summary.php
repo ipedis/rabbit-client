@@ -1,4 +1,5 @@
 <?php
+
 namespace Ipedis\Rabbit\Workflow\ProgressBag;
 
 use Ipedis\Rabbit\Exception\Progress\InvalidProgressValueException;
@@ -58,12 +59,54 @@ class Summary implements \JsonSerializable
      * @param int $completed
      * @param int $successful
      * @param int $failed
+     * @throws InvalidProgressValueException
+     */
+    private function validateInputs(int $total, int $pending, int $dispatched, int $completed, int $successful, int $failed)
+    {
+        $arguments = func_get_args();
+        foreach ($arguments as $argument) {
+            if ($argument < 0) {
+                throw new InvalidProgressValueException('Number of orders can not be less than 0.');
+            }
+        }
+
+        if ($total < $pending || $total < $dispatched || $total < $completed || $total < $successful || $total < $failed) {
+            throw new InvalidProgressValueException('Total number of orders must always be the highest value.');
+        }
+
+        if ($completed !== ($successful + $failed)) {
+            throw new InvalidProgressValueException('Inconsistent value of completed, successful and failed orders.');
+        }
+    }
+
+    /**
+     * @param int $total
+     * @param int $pending
+     * @param int $dispatched
+     * @param int $completed
+     * @param int $successful
+     * @param int $failed
      * @return Summary
      * @throws InvalidProgressValueException
      */
     public static function build(int $total, int $pending, int $dispatched, int $completed, int $successful, int $failed): self
     {
         return new self($total, $pending, $dispatched, $completed, $successful, $failed);
+    }
+
+    /**
+     * @return array
+     */
+    public function jsonSerialize(): array
+    {
+        return [
+            'total' => $this->getTotal(),
+            'pending' => $this->getPending(),
+            'dispatched' => $this->getDispatched(),
+            'completed' => $this->getCompleted(),
+            'successful' => $this->getSuccessful(),
+            'failed' => $this->getFailed()
+        ];
     }
 
     /**
@@ -112,47 +155,5 @@ class Summary implements \JsonSerializable
     public function getFailed(): int
     {
         return $this->failed;
-    }
-
-    /**
-     * @return array
-     */
-    public function jsonSerialize(): array
-    {
-        return [
-            'total' => $this->getTotal(),
-            'pending' => $this->getPending(),
-            'dispatched' => $this->getDispatched(),
-            'completed' => $this->getCompleted(),
-            'successful' => $this->getSuccessful(),
-            'failed' => $this->getFailed()
-        ];
-    }
-
-    /**
-     * @param int $total
-     * @param int $pending
-     * @param int $dispatched
-     * @param int $completed
-     * @param int $successful
-     * @param int $failed
-     * @throws InvalidProgressValueException
-     */
-    private function validateInputs(int $total, int $pending, int $dispatched, int $completed, int $successful, int $failed)
-    {
-        $arguments = func_get_args();
-        foreach ($arguments as $argument) {
-            if ($argument < 0) {
-                throw new InvalidProgressValueException('Number of orders can not be less than 0.');
-            }
-        }
-
-        if ($total < $pending || $total < $dispatched || $total < $completed || $total < $successful || $total < $failed) {
-            throw new InvalidProgressValueException('Total number of orders must always be the highest value.');
-        }
-
-        if ($completed !== ($successful + $failed)) {
-            throw new InvalidProgressValueException('Inconsistent value of completed, successful and failed orders.');
-        }
     }
 }

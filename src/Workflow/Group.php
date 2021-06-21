@@ -2,7 +2,6 @@
 
 namespace Ipedis\Rabbit\Workflow;
 
-
 use Ipedis\Rabbit\Exception\Group\InvalidGroupArgumentException;
 use Ipedis\Rabbit\Exception\Task\InvalidStatusException;
 use Ipedis\Rabbit\Exception\Timer\InvalidSpentTimeException;
@@ -18,23 +17,21 @@ use Ipedis\Rabbit\Workflow\ProgressBag\Property\Timer;
 class Group extends Bindable
 {
     /**
+     * Group orders
+     *
+     * @var $orders []
+     */
+    protected $orders = [];
+    /**
+     * @var GroupConfig
+     */
+    protected $config;
+    /**
      * Group Identifier
      *
      * @var string $groupId
      */
     private $groupId;
-
-    /**
-     * Group orders
-     *
-     * @var $orders[]
-     */
-    protected $orders = [];
-
-    /**
-     * @var GroupConfig
-     */
-    protected $config;
 
     /**
      * Group constructor.
@@ -46,10 +43,29 @@ class Group extends Bindable
      */
     protected function __construct(string $groupId, array $orders = [], array $callbacks = [], ?GroupConfig $config = null)
     {
-        $this->groupId  = $groupId;
+        $this->groupId = $groupId;
         $this->prepareOrders($orders);
         $this->callbacks = $this->assertCallbacks($callbacks);
         $this->config = $config;
+    }
+
+    /**
+     * @param array $orders
+     * @throws InvalidGroupArgumentException
+     */
+    private function prepareOrders(array $orders)
+    {
+        foreach ($orders as $order) {
+            if (!$order instanceof Task && !$order instanceof Workflow) {
+                throw new InvalidGroupArgumentException(sprintf('list of tasks must have "%s" type or "%s" type', Task::class, Workflow::class));
+            }
+
+            if ($order instanceof Workflow) {
+                $this->orders[$order->getWorkflowId()] = $order;
+            } else {
+                $this->orders[$order->getOrderMessage()->getOrderId()] = $order;
+            }
+        }
     }
 
     /**
@@ -65,6 +81,19 @@ class Group extends Bindable
     public static function build(array $orders = [], array $callbacks = [], ?GroupConfig $config = null): self
     {
         return new self(uuid_create(), $orders, $callbacks, $config);
+    }
+
+    /**
+     * Planify a task in the group
+     *
+     * @param OrderMessagePayload $order
+     * @param array $callbacks
+     * @return Group
+     * @throws InvalidGroupArgumentException
+     */
+    public function planifyOrder(OrderMessagePayload $order, array $callbacks = []): self
+    {
+        return $this->planify(Task::build($order, $callbacks));
     }
 
     /**
@@ -87,19 +116,6 @@ class Group extends Bindable
         }
 
         return $this;
-    }
-
-    /**
-     * Planify a task in the group
-     *
-     * @param OrderMessagePayload $order
-     * @param array $callbacks
-     * @return Group
-     * @throws InvalidGroupArgumentException
-     */
-    public function planifyOrder(OrderMessagePayload $order, array $callbacks = []): self
-    {
-        return $this->planify(Task::build($order, $callbacks));
     }
 
     /**
@@ -126,15 +142,6 @@ class Group extends Bindable
     }
 
     /**
-     * @param string $orderId
-     * @return Task
-     */
-    public function find(string $orderId): Task
-    {
-        return $this->orders[$orderId];
-    }
-
-    /**
      * @param ReplyMessagePayload $message
      * @return array
      * @throws InvalidStatusException
@@ -145,6 +152,15 @@ class Group extends Bindable
         $order->update($message);
 
         return [$this, $order];
+    }
+
+    /**
+     * @param string $orderId
+     * @return Task
+     */
+    public function find(string $orderId): Task
+    {
+        return $this->orders[$orderId];
     }
 
     /**
@@ -161,21 +177,17 @@ class Group extends Bindable
     }
 
     /**
-     * Get all scheduled tasks
+     * Check if retry is allowed for task
      *
-     * @return Task[]
+     * @param Task $task
+     * @return bool
      */
-    public function getOrders(): array
+    public function canRetryTask(Task $task): bool
     {
-        return $this->orders;
-    }
-
-    /**
-     * @return string
-     */
-    public function getGroupId(): string
-    {
-        return $this->groupId;
+        return
+            $this->hasConfig() &&
+            $this->getConfig()->hasToRetry() &&
+            $task->getRetryCount() < $this->getConfig()->getMaxRetry();
     }
 
     /**
@@ -195,21 +207,6 @@ class Group extends Bindable
     }
 
     /**
-     * Check if retry is allowed for task
-     *
-     * @param Task $task
-     * @return bool
-     */
-    public function canRetryTask(Task $task): bool
-    {
-        return
-            $this->hasConfig() &&
-            $this->getConfig()->hasToRetry() &&
-            $task->getRetryCount() < $this->getConfig()->getMaxRetry()
-        ;
-    }
-
-    /**
      * Check if further tasks can be dispatched for channel
      *
      * @param string $channelName
@@ -220,8 +217,7 @@ class Group extends Bindable
     {
         return
             $this->getProgressBag()->countDispatchedTasks($channelName) < $maxWorkers &&
-            $this->getProgressBag()->countInProgressTasks($channelName) < $maxWorkers
-        ;
+            $this->getProgressBag()->countInProgressTasks($channelName) < $maxWorkers;
     }
 
     /**
@@ -232,6 +228,24 @@ class Group extends Bindable
     public function getProgressBag(): GroupProgressBag
     {
         return new GroupProgressBag($this->getOrders(), $this->getGroupId());
+    }
+
+    /**
+     * Get all scheduled tasks
+     *
+     * @return Task[]
+     */
+    public function getOrders(): array
+    {
+        return $this->orders;
+    }
+
+    /**
+     * @return string
+     */
+    public function getGroupId(): string
+    {
+        return $this->groupId;
     }
 
     /**
@@ -263,25 +277,6 @@ class Group extends Bindable
             $this->getProgressBag()->getStartedAt(),
             $this->getProgressBag()->getFinishedAt()
         );
-    }
-
-    /**
-     * @param array $orders
-     * @throws InvalidGroupArgumentException
-     */
-    private function prepareOrders(array $orders)
-    {
-        foreach ($orders as $order) {
-            if (!$order instanceof Task && !$order instanceof Workflow) {
-                throw new InvalidGroupArgumentException(sprintf('list of tasks must have "%s" type or "%s" type', Task::class, Workflow::class));
-            }
-
-            if ($order instanceof Workflow) {
-                $this->orders[$order->getWorkflowId()] = $order;
-            } else {
-                $this->orders[$order->getOrderMessage()->getOrderId()] = $order;
-            }
-        }
     }
 
     /**

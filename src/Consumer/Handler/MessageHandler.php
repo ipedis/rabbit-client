@@ -2,9 +2,7 @@
 
 namespace Ipedis\Rabbit\Consumer\Handler;
 
-
 use Ipedis\Rabbit\MessagePayload\ReplyMessagePayload;
-
 
 abstract class MessageHandler implements MessageHandlerInterface
 {
@@ -16,8 +14,7 @@ abstract class MessageHandler implements MessageHandlerInterface
      */
     public function on(ReplyMessagePayload $messagePayload)
     {
-        switch (strtolower($messagePayload->getStatus()))
-        {
+        switch (strtolower($messagePayload->getStatus())) {
             case self::TYPE_SUCCESS:
                 $this->onSuccess($messagePayload);
                 break;

@@ -2,7 +2,6 @@
 
 namespace Ipedis\Rabbit\DTO\Store;
 
-
 class TaskMeta
 {
     /**

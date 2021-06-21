@@ -35,6 +35,19 @@ class GroupedTasksProgress implements \JsonSerializable
     }
 
     /**
+     * @param array $taskUuids
+     * @throws \Ipedis\Rabbit\Exception\InvalidUuidException
+     */
+    private function validateInputs(array $taskUuids)
+    {
+        $validator = new UuidValidator();
+
+        foreach ($taskUuids as $taskUuid) {
+            $validator->validate($taskUuid);
+        }
+    }
+
+    /**
      * @param string $type
      * @param Status $status
      * @param Summary $summary
@@ -44,6 +57,19 @@ class GroupedTasksProgress implements \JsonSerializable
     public static function build(string $type, Status $status, Summary $summary, array $taskUuids): self
     {
         return new self($type, $status, $summary, $taskUuids);
+    }
+
+    /**
+     * @return array[]
+     */
+    public function jsonSerialize()
+    {
+        return [
+            'type' => $this->getType(),
+            'status' => $this->getStatus(),
+            'summary' => $this->getSummary(),
+            'contain' => $this->getTaskUuids()
+        ];
     }
 
     /**
@@ -77,31 +103,4 @@ class GroupedTasksProgress implements \JsonSerializable
     {
         return $this->taskUuids;
     }
-
-    /**
-     * @return array[]
-     */
-    public function jsonSerialize()
-    {
-        return [
-            'type' => $this->getType(),
-            'status' => $this->getStatus(),
-            'summary' => $this->getSummary(),
-            'contain' => $this->getTaskUuids()
-        ];
-    }
-
-    /**
-     * @param array $taskUuids
-     * @throws \Ipedis\Rabbit\Exception\InvalidUuidException
-     */
-    private function validateInputs(array $taskUuids)
-    {
-        $validator = new UuidValidator();
-
-        foreach ($taskUuids as $taskUuid) {
-            $validator->validate($taskUuid);
-        }
-    }
-
 }

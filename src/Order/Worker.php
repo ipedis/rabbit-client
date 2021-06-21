@@ -2,7 +2,6 @@
 
 namespace Ipedis\Rabbit\Order;
 
-
 use AMQPEnvelope;
 use AMQPExchange;
 use AMQPQueue;
@@ -12,12 +11,10 @@ use Ipedis\Rabbit\Channel\Factory\ChannelFactory;
 use Ipedis\Rabbit\Consumer\Handler\MessageHandlerInterface;
 use Ipedis\Rabbit\Exception\Channel\ChannelFactoryException;
 use Ipedis\Rabbit\Exception\MessagePayload\MessagePayloadFormatException;
-use Ipedis\Rabbit\Exception\MessagePayload\MessagePayloadValidatorException;
 use Ipedis\Rabbit\Lifecyle\Hook\OnAfterMessage;
 use Ipedis\Rabbit\Lifecyle\Hook\OnBeforeMessage;
 use Ipedis\Rabbit\MessagePayload\OrderMessagePayload;
 use Ipedis\Rabbit\MessagePayload\ReplyMessagePayload;
-use Ipedis\Rabbit\MessagePayload\Validator\ValidatorInterface;
 
 /**
  * Class Worker
@@ -28,12 +25,12 @@ trait Worker
     /**
      * @var string $worker_id
      */
-    protected $worker_id;
+    protected string $worker_id;
 
     /**
      * @var AMQPQueue $queue
      */
-    protected $queue;
+    protected AMQPQueue $queue;
 
     /**
      * Method to initialise worker by
@@ -59,9 +56,51 @@ trait Worker
         $this->disconnect();
     }
 
+    abstract protected function getChannelFactory();
+
+    /**
+     * Create new queue on rabbitMQ and
+     * bind queue to exchange with routing key
+     */
+    protected function queueDeclare()
+    {
+        $queueName = $this->getRoutingKeyWithPrefix($this->getQueueName());
+
+        $this->queue = new AMQPQueue($this->channel);
+        $this->queue->setFlags(AMQP_DURABLE);
+        $this->queue->setName($queueName);
+        $this->queue->declareQueue();
+        $this->queue->bind($this->getExchangeName(), $queueName);
+    }
+
+    /**
+     * Can be string or array of keys
+     *
+     * @return mixed
+     */
+    abstract protected function getQueueName();
+
+    /**
+     * The exchange to be used to bind worker's queue
+     *
+     * @return string
+     */
+    abstract protected function getExchangeName(): string;
+
+    /**
+     * Attach callback to queue
+     *
+     */
+    protected function queueConsume()
+    {
+        $this->queue->consume([$this, "main"]); //$this->mainWork(AMQPMessage $req) callback
+    }
+
     public function __destruct()
     {
-        if($this->queue) $this->queue->delete();
+        if ($this->queue) {
+            $this->queue->delete();
+        }
         $this->disconnect();
     }
 
@@ -77,71 +116,25 @@ trait Worker
             /**
              * We have before message hook to run
              */
-            if ( $this instanceOf OnBeforeMessage) $this->beforeMessageHandled();
+            if ($this instanceof OnBeforeMessage) {
+                $this->beforeMessageHandled();
+            }
 
             $this->consumeReceivedMessage($message, $q);
 
             /**
              * We have after message hook to run
              */
-            if ( $this instanceOf OnAfterMessage) $this->afterMessageHandled();
-        } catch (\Exception $exception) {
+            if ($this instanceof OnAfterMessage) {
+                $this->afterMessageHandled();
+            }
+        } catch (Exception $exception) {
             /**
              * Handle exception from hook and
              * message payload creation
              */
             $this->handleException($exception);
         }
-    }
-
-    /**
-     * Notify manager with reply message and
-     * acknowledge message as processed on rabbitMQ
-     *
-     * @param AMQPEnvelope $message
-     * @param AMQPQueue $q
-     * @param ReplyMessagePayload $replyToMessagePayload
-     * @throws \AMQPChannelException
-     * @throws \AMQPConnectionException
-     * @throws \AMQPExchangeException
-     */
-    public function replyTo(AMQPEnvelope $message, AMQPQueue $q, ReplyMessagePayload $replyToMessagePayload)
-    {
-        /**
-         * Notify manager with reply
-         */
-        $this->notifyTo($message, $replyToMessagePayload);
-
-        /*
-         * Acknowledging the message
-         */
-        $q->ack($message->getDeliveryTag());
-    }
-
-    /**
-     * Notify manager with an update
-     * Can be a progress update or the final reply back message
-     *
-     * @param AMQPEnvelope $message
-     * @param ReplyMessagePayload $replyToMessagePayload
-     * @return void
-     * @throws \AMQPChannelException
-     * @throws \AMQPConnectionException
-     * @throws \AMQPExchangeException
-     */
-    public function notifyTo(AMQPEnvelope $message, ReplyMessagePayload $replyToMessagePayload)
-    {
-        $defaultExchange = new AMQPExchange($this->channel);
-
-        /**
-         * Publishing to the same channel from the incoming message
-         */
-        $defaultExchange->publish(
-            json_encode($replyToMessagePayload),
-            $message->getReplyTo(),
-            AMQP_NOPARAM,
-            $replyToMessagePayload->getMessageProperties()
-        );
     }
 
     /**
@@ -160,6 +153,11 @@ trait Worker
      */
     private function consumeReceivedMessage(AMQPEnvelope $message, AMQPQueue $q)
     {
+        /**
+         * Get current moment
+         */
+        $startAt = $this->getCurrentMoment();
+
         /**
          * Ignore if message not proper json
          */
@@ -191,14 +189,18 @@ trait Worker
             ));
 
             $answer = $this->makeMessageHandler()($message, $messagePayload);
+            if (is_callable($answer)) {
+                $answer = $answer($message, $messagePayload);
+            }
+            // force status to success.
             $answer['status'] = MessageHandlerInterface::TYPE_SUCCESS;
         } catch (Exception $exception) {
             $answer = [
-                'worker'    => self::class,
-                'id'        => $this->worker_id,
-                'status'    => MessageHandlerInterface::TYPE_ERROR,
-                'message'   => $exception->getMessage(),
-                'code'      => $exception->getCode(),
+                'worker' => self::class,
+                'id' => $this->worker_id,
+                'status' => MessageHandlerInterface::TYPE_ERROR,
+                'message' => $exception->getMessage(),
+                'code' => $exception->getCode(),
                 'correlation_id' => $messagePayload->getOrderId()
             ];
 
@@ -211,7 +213,8 @@ trait Worker
             $replyToMessage = ReplyMessagePayload::buildFromOrderMessagePayload(
                 $messagePayload,
                 $answer['status'],
-                $answer
+                $answer,
+                ['executionTime' => ($this->getCurrentMoment() - $startAt)]
             );
 
             /**
@@ -224,85 +227,12 @@ trait Worker
     }
 
     /**
-     * Create new queue on rabbitMQ and
-     * bind queue to exchange with routing key
+     * get current timer
      */
-    protected function queueDeclare()
+    private function getCurrentMoment(): float
     {
-        $queueName = $this->getRoutingKeyWithPrefix($this->getQueueName());
-
-        $this->queue = new AMQPQueue($this->channel);
-        $this->queue->setFlags(AMQP_DURABLE);
-        $this->queue->setName($queueName);
-        $this->queue->declareQueue();
-        $this->queue->bind($this->getExchangeName(), $queueName);
+        return microtime(true);
     }
-
-    /**
-     * Attach callback to queue
-     *
-     */
-    protected function queueConsume()
-    {
-        $this->queue->consume([$this, "main"]); //$this->mainWork(AMQPMessage $req) callback
-    }
-
-    /**
-     * Handle exception by calling
-     * client exception callback
-     *
-     * @param $exception
-     * @param OrderMessagePayload|null $messagePayload
-     * @return void
-     */
-    private function handleException($exception, ?OrderMessagePayload $messagePayload = null)
-    {
-        try {
-            $this->makeExceptionHandler()($exception, $messagePayload);
-        } catch (\Exception $exception) {
-            $this->logException($exception);
-        }
-    }
-
-    /**
-     * Can be string or array of keys
-     *
-     * @return mixed
-     */
-    abstract protected function getQueueName();
-
-    /**
-     * The exchange to be used to bind worker's queue
-     *
-     * @return string
-     */
-    abstract protected function getExchangeName(): string;
-
-    /**
-     * The client callback to be executed
-     * on receiving a message
-     *
-     * @return Closure
-     */
-    abstract protected function makeMessageHandler(): Closure;
-
-    /**
-     * The client callback to be executed
-     * if there is an exception while handling a message
-     *
-     * @return Closure
-     */
-    abstract protected function makeExceptionHandler(): Closure;
-
-    abstract protected function getChannelFactory();
-
-    /**
-     * Prototype method
-     * Child can overide this function to log exceptions
-     *
-     * @param Exception $exception
-     */
-    protected function logException(\Exception $exception){}
 
     /**
      * Check if message is valid json
@@ -324,5 +254,98 @@ trait Worker
     private function isValidChannelName(string $channelName): bool
     {
         return $this->getChannelFactory()->match($channelName);
+    }
+
+    /**
+     * Notify manager with an update
+     * Can be a progress update or the final reply back message
+     *
+     * @param AMQPEnvelope $message
+     * @param ReplyMessagePayload $replyToMessagePayload
+     * @return void
+     * @throws \AMQPChannelException
+     * @throws \AMQPConnectionException
+     * @throws \AMQPExchangeException
+     */
+    public function notifyTo(AMQPEnvelope $message, ReplyMessagePayload $replyToMessagePayload)
+    {
+        $defaultExchange = new AMQPExchange($this->channel);
+
+        /**
+         * Publishing to the same channel from the incoming message
+         */
+        $defaultExchange->publish(
+            json_encode($replyToMessagePayload),
+            $message->getReplyTo(),
+            AMQP_NOPARAM,
+            $replyToMessagePayload->getMessageProperties()
+        );
+    }
+
+    /**
+     * The client callback to be executed
+     * on receiving a message
+     *
+     * @return Closure | array
+     */
+    abstract protected function makeMessageHandler();
+
+    /**
+     * Handle exception by calling
+     * client exception callback
+     *
+     * @param $exception
+     * @param OrderMessagePayload|null $messagePayload
+     * @return void
+     */
+    private function handleException($exception, ?OrderMessagePayload $messagePayload = null)
+    {
+        try {
+            $this->makeExceptionHandler()($exception, $messagePayload);
+        } catch (Exception $exception) {
+            $this->logException($exception);
+        }
+    }
+
+    /**
+     * The client callback to be executed
+     * if there is an exception while handling a message
+     *
+     * @return Closure
+     */
+    abstract protected function makeExceptionHandler(): Closure;
+
+    /**
+     * Prototype method
+     * Child can overide this function to log exceptions
+     *
+     * @param Exception $exception
+     */
+    protected function logException(Exception $exception)
+    {
+    }
+
+    /**
+     * Notify manager with reply message and
+     * acknowledge message as processed on rabbitMQ
+     *
+     * @param AMQPEnvelope $message
+     * @param AMQPQueue $q
+     * @param ReplyMessagePayload $replyToMessagePayload
+     * @throws \AMQPChannelException
+     * @throws \AMQPConnectionException
+     * @throws \AMQPExchangeException
+     */
+    public function replyTo(AMQPEnvelope $message, AMQPQueue $q, ReplyMessagePayload $replyToMessagePayload)
+    {
+        /**
+         * Notify manager with reply
+         */
+        $this->notifyTo($message, $replyToMessagePayload);
+
+        /*
+         * Acknowledging the message
+         */
+        $q->ack($message->getDeliveryTag());
     }
 }

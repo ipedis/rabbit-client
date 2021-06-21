@@ -1,8 +1,6 @@
 <?php
 
-
 namespace Ipedis\Rabbit\DTO\Store;
-
 
 use Ipedis\Rabbit\Workflow\Workflow;
 
@@ -50,14 +48,6 @@ class WorkflowMeta
     }
 
     /**
-     * @return bool
-     */
-    public function hasParent(): bool
-    {
-        return !is_null($this->parent);
-    }
-
-    /**
      * @return string
      */
     public function getParent(): string
@@ -87,5 +77,13 @@ class WorkflowMeta
     public function isRootWorkflow(): bool
     {
         return !$this->hasParent();
+    }
+
+    /**
+     * @return bool
+     */
+    public function hasParent(): bool
+    {
+        return !is_null($this->parent);
     }
 }

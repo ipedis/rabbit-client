@@ -2,7 +2,6 @@
 
 namespace Ipedis\Rabbit\Event;
 
-
 use Ipedis\HttpSignature\HttpClient\HttpClient;
 use Ipedis\Rabbit\Channel\EventChannel;
 use Ipedis\Rabbit\Channel\Factory\ChannelFactory;
@@ -43,7 +42,7 @@ trait EventDispatcher
     public function dispatch(EventMessagePayload $messagePayload)
     {
         try {
-            if ( $this->channel === null) {
+            if ($this->channel === null) {
                 $this->connect();
             }
 
@@ -114,23 +113,6 @@ trait EventDispatcher
     }
 
     /**
-     * Store event on recovery
-     *
-     * @param EventMessagePayload $payload
-     */
-    private function storeEventOnRecovery(EventMessagePayload $payload)
-    {
-        $this->getClient()
-            ->post($this->getRecoveryEventStoreEndpoint(), [
-                'body' => json_encode($payload),
-                'headers' => [
-                    'Accept' => 'application/json'
-                ]
-            ])
-        ;
-    }
-
-    /**
      * prepare data of message payload
      *
      * @param EventMessagePayload $payload
@@ -151,6 +133,22 @@ trait EventDispatcher
 
         //rebuild payload with encoded data
         return EventMessagePayload::build($payload->getChannel(), $data, $payload->getHeaders());
+    }
+
+    /**
+     * Store event on recovery
+     *
+     * @param EventMessagePayload $payload
+     */
+    private function storeEventOnRecovery(EventMessagePayload $payload)
+    {
+        $this->getClient()
+            ->post($this->getRecoveryEventStoreEndpoint(), [
+                'body' => json_encode($payload),
+                'headers' => [
+                    'Accept' => 'application/json'
+                ]
+            ]);
     }
 
     abstract public function getRecoveryEventStoreEndpoint(): string;

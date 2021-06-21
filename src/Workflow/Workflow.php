@@ -2,7 +2,6 @@
 
 namespace Ipedis\Rabbit\Workflow;
 
-
 use Exception;
 use Ipedis\Rabbit\Exception\Group\InvalidGroupArgumentException;
 use Ipedis\Rabbit\Exception\InvalidUuidException;
@@ -55,7 +54,9 @@ class Workflow extends Bindable
          * - Group : add group to collection
          * - Callable : create and provide new group to callable
          */
-        if ($workflowId) $this->assertUuid($workflowId);
+        if ($workflowId) {
+            $this->assertUuid($workflowId);
+        }
         $this->workflowId = $workflowId ?? uuid_create();
         if (!is_null($firstStep)) {
             $this->schedule($firstStep, $groupCallbacks);
@@ -63,68 +64,12 @@ class Workflow extends Bindable
     }
 
     /**
-     * Schedule next group of orders
-     *
-     * @param $nextStep
-     * @param array $callbacks
-     * @return Workflow
-     * @throws InvalidWorkflowArgumentException
-     * @throws InvalidGroupArgumentException
+     * @param string $uuid
+     * @throws InvalidUuidException
      */
-    public function then($nextStep,  array $callbacks = []): self
+    protected function assertUuid(string $uuid)
     {
-        $this->schedule($nextStep, $callbacks);
-
-        return $this;
-    }
-
-    /**
-     * On task reply,
-     * When we receive ReplyMessage from worker.
-     *
-     * @param ReplyMessagePayload $message
-     * @return array
-     * @throws InvalidStatusException
-     */
-    public function taskReply(ReplyMessagePayload $message): array
-    {
-        // Check all existing group if he contain particular order id.
-        foreach ($this->groups as $group) {
-            if($group->has($message->getOrderId())) {
-                // Ask current group to update task based on received message.
-                $currentGroup = $group->update($message);
-                break;
-            }
-        }
-
-        return $currentGroup;
-    }
-
-    /**
-     * @param ReplyMessagePayload $message
-     * @return array
-     * @throws InvalidStatusException
-     */
-    public function retryGroupTask(ReplyMessagePayload $message): array
-    {
-        // Check all existing group if he contain particular order id.
-        foreach ($this->groups as $group) {
-            if($group->has($message->getOrderId())) {
-                // Ask current group to update task based on received message.
-                $currentGroup = $group->retryTask($message);
-                break;
-            }
-        }
-
-        return $currentGroup;
-    }
-
-    /**
-     * @return WorkflowConfig
-     */
-    public function getConfig(): WorkflowConfig
-    {
-        return $this->config;
+        (new UuidValidator())->validate($uuid);
     }
 
     /**
@@ -173,87 +118,6 @@ class Workflow extends Bindable
     }
 
     /**
-     * @return Group[]
-     */
-    public function getGroups(): array
-    {
-        return $this->groups;
-    }
-
-    /**
-     * Find group
-     *
-     * @param string $groupId
-     * @return Group
-     * @throws Exception
-     */
-    public function findGroup(string $groupId): Group
-    {
-        $group = array_filter($this->getGroups(), function(Group $group) use ($groupId) {
-            return $group->getGroupId() === $groupId;
-        });
-
-        if (count($group) === 0) {
-            throw new Exception('Group not found');
-        }
-
-        return reset($group);
-    }
-
-    /**
-     * Check if retry is allowed for task
-     *
-     * @param Task $task
-     * @param Group $group
-     * @return bool
-     */
-    public function canRetryTask(Task $task, Group $group): bool
-    {
-        return
-            !$group->hasConfig() &&
-            $this->getConfig()->hasToRetry() &&
-            $task->getRetryCount() < $this->getConfig()->getMaxRetry()
-            ;
-    }
-
-    /**
-     * @return WorkflowProgressBag
-     */
-    public function getProgressBag(): WorkflowProgressBag
-    {
-        return new WorkflowProgressBag($this->getGroups(), $this->workflowId);
-    }
-
-    /**
-     * get current workflow progress percentage
-     * @return float
-     * @throws InvalidProgressValueException
-     */
-    public function getProgressPercentage(): float
-    {
-        return $this->getProgressBag()->getPercentage()->getCompleted();
-    }
-
-    /**
-     * @return string|null
-     */
-    public function getWorkflowId(): ?string
-    {
-        return $this->workflowId;
-    }
-
-    /**
-     * @param WorkflowConfig $config
-     * @return Workflow
-     */
-    public function setConfig(WorkflowConfig $config): self
-    {
-        $this->config = $config;
-
-        return $this;
-    }
-
-    /**
      * @param $step
      * @throws InvalidWorkflowArgumentException
      */
@@ -268,19 +132,155 @@ class Workflow extends Bindable
     }
 
     /**
+     * Schedule next group of orders
+     *
+     * @param $nextStep
+     * @param array $callbacks
+     * @return Workflow
+     * @throws InvalidWorkflowArgumentException
+     * @throws InvalidGroupArgumentException
+     */
+    public function then($nextStep, array $callbacks = []): self
+    {
+        $this->schedule($nextStep, $callbacks);
+
+        return $this;
+    }
+
+    /**
+     * On task reply,
+     * When we receive ReplyMessage from worker.
+     *
+     * @param ReplyMessagePayload $message
+     * @return array
+     * @throws InvalidStatusException
+     */
+    public function taskReply(ReplyMessagePayload $message): array
+    {
+        // Check all existing group if he contain particular order id.
+        foreach ($this->groups as $group) {
+            if ($group->has($message->getOrderId())) {
+                // Ask current group to update task based on received message.
+                $currentGroup = $group->update($message);
+                break;
+            }
+        }
+
+        return $currentGroup;
+    }
+
+    /**
+     * @param ReplyMessagePayload $message
+     * @return array
+     * @throws InvalidStatusException
+     */
+    public function retryGroupTask(ReplyMessagePayload $message): array
+    {
+        // Check all existing group if he contain particular order id.
+        foreach ($this->groups as $group) {
+            if ($group->has($message->getOrderId())) {
+                // Ask current group to update task based on received message.
+                $currentGroup = $group->retryTask($message);
+                break;
+            }
+        }
+
+        return $currentGroup;
+    }
+
+    /**
+     * Find group
+     *
+     * @param string $groupId
+     * @return Group
+     * @throws Exception
+     */
+    public function findGroup(string $groupId): Group
+    {
+        $group = array_filter($this->getGroups(), function (Group $group) use ($groupId) {
+            return $group->getGroupId() === $groupId;
+        });
+
+        if (count($group) === 0) {
+            throw new Exception('Group not found');
+        }
+
+        return reset($group);
+    }
+
+    /**
+     * @return Group[]
+     */
+    public function getGroups(): array
+    {
+        return $this->groups;
+    }
+
+    /**
+     * Check if retry is allowed for task
+     *
+     * @param Task $task
+     * @param Group $group
+     * @return bool
+     */
+    public function canRetryTask(Task $task, Group $group): bool
+    {
+        return
+            !$group->hasConfig() &&
+            $this->getConfig()->hasToRetry() &&
+            $task->getRetryCount() < $this->getConfig()->getMaxRetry();
+    }
+
+    /**
+     * @return WorkflowConfig
+     */
+    public function getConfig(): WorkflowConfig
+    {
+        return $this->config;
+    }
+
+    /**
+     * @param WorkflowConfig $config
+     * @return Workflow
+     */
+    public function setConfig(WorkflowConfig $config): self
+    {
+        $this->config = $config;
+
+        return $this;
+    }
+
+    /**
+     * get current workflow progress percentage
+     * @return float
+     * @throws InvalidProgressValueException
+     */
+    public function getProgressPercentage(): float
+    {
+        return $this->getProgressBag()->getPercentage()->getCompleted();
+    }
+
+    /**
+     * @return WorkflowProgressBag
+     */
+    public function getProgressBag(): WorkflowProgressBag
+    {
+        return new WorkflowProgressBag($this->getGroups(), $this->workflowId);
+    }
+
+    /**
+     * @return string|null
+     */
+    public function getWorkflowId(): ?string
+    {
+        return $this->workflowId;
+    }
+
+    /**
      * @return array
      */
     protected function getAllowedBindableTypes(): array
     {
         return BindableEventInterface::WORKFLOW_ALLOW_TYPES;
-    }
-
-    /**
-     * @param string $uuid
-     * @throws InvalidUuidException
-     */
-    protected function assertUuid(string $uuid)
-    {
-        (new UuidValidator())->validate($uuid);
     }
 }

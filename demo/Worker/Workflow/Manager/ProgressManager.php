@@ -2,7 +2,6 @@
 
 namespace Ipedis\Demo\Rabbit\Worker\Workflow\Manager;
 
-
 use Ipedis\Rabbit\Channel\OrderChannel;
 use Ipedis\Rabbit\MessagePayload\OrderMessagePayload;
 use Ipedis\Rabbit\Workflow\Event\BindableEventInterface;
@@ -35,7 +34,7 @@ class ProgressManager extends ManagerAbstract
     public function craftGroup(string $channel, $numberOfTasks = 2, bool $shouldFailed = true): Closure
     {
         return function (Group $group) use ($channel, $numberOfTasks, $shouldFailed) {
-            for($i = 0; $i < $numberOfTasks; $i++) {
+            for ($i = 0; $i < $numberOfTasks; $i++) {
                 $group->planifyOrder(
                     OrderMessagePayload::build(
                         OrderChannel::fromString($channel),
@@ -53,7 +52,8 @@ class ProgressManager extends ManagerAbstract
      * @param Workflow $workflow
      * @return Closure
      */
-    public function json(Workflow $workflow): Closure {
+    public function json(Workflow $workflow): Closure
+    {
         return function () use ($workflow) {
             echo "\n\n\n\n";
             echo json_encode($workflow->getProgressBag()->getWorkflowProgress(), JSON_PRETTY_PRINT);

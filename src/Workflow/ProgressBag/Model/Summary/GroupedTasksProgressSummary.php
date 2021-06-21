@@ -1,8 +1,6 @@
 <?php
 
-
 namespace Ipedis\Rabbit\Workflow\ProgressBag\Model\Summary;
-
 
 use Ipedis\Rabbit\Exception\Progress\InvalidProgressValueException;
 use Ipedis\Rabbit\Workflow\ProgressBag\Model\Collection\GroupedTasksProgressCollection;
@@ -86,6 +84,15 @@ class GroupedTasksProgressSummary implements \JsonSerializable
         return new self($status, Summary::build($total, $pending, $dispatched, $completed, $success, $failed), $groupedTasks);
     }
 
+    public function jsonSerialize()
+    {
+        return [
+            'status' => $this->getStatus(),
+            'summary' => $this->getSummary(),
+            'tasks' => $this->getGroupedTasksCollection()
+        ];
+    }
+
     /**
      * @return Status
      */
@@ -108,14 +115,5 @@ class GroupedTasksProgressSummary implements \JsonSerializable
     public function getGroupedTasksCollection(): GroupedTasksProgressCollection
     {
         return $this->groupedTasksCollection;
-    }
-
-    public function jsonSerialize()
-    {
-        return [
-            'status' => $this->getStatus(),
-            'summary' => $this->getSummary(),
-            'tasks' => $this->getGroupedTasksCollection()
-        ];
     }
 }

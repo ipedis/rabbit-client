@@ -2,17 +2,16 @@
 
 namespace Ipedis\Rabbit\MessagePayload;
 
-
 /**
  * This class is responsible for standardizing the message body
  *
  */
 abstract class MessagePayloadAbstract implements MessagePayloadInterface
 {
-    const HEADER_UUID       = 'uuid';
-    const HEADER_TIMESTAMP  = 'sendAt';
-    const HEADER_TIMEZONE   = 'timezone';
-    const HEADER_CHANNEL    = 'channel';
+    public const HEADER_UUID = 'uuid';
+    public const HEADER_TIMESTAMP = 'sendAt';
+    public const HEADER_TIMEZONE = 'timezone';
+    public const HEADER_CHANNEL = 'channel';
 
     /**
      * data storage
@@ -56,28 +55,23 @@ abstract class MessagePayloadAbstract implements MessagePayloadInterface
 
     /**
      * @param string $key
-     * @return bool
+     * @param $value
+     * @return MessagePayloadAbstract
      */
-    public function hasData(string $key): bool
+    protected function addHeader(string $key, $value): self
     {
-        return isset($this->data[$key]);
+        $this->headers[$key] = $value;
+
+        return $this;
     }
 
     /**
      * @param string $key
      * @return bool
      */
-    public function hasHeader(string $key): bool
+    public function hasData(string $key): bool
     {
-        return isset($this->headers[$key]);
-    }
-
-    /**
-     * @return array
-     */
-    public function getData(): array
-    {
-        return $this->data;
+        return isset($this->data[$key]);
     }
 
     /**
@@ -93,45 +87,9 @@ abstract class MessagePayloadAbstract implements MessagePayloadInterface
     /**
      * @return array
      */
-    public function getHeaders(): array
+    public function getData(): array
     {
-        return $this->headers;
-    }
-
-    /**
-     * @param string $key
-     * @param null $default
-     * @return mixed|null
-     */
-    public function getHeader(string $key, $default = null)
-    {
-        return ($this->hasHeader($key)) ?
-            $this->headers[$key] :
-            $default
-        ;
-    }
-
-    /**
-     * @return string
-     */
-    public function getChannel(): string
-    {
-        return $this->channel;
-    }
-
-    public function getUuid(): string
-    {
-        return $this->getHeader(self::HEADER_UUID);
-    }
-
-    public function getTimestamp(): int
-    {
-        return $this->getHeader(self::HEADER_TIMESTAMP);
-    }
-
-    public function getTimezone() : array
-    {
-        return $this->getHeader(self::HEADER_TIMEZONE);
+        return $this->data;
     }
 
     /**
@@ -149,26 +107,58 @@ abstract class MessagePayloadAbstract implements MessagePayloadInterface
         ];
     }
 
+    public function getUuid(): string
+    {
+        return $this->getHeader(self::HEADER_UUID);
+    }
+
+    /**
+     * @param string $key
+     * @param null $default
+     * @return mixed|null
+     */
+    public function getHeader(string $key, $default = null)
+    {
+        return ($this->hasHeader($key)) ?
+            $this->headers[$key] :
+            $default;
+    }
+
+    /**
+     * @param string $key
+     * @return bool
+     */
+    public function hasHeader(string $key): bool
+    {
+        return isset($this->headers[$key]);
+    }
+
+    /**
+     * @return string
+     */
+    public function getChannel(): string
+    {
+        return $this->channel;
+    }
+
+    public function getTimestamp(): int
+    {
+        return $this->getHeader(self::HEADER_TIMESTAMP);
+    }
+
+    public function getTimezone(): array
+    {
+        return $this->getHeader(self::HEADER_TIMEZONE);
+    }
+
     public function jsonSerialize()
     {
         $this->setDefaultHeader();
 
         return [
             'header' => $this->getHeaders(),
-            'data'   => $this->getData()
+            'data' => $this->getData()
         ];
-    }
-
-    /**
-     * @param string $key
-     * @param $value
-     * @return MessagePayloadAbstract
-     */
-    protected function addHeader(string $key, $value) :self
-    {
-        $this->headers[$key] = $value;
-
-        return $this;
     }
 
     /**
@@ -192,5 +182,13 @@ abstract class MessagePayloadAbstract implements MessagePayloadInterface
             $this->headers[self::HEADER_TIMESTAMP] = microtime(true);
             $this->headers[self::HEADER_TIMEZONE] = (new \DateTime())->getTimezone();
         }
+    }
+
+    /**
+     * @return array
+     */
+    public function getHeaders(): array
+    {
+        return $this->headers;
     }
 }

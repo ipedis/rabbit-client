@@ -2,7 +2,6 @@
 
 namespace Ipedis\Rabbit\Event;
 
-
 use AMQPEnvelope;
 use AMQPQueue;
 use Closure;
@@ -14,7 +13,6 @@ use Ipedis\Rabbit\Exception\MessagePayload\MessagePayloadFormatException;
 use Ipedis\Rabbit\Lifecyle\Hook\OnAfterMessage;
 use Ipedis\Rabbit\Lifecyle\Hook\OnBeforeMessage;
 use Ipedis\Rabbit\MessagePayload\EventMessagePayload;
-
 
 trait EventListener
 {
@@ -55,6 +53,54 @@ trait EventListener
         $this->disconnect();
     }
 
+    abstract protected function getChannelFactory();
+
+    /**
+     * Declare Queue and bind with exchange
+     */
+    protected function declareQueueIfNecessary()
+    {
+        $this->queue = new AMQPQueue($this->channel);
+        $this->queue->setFlags(AMQP_EXCLUSIVE);
+        $this->queue->declareQueue();
+        $this->resolveRoutingKeys();
+    }
+
+    /**
+     * Bind listener to multiple events
+     *
+     * @throws \AMQPChannelException
+     * @throws \AMQPConnectionException
+     */
+    private function resolveRoutingKeys()
+    {
+        $routingKey = $this->getBindingKey();
+
+        // If is string, we cast it to array.
+        if (is_string($routingKey)) {
+            $routingKey = [$routingKey];
+        }
+
+        if (is_array($routingKey)) {
+            foreach ($routingKey as $key) {
+                if (is_string($key)) {
+                    $this->queue->bind($this->exchange->getName(), $this->getRoutingKeyWithPrefix($key));
+                }
+            }
+        }
+    }
+
+    abstract protected function getBindingKey();
+
+    /**
+     * Define callback to be executed
+     * when consuming message from queue
+     */
+    protected function queueConsume()
+    {
+        $this->queue->consume([$this, 'main']);
+    }
+
     public function __destruct()
     {
         $this->disconnect();
@@ -73,14 +119,18 @@ trait EventListener
             /**
              * We have before message hook to run
              */
-            if ( $this instanceOf OnBeforeMessage) $this->beforeMessageHandled();
+            if ($this instanceof OnBeforeMessage) {
+                $this->beforeMessageHandled();
+            }
 
             $this->consumeReceivedMessage($message);
 
             /**
              * We have after message hook to run
              */
-            if ( $this instanceOf OnAfterMessage) $this->afterMessageHandled();
+            if ($this instanceof OnAfterMessage) {
+                $this->afterMessageHandled();
+            }
         } catch (\Exception $exception) {
             /**
              * Handle exception from the hooks
@@ -134,110 +184,6 @@ trait EventListener
     }
 
     /**
-     * Handle the message by calling dedicated callback handler
-     * or the general callback handler
-     *
-     * @param EventMessagePayload $message
-     */
-    private function handleReceivedMessage(EventMessagePayload $message)
-    {
-        $wasCalled = false;
-        foreach ($this->getHandledMessages() as $channelName => $handledMessage) {
-            if (
-                !empty($handledMessage['method']) &&
-                $message->getChannel() === $channelName
-            ) {
-                $this->callHandler($handledMessage, $message);
-                $wasCalled = true;
-            }
-        }
-
-        // If nobody was call, fallback to makeMessageHandler
-        if(!$wasCalled) $this->callHandler(['method' => 'makeMessageHandler'], $message);
-    }
-
-    /**
-     * Handle exception by calling
-     * client exception callback
-     *
-     * @param $exception
-     * @param EventMessagePayload|null $messagePayload
-     */
-    private function handleException($exception, ?EventMessagePayload $messagePayload = null)
-    {
-        try {
-            $this->makeExceptionHandler()($exception, $messagePayload);
-        } catch (\Exception $exception) {
-            $this->logException($exception);
-        }
-    }
-
-    /**
-     * Helper to execute proper callback
-     *
-     * @param array $handler
-     * @param EventMessagePayload $message
-     */
-    private function callHandler(array $handler, EventMessagePayload $message)
-    {
-        $result = $this->{$handler['method']}($message);
-        if(is_callable($result)) {
-            $result($message);
-        }
-    }
-
-    /**
-     * Declare Queue and bind with exchange
-     */
-    protected function declareQueueIfNecessary()
-    {
-        $this->queue = new AMQPQueue($this->channel);
-        $this->queue->setFlags(AMQP_EXCLUSIVE);
-        $this->queue->declareQueue();
-        $this->resolveRoutingKeys();
-    }
-
-    /**
-     * Define callback to be executed
-     * when consuming message from queue
-     */
-    protected function queueConsume()
-    {
-        $this->queue->consume([$this, 'main']);
-    }
-
-    abstract protected function makeMessageHandler(): Closure;
-    abstract protected function makeExceptionHandler(): Closure;
-    abstract protected function getBindingKey();
-    abstract protected function getChannelFactory();
-
-    /**
-     * If you want to limit the call of callback for each message, you can filter by white list here.
-     * @param string $eventName
-     * @return bool
-     */
-    protected function isSubscribed(string $eventName): bool
-    {
-        return true;
-    }
-
-    /**
-     * By default there is no dedicated handler
-     */
-    protected function getHandledMessages(): iterable
-    {
-        return [];
-    }
-
-    /**
-     * Prototype method
-     * Child can overide this function to log exceptions
-     *
-     * @param Exception $exception
-     */
-    protected function logException(\Exception $exception){}
-
-    /**
      * Check if message is valid json
      *
      * @param $message
@@ -260,24 +206,89 @@ trait EventListener
     }
 
     /**
-     * Bind listener to multiple events
-     *
-     * @throws \AMQPChannelException
-     * @throws \AMQPConnectionException
+     * If you want to limit the call of callback for each message, you can filter by white list here.
+     * @param string $eventName
+     * @return bool
      */
-    private function resolveRoutingKeys()
+    protected function isSubscribed(string $eventName): bool
     {
-        $routingKey = $this->getBindingKey();
+        return true;
+    }
 
-        // If is string, we cast it to array.
-        if(is_string($routingKey)) $routingKey = [$routingKey];
-
-        if(is_array($routingKey)) {
-            foreach ($routingKey as $key) {
-                if(is_string($key)) {
-                    $this->queue->bind($this->exchange->getName(), $this->getRoutingKeyWithPrefix($key));
-                }
+    /**
+     * Handle the message by calling dedicated callback handler
+     * or the general callback handler
+     *
+     * @param EventMessagePayload $message
+     */
+    private function handleReceivedMessage(EventMessagePayload $message)
+    {
+        $wasCalled = false;
+        foreach ($this->getHandledMessages() as $channelName => $handledMessage) {
+            if (
+                !empty($handledMessage['method']) &&
+                $message->getChannel() === $channelName
+            ) {
+                $this->callHandler($handledMessage, $message);
+                $wasCalled = true;
             }
         }
+
+        // If nobody was call, fallback to makeMessageHandler
+        if (!$wasCalled) {
+            $this->callHandler(['method' => 'makeMessageHandler'], $message);
+        }
     }
+
+    /**
+     * By default there is no dedicated handler
+     */
+    protected function getHandledMessages(): iterable
+    {
+        return [];
+    }
+
+    /**
+     * Helper to execute proper callback
+     *
+     * @param array $handler
+     * @param EventMessagePayload $message
+     */
+    private function callHandler(array $handler, EventMessagePayload $message)
+    {
+        $result = $this->{$handler['method']}($message);
+        if (is_callable($result)) {
+            $result($message);
+        }
+    }
+
+    /**
+     * Handle exception by calling
+     * client exception callback
+     *
+     * @param $exception
+     * @param EventMessagePayload|null $messagePayload
+     */
+    private function handleException($exception, ?EventMessagePayload $messagePayload = null)
+    {
+        try {
+            $this->makeExceptionHandler()($exception, $messagePayload);
+        } catch (\Exception $exception) {
+            $this->logException($exception);
+        }
+    }
+
+    abstract protected function makeExceptionHandler(): Closure;
+
+    /**
+     * Prototype method
+     * Child can overide this function to log exceptions
+     *
+     * @param Exception $exception
+     */
+    protected function logException(\Exception $exception)
+    {
+    }
+
+    abstract protected function makeMessageHandler(): Closure;
 }

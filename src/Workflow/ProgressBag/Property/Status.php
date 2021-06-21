@@ -8,15 +8,14 @@
 
 namespace Ipedis\Rabbit\Workflow\ProgressBag\Property;
 
-
 use Ipedis\Rabbit\Exception\Progress\InvalidStatusException;
 
 class Status implements \JsonSerializable
 {
-    const STATUS_PENDING = 'pending';
-    const STATUS_RUNNING = 'running';
-    const STATUS_FAILED  = 'failed';
-    const STATUS_SUCCESS = 'success';
+    public const STATUS_PENDING = 'pending';
+    public const STATUS_RUNNING = 'running';
+    public const STATUS_FAILED = 'failed';
+    public const STATUS_SUCCESS = 'success';
 
     public const AVAILABLE_STATUS = [
         self::STATUS_PENDING, self::STATUS_RUNNING, self::STATUS_FAILED, self::STATUS_SUCCESS
@@ -37,6 +36,30 @@ class Status implements \JsonSerializable
         $this->assertStatus($status);
 
         $this->status = $status;
+    }
+
+    /**
+     * Validate the provided value for status.
+     *
+     * @param string $status
+     * @throws InvalidStatusException
+     */
+    private function assertStatus(string $status): void
+    {
+        if (!$this->isStatusValid($status)) {
+            throw new InvalidStatusException(sprintf('Status %s is not valid status value.', $status));
+        }
+    }
+
+    /**
+     * Checks if the given value is a valid status.
+     *
+     * @param string $status
+     * @return bool
+     */
+    private function isStatusValid(string $status): bool
+    {
+        return in_array($status, self::AVAILABLE_STATUS);
     }
 
     /**
@@ -118,17 +141,17 @@ class Status implements \JsonSerializable
     /**
      * @return string
      */
-    public function getStatus(): string
+    public function __toString(): string
     {
-        return $this->status;
+        return $this->getStatus();
     }
 
     /**
      * @return string
      */
-    public function __toString(): string
+    public function getStatus(): string
     {
-        return $this->getStatus();
+        return $this->status;
     }
 
     /**
@@ -139,29 +162,5 @@ class Status implements \JsonSerializable
         return [
             'status' => $this->getStatus()
         ];
-    }
-
-    /**
-     * Validate the provided value for status.
-     *
-     * @param string $status
-     * @throws InvalidStatusException
-     */
-    private function assertStatus(string $status): void
-    {
-        if (!$this->isStatusValid($status)) {
-            throw new InvalidStatusException(sprintf('Status %s is not valid status value.', $status));
-        }
-    }
-
-    /**
-     * Checks if the given value is a valid status.
-     *
-     * @param string $status
-     * @return bool
-     */
-    private function isStatusValid(string $status): bool
-    {
-        return in_array($status, self::AVAILABLE_STATUS);
     }
 }

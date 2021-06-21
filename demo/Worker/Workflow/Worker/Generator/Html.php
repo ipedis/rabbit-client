@@ -1,6 +1,5 @@
 <?php
 
-
 namespace Ipedis\Demo\Rabbit\Worker\Workflow\Worker\Generator;
 
 use AMQPEnvelope;

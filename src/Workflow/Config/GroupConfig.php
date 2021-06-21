@@ -1,25 +1,23 @@
 <?php
 
-
 namespace Ipedis\Rabbit\Workflow\Config;
-
 
 class GroupConfig
 {
     /**
      * @var bool
      */
-    private $retry;
+    private bool $retry;
 
     /**
      * @var int
      */
-    private $maxRetry;
+    private int $maxRetry;
 
     public function __construct(bool $hasToRetry = false, int $maxRetry = 3)
     {
-        $this->retry            = $hasToRetry;
-        $this->maxRetry         = $maxRetry;
+        $this->retry = $hasToRetry;
+        $this->maxRetry = $maxRetry;
     }
 
     public function hasToRetry(): bool

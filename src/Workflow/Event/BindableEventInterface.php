@@ -1,25 +1,23 @@
 <?php
 
-
 namespace Ipedis\Rabbit\Workflow\Event;
-
 
 interface BindableEventInterface
 {
-    const WORKFLOW_ON_START = 'workflow.started';
-    const WORKFLOW_ON_FINISH = 'workflow.finished';
-    const WORKFLOW_ON_FAILURE = 'workflow.failed';
-    const WORKFLOW_ON_SUCCESS = 'workflow.successed';
+    public const WORKFLOW_ON_START = 'workflow.started';
+    public const WORKFLOW_ON_FINISH = 'workflow.finished';
+    public const WORKFLOW_ON_FAILURE = 'workflow.failed';
+    public const WORKFLOW_ON_SUCCESS = 'workflow.successed';
 
-    const WORKFLOW_ON_GROUPS_FAILURE = 'workflow.groups.failed';
-    const WORKFLOW_ON_GROUPS_SUCCESS = 'workflow.groups.successed';
-    const WORKFLOW_ON_GROUPS_FINISH = 'workflow.groups.finished';
+    public const WORKFLOW_ON_GROUPS_FAILURE = 'workflow.groups.failed';
+    public const WORKFLOW_ON_GROUPS_SUCCESS = 'workflow.groups.successed';
+    public const WORKFLOW_ON_GROUPS_FINISH = 'workflow.groups.finished';
 
-    const WORKFLOW_ON_TASKS_FAILURE = 'workflow.tasks.failed';
-    const WORKFLOW_ON_TASKS_SUCCESS = 'workflow.tasks.successed';
-    const WORKFLOW_ON_TASKS_FINISH = 'workflow.tasks.finished';
+    public const WORKFLOW_ON_TASKS_FAILURE = 'workflow.tasks.failed';
+    public const WORKFLOW_ON_TASKS_SUCCESS = 'workflow.tasks.successed';
+    public const WORKFLOW_ON_TASKS_FINISH = 'workflow.tasks.finished';
 
-    const WORKFLOW_ALLOW_TYPES = [
+    public const WORKFLOW_ALLOW_TYPES = [
         self::WORKFLOW_ON_START,
         self::WORKFLOW_ON_FINISH,
         self::WORKFLOW_ON_FAILURE,
@@ -34,16 +32,16 @@ interface BindableEventInterface
         self::WORKFLOW_ON_TASKS_FINISH,
     ];
 
-    const GROUP_ON_START = 'group.started';
-    const GROUP_ON_FINISH = 'group.finished';
-    const GROUP_ON_FAILURE = 'group.failed';
-    const GROUP_ON_SUCCESS = 'group.successed';
+    public const GROUP_ON_START = 'group.started';
+    public const GROUP_ON_FINISH = 'group.finished';
+    public const GROUP_ON_FAILURE = 'group.failed';
+    public const GROUP_ON_SUCCESS = 'group.successed';
 
-    const GROUP_ON_TASKS_FAILURE = 'group.tasks.failed';
-    const GROUP_ON_TASKS_SUCCESS = 'group.tasks.successed';
-    const GROUP_ON_TASKS_FINISH = 'group.tasks.finished';
+    public const GROUP_ON_TASKS_FAILURE = 'group.tasks.failed';
+    public const GROUP_ON_TASKS_SUCCESS = 'group.tasks.successed';
+    public const GROUP_ON_TASKS_FINISH = 'group.tasks.finished';
 
-    const GROUP_ALLOW_TYPES = [
+    public const GROUP_ALLOW_TYPES = [
         self::GROUP_ON_START,
         self::GROUP_ON_FINISH,
         self::GROUP_ON_FAILURE,
@@ -54,14 +52,14 @@ interface BindableEventInterface
         self::GROUP_ON_TASKS_FINISH,
     ];
 
-    const TASK_ON_START  = 'task.started';
-    const TASK_ON_PROGRESS = 'task.progressed';
-    const TASK_ON_FAILURE = 'task.failed';
-    const TASK_ON_SUCCESS = 'task.successed';
-    const TASK_ON_FINISH = 'task.finished';
-    const TASK_ON_RETRY = 'task.retried';
+    public const TASK_ON_START = 'task.started';
+    public const TASK_ON_PROGRESS = 'task.progressed';
+    public const TASK_ON_FAILURE = 'task.failed';
+    public const TASK_ON_SUCCESS = 'task.successed';
+    public const TASK_ON_FINISH = 'task.finished';
+    public const TASK_ON_RETRY = 'task.retried';
 
-    const TASK_ALLOW_TYPES = [
+    public const TASK_ALLOW_TYPES = [
         self::TASK_ON_START,
         self::TASK_ON_PROGRESS,
         self::TASK_ON_FAILURE,

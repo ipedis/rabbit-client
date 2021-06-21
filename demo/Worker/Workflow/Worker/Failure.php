@@ -2,7 +2,6 @@
 
 namespace Ipedis\Demo\Rabbit\Worker\Workflow\Worker;
 
-
 use AMQPEnvelope;
 use Closure;
 use Exception;
@@ -13,7 +12,6 @@ use Ipedis\Rabbit\Lifecyle\Hook\OnBeforeMessage;
 use Ipedis\Rabbit\MessagePayload\OrderMessagePayload;
 use Ipedis\Rabbit\MessagePayload\ReplyMessagePayload;
 use Ipedis\Rabbit\Order\Worker as WorkerTrait;
-
 
 class Failure extends WorkerAbstract implements OnBeforeMessage, OnAfterMessage
 {

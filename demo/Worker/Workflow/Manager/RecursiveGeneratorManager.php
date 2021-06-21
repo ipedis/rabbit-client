@@ -14,7 +14,7 @@ use Ipedis\Rabbit\Workflow\Workflow;
 
 class RecursiveGeneratorManager extends ManagerAbstract
 {
-    const COUNT_PAGE = 3;
+    public const COUNT_PAGE = 3;
 
     public function main()
     {
@@ -57,10 +57,10 @@ class RecursiveGeneratorManager extends ManagerAbstract
      */
     private function craftFirstGroup(): Closure
     {
-        return function(Group $group) {
+        return function (Group $group) {
             $group->planifyOrder(
                 OrderMessagePayload::build(
-                'v1.admin.publication.generate-html',
+                    'v1.admin.publication.generate-html',
                     [
                         'publication' => ['sid' => 1024]
                     ]

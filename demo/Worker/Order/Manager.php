@@ -2,12 +2,12 @@
 
 namespace Ipedis\Demo\Rabbit\Worker\Order;
 
-
 use Ipedis\Demo\Rabbit\Utils\ConnectorAbstract;
 use Ipedis\Demo\Rabbit\Worker\Handler\ManagerHandler;
 use Ipedis\Rabbit\Channel\Factory\ChannelFactory;
 use Ipedis\Rabbit\Channel\OrderChannel;
 use Ipedis\Rabbit\Consumer\Handler\MessageHandlerInterface;
+use Ipedis\Rabbit\Exception\RabbitClientConnectException;
 use Ipedis\Rabbit\MessagePayload\OrderMessagePayload;
 use Ipedis\Rabbit\MessagePayload\ReplyMessagePayload;
 use Ipedis\Rabbit\MessagePayload\Validator\ValidatorInterface;
@@ -20,12 +20,12 @@ class Manager extends ConnectorAbstract
     /**
      * @var ChannelFactory $channelFactory
      */
-    private $channelFactory;
+    private ChannelFactory $channelFactory;
 
     /**
      * @var ValidatorInterface
      */
-    private $messagePayloadValidator;
+    private ValidatorInterface $messagePayloadValidator;
 
     /**
      * Manager constructor.
@@ -37,7 +37,7 @@ class Manager extends ConnectorAbstract
      * @param string $type
      * @param ChannelFactory $channelFactory
      * @param ValidatorInterface $messagePayloadValidator
-     * @throws \Ipedis\Rabbit\Exception\RabbitClientConnectException
+     * @throws RabbitClientConnectException
      */
     public function __construct(
         string $host,
@@ -88,7 +88,7 @@ class Manager extends ConnectorAbstract
             ]);
 
             $this->publish($orderMessagePayload, $messageHandler)
-                ->bind(MessageHandlerInterface::TYPE_PROGRESS, function(ReplyMessagePayload $messagePayload) {
+                ->bind(MessageHandlerInterface::TYPE_PROGRESS, function (ReplyMessagePayload $message) {
                     printf("[[ ----------- PROGRESSION PERCENTAGE %s%% COMPLETED ---------- ]]\n\n", (string) $this->getPercentageProgression());
                 })
             ;
@@ -98,7 +98,8 @@ class Manager extends ConnectorAbstract
 
         $this->run();
 
-        printf("All orders(%s in total) executed with %s orders as success and %s orders as error :). \n",
+        printf(
+            "All orders(%s in total) executed with %s orders as success and %s orders as error :). \n",
             count($this->getCompletedOrders()),
             count($this->getSuccessfulOrders()),
             count($this->getFailedOrders())

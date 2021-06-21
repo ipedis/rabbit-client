@@ -1,8 +1,6 @@
 <?php
 
-
 namespace Ipedis\Rabbit\DTO\Group;
-
 
 use Ipedis\Rabbit\DTO\Type\Group\GroupType;
 use Ipedis\Rabbit\DTO\Type\ProgressType;
@@ -41,7 +39,7 @@ class Groups implements \JsonSerializable
         string $workflowId,
         StatusType $status,
         SummaryType $summary,
-        ProgressType $progressType ,
+        ProgressType $progressType,
         array $details
     ) {
         $this->assertDetails($details);
@@ -53,46 +51,6 @@ class Groups implements \JsonSerializable
         $this->workflowId = $workflowId;
     }
 
-    /**
-     * @return ProgressType
-     */
-    public function getPercentage(): ProgressType
-    {
-        return $this->progress;
-    }
-
-    public function findAll()
-    {
-        return [
-            'status' => $this->status,
-            'groups' => $this->details
-        ];
-    }
-
-    /**
-     * @return StatusType
-     */
-    public function getStatus(): StatusType
-    {
-        return $this->status;
-    }
-
-    /**
-     * @return SummaryType
-     */
-    public function getSummary(): SummaryType
-    {
-        return $this->summary;
-    }
-
-    /**
-     * @return array
-     */
-    public function getDetails(): array
-    {
-        return $this->details;
-    }
-
     private function assertDetails(array $details)
     {
         foreach ($details as $detail) {
@@ -102,30 +60,19 @@ class Groups implements \JsonSerializable
         }
     }
 
-    /**
-     * Get all succesfully completed groups
-     * @return array
-     */
-    public function getSuccessfullGroups()
+    public function assertUuid(string $uuid)
     {
-        return array_values(
-            array_filter($this->details, function (GroupType $groupType) {
-                return $groupType->getStatus()->isSuccess();
-            })
-        );
+        if (!uuid_is_valid($uuid)) {
+            throw new InvalidWorkflowArgumentException("{$uuid} is not valid uuid");
+        }
     }
 
-    /**
-     * Get all completed groups but with some tasks failed
-     * @return array
-     */
-    public function getFailedGroups()
+    public function findAll()
     {
-        return array_values(
-            array_filter($this->details, function (GroupType $groupType) {
-                return $groupType->getStatus()->isFailed();
-            })
-        );
+        return [
+            'status' => $this->status,
+            'groups' => $this->details
+        ];
     }
 
     /**
@@ -165,10 +112,36 @@ class Groups implements \JsonSerializable
         );
     }
 
+    /**
+     * Get all succesfully completed groups
+     * @return array
+     */
+    public function getSuccessfullGroups()
+    {
+        return array_values(
+            array_filter($this->details, function (GroupType $groupType) {
+                return $groupType->getStatus()->isSuccess();
+            })
+        );
+    }
+
+    /**
+     * Get all completed groups but with some tasks failed
+     * @return array
+     */
+    public function getFailedGroups()
+    {
+        return array_values(
+            array_filter($this->details, function (GroupType $groupType) {
+                return $groupType->getStatus()->isFailed();
+            })
+        );
+    }
+
     public function find(string $groupId)
     {
         $group = array_values(
-            array_filter($this->details, function (GroupType $groupType) use ($groupId){
+            array_filter($this->details, function (GroupType $groupType) use ($groupId) {
                 return $groupType->getUuid() === $groupId;
             })
         );
@@ -190,10 +163,35 @@ class Groups implements \JsonSerializable
         ];
     }
 
-    public function assertUuid(string $uuid)
+    /**
+     * @return StatusType
+     */
+    public function getStatus(): StatusType
     {
-        if (!uuid_is_valid($uuid)) {
-            throw new InvalidWorkflowArgumentException("{$uuid} is not valid uuid");
-        }
+        return $this->status;
+    }
+
+    /**
+     * @return SummaryType
+     */
+    public function getSummary(): SummaryType
+    {
+        return $this->summary;
+    }
+
+    /**
+     * @return array
+     */
+    public function getDetails(): array
+    {
+        return $this->details;
+    }
+
+    /**
+     * @return ProgressType
+     */
+    public function getPercentage(): ProgressType
+    {
+        return $this->progress;
     }
 }

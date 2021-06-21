@@ -1,8 +1,6 @@
 <?php
 
-
 namespace Ipedis\Rabbit\Channel\Factory;
-
 
 use Ipedis\Rabbit\Channel\ChannelAbstract;
 use Ipedis\Rabbit\Channel\EventChannel;
@@ -42,10 +40,35 @@ class ChannelFactory
     {
         preg_match(EventChannel::PARTIAL_CHANNEL_PATTERN, $partialChannel, $matched);
 
-        if (empty($matched['aggregate'] || $matched['action'])) throw new ChannelNamingException('impossible to parse : '.$partialChannel);
+        if (empty($matched['aggregate'] || $matched['action'])) {
+            throw new ChannelNamingException('impossible to parse : ' . $partialChannel);
+        }
 
         /** @var EventChannel */
         return $this->getChannel(self::TYPE_EVENT, $matched['aggregate'], $matched['action'], $protocolVersion);
+    }
+
+    /**
+     * @param string $type
+     * @param string $aggregate
+     * @param string $action
+     * @param string|null $protocolVersion
+     * @return ChannelAbstract
+     */
+    private function getChannel(
+        string $type,
+        string $aggregate,
+        string $action,
+        string $protocolVersion = null
+    ): ChannelAbstract {
+        switch ($type) {
+            case self::TYPE_EVENT:
+                return EventChannel::build($protocolVersion ?? $this->protocolVersion, $this->serviceName, $aggregate, $action);
+                break;
+            case self::TYPE_ORDER:
+                return OrderChannel::build($protocolVersion ?? $this->protocolVersion, $this->serviceName, $aggregate, $action);
+                break;
+        }
     }
 
     /**
@@ -58,7 +81,9 @@ class ChannelFactory
     {
         preg_match(OrderChannel::PARTIAL_CHANNEL_PATTERN, $partialChannel, $matched);
 
-        if (empty($matched['aggregate'] || $matched['action'])) throw new ChannelNamingException('impossible to parse : '.$partialChannel);
+        if (empty($matched['aggregate'] || $matched['action'])) {
+            throw new ChannelNamingException('impossible to parse : ' . $partialChannel);
+        }
 
         /** @var OrderChannel */
         return $this->getChannel(self::TYPE_ORDER, $matched['aggregate'], $matched['action'], $protocolVersion);
@@ -87,31 +112,6 @@ class ChannelFactory
         return !empty($matches['protocol']) &&
             !empty($matches['service']) &&
             !empty($matches['aggregate']) &&
-            !empty($matches['action'])
-        ;
-    }
-
-    /**
-     * @param string $type
-     * @param string $aggregate
-     * @param string $action
-     * @param string|null $protocolVersion
-     * @return ChannelAbstract
-     */
-    private function getChannel(
-        string $type,
-        string $aggregate,
-        string $action,
-        string $protocolVersion = null
-    ): ChannelAbstract {
-        switch ($type)
-        {
-            case self::TYPE_EVENT:
-                return EventChannel::build($protocolVersion ?? $this->protocolVersion, $this->serviceName, $aggregate, $action);
-            break;
-            case self::TYPE_ORDER:
-                return OrderChannel::build($protocolVersion ?? $this->protocolVersion, $this->serviceName, $aggregate, $action);
-            break;
-        }
+            !empty($matches['action']);
     }
 }

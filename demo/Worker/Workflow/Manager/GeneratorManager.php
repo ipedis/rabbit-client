@@ -13,7 +13,7 @@ use Ipedis\Rabbit\Workflow\Workflow;
 
 class GeneratorManager extends ManagerAbstract
 {
-    const COUNT_PAGE = 10;
+    public const COUNT_PAGE = 10;
 
     public function main()
     {
@@ -43,7 +43,7 @@ class GeneratorManager extends ManagerAbstract
                 );
             }
             printf("\n\n");
-         });
+        });
 
         $generation->bind(BindableEventInterface::WORKFLOW_ON_FINISH, function () use ($generation) {
             print_r(sprintf("Summary : %s", json_encode($generation->getProgressBag()->getWorkflowProgress(), JSON_PRETTY_PRINT)));
@@ -64,7 +64,8 @@ class GeneratorManager extends ManagerAbstract
      * In concurrency we can have html and image
      * @return Closure
      */
-    private function craftFirstGroup(): Closure {
+    private function craftFirstGroup(): Closure
+    {
         return function (Group $group) {
             $group->planifyOrder(
                 OrderMessagePayload::build(
@@ -86,7 +87,8 @@ class GeneratorManager extends ManagerAbstract
         };
     }
 
-    private function craftSecondGroup(): Closure {
+    private function craftSecondGroup(): Closure
+    {
         return function (Group $group) {
             for ($page = 1; $page <= self::COUNT_PAGE; $page++) {
                 $group->planifyOrder(
@@ -102,9 +104,9 @@ class GeneratorManager extends ManagerAbstract
         };
     }
 
-    private function crafThirdGroup(): Closure {
+    private function crafThirdGroup(): Closure
+    {
         return function (Group $group) {
-
             foreach ([1, self::COUNT_PAGE] as $page) {
                 $group->planifyOrder(
                     OrderMessagePayload::build(

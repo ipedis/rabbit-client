@@ -1,4 +1,5 @@
 <?php
+
 namespace Ipedis\Rabbit\Utils\Helper;
 
 use DateTime;
@@ -10,9 +11,21 @@ trait DateTimeHelper
      */
     protected function getCurrentDateTimeWithMicroseconds(): DateTime
     {
-        $microseconds = sprintf('%.4f', microtime(TRUE));
+        $microseconds = sprintf('%.4f', microtime(true));
 
         return DateTime::createFromFormat('U.u', $microseconds);
+    }
+
+    /**
+     * @param DateTime $startTime
+     * @param DateTime $endTime
+     * @return float
+     */
+    protected function getDifferenceInMilliseconds(DateTime $startTime, DateTime $endTime): float
+    {
+        $microseconds = $this->getDifferenceWithMicroseconds($startTime, $endTime);
+
+        return $microseconds * 1000;
     }
 
     /**
@@ -30,17 +43,5 @@ trait DateTimeHelper
         }
 
         return number_format(abs($end - $start), 6);
-    }
-
-    /**
-     * @param DateTime $startTime
-     * @param DateTime $endTime
-     * @return float
-     */
-    protected function getDifferenceInMilliseconds(DateTime $startTime, DateTime $endTime): float
-    {
-        $microseconds = $this->getDifferenceWithMicroseconds($startTime, $endTime);
-
-        return $microseconds * 1000;
     }
 }

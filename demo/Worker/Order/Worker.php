@@ -2,8 +2,8 @@
 
 namespace Ipedis\Demo\Rabbit\Worker\Order;
 
-
 use AMQPEnvelope;
+use Closure;
 use Ipedis\Demo\Rabbit\Utils\WorkerAbstract;
 use Ipedis\Rabbit\Consumer\Handler\MessageHandlerInterface;
 use Ipedis\Rabbit\Lifecyle\Hook\OnAfterMessage;
@@ -12,17 +12,18 @@ use Ipedis\Rabbit\MessagePayload\OrderMessagePayload;
 use Ipedis\Rabbit\MessagePayload\ReplyMessagePayload;
 use Ipedis\Rabbit\Order\Worker as WorkerTrait;
 
-
 class Worker extends WorkerAbstract implements OnBeforeMessage, OnAfterMessage
 {
     use WorkerTrait;
+
+    public const ENABLE_LIFE_CYCLE_PRINTING = true;
 
     protected function getQueueName()
     {
         return 'v1.admin.publication.generate';
     }
 
-    protected function makeMessageHandler(): \Closure
+    protected function makeMessageHandler(): Closure
     {
         return function (AMQPEnvelope $message, OrderMessagePayload $messagePayload) {
             $params = $messagePayload->getData();
@@ -51,14 +52,17 @@ class Worker extends WorkerAbstract implements OnBeforeMessage, OnAfterMessage
              * If everything is ok, reply to manager.
              */
 
-            printf("Worker Name : %s (id : %s) as done task with id %s - Fail ? %s \n",
+            printf(
+                "Worker Name : %s (id : %s) as done task with id %s - Fail ? %s \n",
                 self::class,
                 $this->worker_id,
                 $messagePayload->getOrderId(),
                 ($params["hasToFail"]) ? 'yes' : 'no'
             );
 
-            if($params["hasToFail"]) throw new \Exception('oups something bad happen', 10);
+            if ($params["hasToFail"]) {
+                throw new \Exception('oups something bad happen', 10);
+            }
 
             return ["foo" => "bar"];
         };
@@ -67,12 +71,12 @@ class Worker extends WorkerAbstract implements OnBeforeMessage, OnAfterMessage
     /**
      * Handle errors during processing of message
      *
-     * @return \Closure
+     * @return Closure
      */
-    protected function makeExceptionHandler(): \Closure
+    protected function makeExceptionHandler(): Closure
     {
         return function (\Exception $exception, ?OrderMessagePayload $messagePayload) {
-            printf($exception->getMessage());
+            printf($exception->getMessage()."\n\n");
         };
     }
 
@@ -81,7 +85,9 @@ class Worker extends WorkerAbstract implements OnBeforeMessage, OnAfterMessage
      */
     public function beforeMessageHandled()
     {
-        printf("WORKER LIFECYCLE HOOK : BEFORE HANDLING MESSAGE..."."\n\n");
+        if (self::ENABLE_LIFE_CYCLE_PRINTING) {
+            printf("Worker lifecycle hook : before handling message..."."\n\n");
+        }
     }
 
     /**
@@ -89,6 +95,13 @@ class Worker extends WorkerAbstract implements OnBeforeMessage, OnAfterMessage
      */
     public function afterMessageHandled()
     {
-        printf("WORKER LIFECYCLE HOOK : AFTER HANDLING MESSAGE..."."\n\n");
+        if (self::ENABLE_LIFE_CYCLE_PRINTING) {
+            printf("Worker lifecycle hook : after handling message..."."\n\n");
+        }
+    }
+
+    public function getQueuePrefix(): string
+    {
+        return 'demo.order';
     }
 }

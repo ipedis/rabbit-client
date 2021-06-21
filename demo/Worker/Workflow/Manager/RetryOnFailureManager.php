@@ -2,7 +2,6 @@
 
 namespace Ipedis\Demo\Rabbit\Worker\Workflow\Manager;
 
-
 use Ipedis\Rabbit\Channel\OrderChannel;
 use Ipedis\Rabbit\MessagePayload\OrderMessagePayload;
 use Ipedis\Rabbit\Workflow\Config\WorkflowConfig;
@@ -18,7 +17,9 @@ class RetryOnFailureManager extends ManagerAbstract
         $workflow = new Workflow(
             function (Group $group) {
                 $group->planifyOrder(OrderMessagePayload::build(OrderChannel::fromString('v1.admin.publication.failure')), [
-                    BindableEventInterface::TASK_ON_RETRY => function(Task $task, string $eventName) { print_r(sprintf("---- TASK -> RETRY -> %d times \n", $task->getRetryCount())); },
+                    BindableEventInterface::TASK_ON_RETRY => function (Task $task, string $eventName) {
+                        print_r(sprintf("---- TASK -> RETRY -> %d times \n", $task->getRetryCount()));
+                    },
                 ]);
             },
             [],

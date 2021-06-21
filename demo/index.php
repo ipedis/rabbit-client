@@ -38,7 +38,7 @@ $configEvent = array_merge($configOrder, [
 $channelFactory = new ChannelFactory('v1', 'rabbitclient');
 $messagePayloadValidator = new MessagePayloadValidator();
 
-if ( !empty($argv[1]) ) {
+if (!empty($argv[1])) {
     switch ($argv[1]) {
         case 'worker':
             (new WorkerProcess(

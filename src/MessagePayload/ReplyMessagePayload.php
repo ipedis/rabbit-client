@@ -2,14 +2,14 @@
 
 namespace Ipedis\Rabbit\MessagePayload;
 
-
 use Ipedis\Rabbit\Consumer\Handler\MessageHandlerInterface;
 use Ipedis\Rabbit\Exception\MessagePayload\MessagePayloadFormatException;
 
 final class ReplyMessagePayload extends MessagePayloadAbstract
 {
-    const HEADER_CORRELATION_ID = 'correlation_id';
-    const HEADER_STATUS = 'status';
+    public const HEADER_CORRELATION_ID = 'correlation_id';
+    public const HEADER_STATUS = 'status';
+    public const HEADER_EXECTIME = 'executionTime';
 
     /**
      * @var string $orderId
@@ -27,8 +27,7 @@ final class ReplyMessagePayload extends MessagePayloadAbstract
         string $status,
         array $data = [],
         array $headers = []
-    )
-    {
+    ) {
         parent::__construct($channel, $data, $headers);
 
         $this->orderId = $taskId;
@@ -36,6 +35,10 @@ final class ReplyMessagePayload extends MessagePayloadAbstract
 
         $this->status = $status;
         $this->addHeader(self::HEADER_STATUS, $status);
+
+        if (!empty($headers[self::HEADER_EXECTIME])) {
+            $this->addHeader(self::HEADER_EXECTIME, $headers[self::HEADER_EXECTIME]);
+        }
     }
 
     /**
@@ -108,14 +111,6 @@ final class ReplyMessagePayload extends MessagePayloadAbstract
     /**
      * @return string
      */
-    public function getOrderId(): string
-    {
-        return $this->orderId;
-    }
-
-    /**
-     * @return string
-     */
     public function getStatus(): string
     {
         return $this->status;
@@ -132,5 +127,13 @@ final class ReplyMessagePayload extends MessagePayloadAbstract
         return [
             'correlation_id' => $this->getOrderId()
         ];
+    }
+
+    /**
+     * @return string
+     */
+    public function getOrderId(): string
+    {
+        return $this->orderId;
     }
 }

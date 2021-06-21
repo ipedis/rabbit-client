@@ -1,10 +1,10 @@
 <?php
+
 namespace Ipedis\Rabbit\Workflow\ProgressBag\Model;
 
 use Ipedis\Rabbit\Exception\Progress\InvalidProgressValueException;
 use Ipedis\Rabbit\Exception\Timer\InvalidSpentTimeException;
 use Ipedis\Rabbit\Exception\Timer\InvalidTimeException;
-use Ipedis\Rabbit\Workflow\ProgressBag\Model\Collection\GroupedTasksProgressCollection;
 use Ipedis\Rabbit\Workflow\ProgressBag\Model\Summary\GroupedTasksProgressSummary;
 use Ipedis\Rabbit\Workflow\ProgressBag\Model\Summary\GroupProgressSummary;
 use Ipedis\Rabbit\Workflow\ProgressBag\Property\Percentage;
@@ -109,6 +109,21 @@ class WorkflowProgress implements \JsonSerializable
     }
 
     /**
+     * @return array
+     */
+    public function jsonSerialize(): array
+    {
+        return [
+            'uuid' => $this->getUuid(),
+            'status' => $this->getStatus(),
+            'timer' => $this->getTimer(),
+            'percentage' => $this->getPercentage(),
+            'groups' => $this->getGroupProgressSummary(),
+            'tasks' => $this->getGroupedTasksSummary()
+        ];
+    }
+
+    /**
      * @return string
      */
     public function getUuid(): string
@@ -154,21 +169,6 @@ class WorkflowProgress implements \JsonSerializable
     public function getGroupedTasksSummary(): GroupedTasksProgressSummary
     {
         return $this->groupedTasksSummary;
-    }
-
-    /**
-     * @return array
-     */
-    public function jsonSerialize(): array
-    {
-        return [
-            'uuid' => $this->getUuid(),
-            'status' => $this->getStatus(),
-            'timer' => $this->getTimer(),
-            'percentage' => $this->getPercentage(),
-            'groups' => $this->getGroupProgressSummary(),
-            'tasks' => $this->getGroupedTasksSummary()
-        ];
     }
 
     /**
