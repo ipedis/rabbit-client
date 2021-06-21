@@ -27,8 +27,7 @@ final class ReplyMessagePayload extends MessagePayloadAbstract
         string $status,
         array $data = [],
         array $headers = []
-    )
-    {
+    ) {
         parent::__construct($channel, $data, $headers);
 
         $this->orderId = $taskId;
@@ -57,8 +56,7 @@ final class ReplyMessagePayload extends MessagePayloadAbstract
         string $status,
         array $data = [],
         array $headers = []
-    ): self
-    {
+    ): self {
         if (!in_array($status, MessageHandlerInterface::AVAILABLE_TYPES)) {
             throw new MessagePayloadFormatException(sprintf('Invalid Status {%s} for building reply message.', $status));
         }

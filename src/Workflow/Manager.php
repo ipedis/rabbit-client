@@ -488,8 +488,7 @@ trait Manager
         Workflow $workflow,
         Group $group,
         Task $task
-    )
-    {
+    ) {
         switch ($message->getStatus()) {
             case MessageHandlerInterface::TYPE_SUCCESS:
                 $task->call(BindableEventInterface::TASK_ON_SUCCESS, $task);

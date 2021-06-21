@@ -56,8 +56,7 @@ class WorkflowProgress implements \JsonSerializable
         Percentage $percentage,
         GroupProgressSummary $groupProgressSummary,
         GroupedTasksProgressSummary $groupedTasksSummary
-    )
-    {
+    ) {
         $this->uuid = $uuid;
         $this->status = $status;
         $this->timer = $timer;
@@ -82,8 +81,7 @@ class WorkflowProgress implements \JsonSerializable
         Percentage $percentage,
         GroupProgressSummary $groupProgressSummary,
         GroupedTasksProgressSummary $groupedTasksSummary
-    ): self
-    {
+    ): self {
         return new self($uuid, $status, $timer, $percentage, $groupProgressSummary, $groupedTasksSummary);
     }
 

@@ -25,8 +25,7 @@ class ChannelFactory
     public function __construct(
         string $protocolVersion,
         string $serviceName
-    )
-    {
+    ) {
         $this->protocolVersion = $protocolVersion;
         $this->serviceName = $serviceName;
     }
@@ -61,8 +60,7 @@ class ChannelFactory
         string $aggregate,
         string $action,
         string $protocolVersion = null
-    ): ChannelAbstract
-    {
+    ): ChannelAbstract {
         switch ($type) {
             case self::TYPE_EVENT:
                 return EventChannel::build($protocolVersion ?? $this->protocolVersion, $this->serviceName, $aggregate, $action);

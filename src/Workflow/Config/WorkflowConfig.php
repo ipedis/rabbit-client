@@ -38,8 +38,7 @@ class WorkflowConfig
         $maxRetry = 3,
         bool $ignoreParentHooks = false,
         array $channelsConfig = []
-    )
-    {
+    ) {
         $this->retry = $hasToRetry;
         $this->maxRetry = $maxRetry;
         $this->continueOnFailure = $continueOnFailure;

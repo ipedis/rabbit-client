@@ -41,8 +41,7 @@ class Groups implements \JsonSerializable
         SummaryType $summary,
         ProgressType $progressType,
         array $details
-    )
-    {
+    ) {
         $this->assertDetails($details);
         $this->assertUuid($workflowId);
         $this->status = $status;
