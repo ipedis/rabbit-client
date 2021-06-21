@@ -2,7 +2,6 @@
 
 namespace Ipedis\Rabbit\MessagePayload;
 
-
 use Ipedis\Rabbit\Exception\MessagePayload\MessagePayloadFormatException;
 
 class EventMessagePayload extends MessagePayloadAbstract

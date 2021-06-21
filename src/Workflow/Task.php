@@ -2,7 +2,6 @@
 
 namespace Ipedis\Rabbit\Workflow;
 
-
 use Ipedis\Rabbit\Channel\ChannelAbstract;
 use Ipedis\Rabbit\Consumer\Handler\MessageHandlerInterface;
 use Ipedis\Rabbit\DTO\Type\StatusType;
@@ -176,7 +175,7 @@ final class Task extends Bindable
      *
      * @return bool
      */
-    public function isSuccess():  bool
+    public function isSuccess(): bool
     {
         return $this->getStatus() === MessageHandlerInterface::TYPE_SUCCESS;
     }
@@ -186,7 +185,7 @@ final class Task extends Bindable
      *
      * @return bool
      */
-    public function isOnFailure():  bool
+    public function isOnFailure(): bool
     {
         return $this->getStatus() === MessageHandlerInterface::TYPE_ERROR;
     }
@@ -268,7 +267,7 @@ final class Task extends Bindable
      */
     public function getExecutionTime(): float
     {
-        if (is_null($this->timeStart) || is_null($this->timeFinished)){
+        if (is_null($this->timeStart) || is_null($this->timeFinished)) {
             return 0;
         }
 
@@ -360,5 +359,4 @@ final class Task extends Bindable
     {
         $this->timeFinished = $this->getCurrentDateTimeWithMicroseconds();
     }
-
 }

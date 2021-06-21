@@ -8,7 +8,6 @@
 
 namespace Ipedis\Rabbit\Exception\Progress;
 
-
 use Ipedis\Rabbit\Exception\RabbitClientException;
 use Throwable;
 

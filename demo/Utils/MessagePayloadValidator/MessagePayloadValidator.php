@@ -2,7 +2,6 @@
 
 namespace Ipedis\Demo\Rabbit\Utils\MessagePayloadValidator;
 
-
 use Ipedis\Rabbit\Exception\MessagePayload\MessagePayloadInvalidSchemaException;
 use Ipedis\Rabbit\MessagePayload\MessagePayloadInterface;
 use Ipedis\Rabbit\MessagePayload\Validator\ValidatorInterface;
@@ -12,7 +11,7 @@ use Opis\JsonSchema\Validator;
 
 class MessagePayloadValidator implements ValidatorInterface
 {
-    const CHANNEL_NAME_SEPARATOR = '.';
+    public const CHANNEL_NAME_SEPARATOR = '.';
 
     /**
      * @var Validator
@@ -55,7 +54,7 @@ class MessagePayloadValidator implements ValidatorInterface
      * @return string
      * @throws MessagePayloadInvalidSchemaException
      */
-    private function getSchemaPath(MessagePayloadInterface $messagePayload) : string
+    private function getSchemaPath(MessagePayloadInterface $messagePayload): string
     {
         $schemaPath = str_replace(self::CHANNEL_NAME_SEPARATOR, DIRECTORY_SEPARATOR, $messagePayload->getChannel());
         $schemaAbsolutePath = sprintf('%s/../../documents/schema/%s/schema.json', __DIR__, $schemaPath);

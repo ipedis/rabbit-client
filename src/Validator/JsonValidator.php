@@ -8,7 +8,6 @@
 
 namespace Ipedis\Rabbit\Validator;
 
-
 class JsonValidator
 {
     /**

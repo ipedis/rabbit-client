@@ -1,8 +1,6 @@
 <?php
 
-
 namespace Ipedis\Rabbit\DTO\Group;
-
 
 use Ipedis\Rabbit\DTO\Type\Group\GroupType;
 use Ipedis\Rabbit\DTO\Type\ProgressType;
@@ -41,7 +39,7 @@ class Groups implements \JsonSerializable
         string $workflowId,
         StatusType $status,
         SummaryType $summary,
-        ProgressType $progressType ,
+        ProgressType $progressType,
         array $details
     ) {
         $this->assertDetails($details);
@@ -168,7 +166,7 @@ class Groups implements \JsonSerializable
     public function find(string $groupId)
     {
         $group = array_values(
-            array_filter($this->details, function (GroupType $groupType) use ($groupId){
+            array_filter($this->details, function (GroupType $groupType) use ($groupId) {
                 return $groupType->getUuid() === $groupId;
             })
         );

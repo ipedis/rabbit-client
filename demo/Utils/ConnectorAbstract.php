@@ -4,7 +4,6 @@ namespace Ipedis\Demo\Rabbit\Utils;
 
 use Ipedis\Rabbit\Connector;
 
-
 abstract class ConnectorAbstract
 {
     use Connector;

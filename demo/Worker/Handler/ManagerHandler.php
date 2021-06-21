@@ -2,7 +2,6 @@
 
 namespace Ipedis\Demo\Rabbit\Worker\Handler;
 
-
 use Ipedis\Rabbit\Consumer\Handler\MessageHandler;
 use Ipedis\Rabbit\MessagePayload\ReplyMessagePayload;
 

@@ -2,15 +2,14 @@
 
 namespace Ipedis\Rabbit\MessagePayload;
 
-
 use Ipedis\Rabbit\Consumer\Handler\MessageHandlerInterface;
 use Ipedis\Rabbit\Exception\MessagePayload\MessagePayloadFormatException;
 
 final class ReplyMessagePayload extends MessagePayloadAbstract
 {
-    const HEADER_CORRELATION_ID = 'correlation_id';
-    const HEADER_STATUS = 'status';
-    const HEADER_EXECTIME = 'executionTime';
+    public const HEADER_CORRELATION_ID = 'correlation_id';
+    public const HEADER_STATUS = 'status';
+    public const HEADER_EXECTIME = 'executionTime';
 
     /**
      * @var string $orderId
@@ -28,8 +27,7 @@ final class ReplyMessagePayload extends MessagePayloadAbstract
         string $status,
         array $data = [],
         array $headers = []
-    )
-    {
+    ) {
         parent::__construct($channel, $data, $headers);
 
         $this->orderId = $taskId;

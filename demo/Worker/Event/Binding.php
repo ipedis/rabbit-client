@@ -2,7 +2,6 @@
 
 namespace Ipedis\Demo\Rabbit\Worker\Event;
 
-
 use Closure;
 use Exception;
 use Ipedis\Demo\Rabbit\Utils\WorkerAbstract;
@@ -15,7 +14,7 @@ class Binding extends WorkerAbstract implements OnBeforeMessage, OnAfterMessage
 {
     use EventListener;
 
-    const ENABLE_LIFE_CYCLE_PRINTING = true;
+    public const ENABLE_LIFE_CYCLE_PRINTING = true;
 
     /**
      * Process messages coming from queue
@@ -34,7 +33,7 @@ class Binding extends WorkerAbstract implements OnBeforeMessage, OnAfterMessage
         printf("%s - %s \n\n", 'onExportedPublication specific handler', $messagePayload->getChannel());
     }
 
-    protected function onUpdatedPublication() : Closure
+    protected function onUpdatedPublication(): Closure
     {
         return function (EventMessagePayload $messagePayload) {
             printf("%s - %s \n\n", 'onUpdatedPublication specific handler with Closure', $messagePayload->getChannel());
@@ -91,7 +90,9 @@ class Binding extends WorkerAbstract implements OnBeforeMessage, OnAfterMessage
      */
     public function beforeMessageHandled()
     {
-        if (self::ENABLE_LIFE_CYCLE_PRINTING) printf("Worker lifecycle hook : before handling message..."."\n\n");
+        if (self::ENABLE_LIFE_CYCLE_PRINTING) {
+            printf("Worker lifecycle hook : before handling message..."."\n\n");
+        }
     }
 
     /**
@@ -99,7 +100,9 @@ class Binding extends WorkerAbstract implements OnBeforeMessage, OnAfterMessage
      */
     public function afterMessageHandled()
     {
-        if (self::ENABLE_LIFE_CYCLE_PRINTING) printf("Worker lifecycle hook : after handling message..."."\n\n");
+        if (self::ENABLE_LIFE_CYCLE_PRINTING) {
+            printf("Worker lifecycle hook : after handling message..."."\n\n");
+        }
     }
 
     public function getQueuePrefix(): string

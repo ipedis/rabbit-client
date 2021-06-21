@@ -1,8 +1,6 @@
 <?php
 
-
 namespace Ipedis\Rabbit\Channel\Factory;
-
 
 use Ipedis\Rabbit\Channel\ChannelAbstract;
 use Ipedis\Rabbit\Channel\EventChannel;
@@ -42,7 +40,9 @@ class ChannelFactory
     {
         preg_match(EventChannel::PARTIAL_CHANNEL_PATTERN, $partialChannel, $matched);
 
-        if (empty($matched['aggregate'] || $matched['action'])) throw new ChannelNamingException('impossible to parse : '.$partialChannel);
+        if (empty($matched['aggregate'] || $matched['action'])) {
+            throw new ChannelNamingException('impossible to parse : '.$partialChannel);
+        }
 
         /** @var EventChannel */
         return $this->getChannel(self::TYPE_EVENT, $matched['aggregate'], $matched['action'], $protocolVersion);
@@ -58,7 +58,9 @@ class ChannelFactory
     {
         preg_match(OrderChannel::PARTIAL_CHANNEL_PATTERN, $partialChannel, $matched);
 
-        if (empty($matched['aggregate'] || $matched['action'])) throw new ChannelNamingException('impossible to parse : '.$partialChannel);
+        if (empty($matched['aggregate'] || $matched['action'])) {
+            throw new ChannelNamingException('impossible to parse : '.$partialChannel);
+        }
 
         /** @var OrderChannel */
         return $this->getChannel(self::TYPE_ORDER, $matched['aggregate'], $matched['action'], $protocolVersion);
@@ -104,8 +106,7 @@ class ChannelFactory
         string $action,
         string $protocolVersion = null
     ): ChannelAbstract {
-        switch ($type)
-        {
+        switch ($type) {
             case self::TYPE_EVENT:
                 return EventChannel::build($protocolVersion ?? $this->protocolVersion, $this->serviceName, $aggregate, $action);
             break;

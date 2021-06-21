@@ -8,14 +8,15 @@
 
 namespace Ipedis\Rabbit\Validator;
 
-use Opis\JsonSchema\{
-    Validator, ValidationResult, ValidationError, Schema
-};
+use Opis\JsonSchema\Validator;
+use Opis\JsonSchema\ValidationResult;
+use Opis\JsonSchema\ValidationError;
+use Opis\JsonSchema\Schema;
 
 class PayloadValidator
 {
     /**
-     * @var JsonValidator 
+     * @var JsonValidator
      */
     private $jsonValidator;
 
@@ -33,7 +34,7 @@ class PayloadValidator
     {
         $this->jsonValidator = new JsonValidator();
     }
-    
+
     public function validate(string $payload, string $schema)
     {
         // no need to proceed if json in invalid

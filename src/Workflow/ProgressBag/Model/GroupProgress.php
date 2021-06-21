@@ -1,4 +1,5 @@
 <?php
+
 namespace Ipedis\Rabbit\Workflow\ProgressBag\Model;
 
 use Ipedis\Rabbit\Exception\InvalidUuidException;
@@ -56,7 +57,7 @@ class GroupProgress implements \JsonSerializable
      * @return GroupProgress
      * @throws InvalidUuidException
      */
-    public static function build(string $uuid, Status $status, Timer $timer, Percentage $percentage, TaskProgressCollection $tasks): self 
+    public static function build(string $uuid, Status $status, Timer $timer, Percentage $percentage, TaskProgressCollection $tasks): self
     {
         return new self($uuid, $status, $timer, $percentage, $tasks);
     }

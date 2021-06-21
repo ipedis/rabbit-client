@@ -1,4 +1,5 @@
 <?php
+
 namespace Ipedis\Rabbit\Workflow\ProgressBag\Model\Collection;
 
 use Ipedis\Rabbit\Workflow\ProgressBag\Contract\CollectionInterface;

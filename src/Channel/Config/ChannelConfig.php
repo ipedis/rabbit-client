@@ -2,7 +2,6 @@
 
 namespace Ipedis\Rabbit\Channel\Config;
 
-
 use Ipedis\Rabbit\Channel\ChannelAbstract;
 
 final class ChannelConfig

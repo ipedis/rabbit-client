@@ -8,15 +8,14 @@
 
 namespace Ipedis\Rabbit\Workflow\ProgressBag\Property;
 
-
 use Ipedis\Rabbit\Exception\Progress\InvalidStatusException;
 
 class Status implements \JsonSerializable
 {
-    const STATUS_PENDING = 'pending';
-    const STATUS_RUNNING = 'running';
-    const STATUS_FAILED  = 'failed';
-    const STATUS_SUCCESS = 'success';
+    public const STATUS_PENDING = 'pending';
+    public const STATUS_RUNNING = 'running';
+    public const STATUS_FAILED  = 'failed';
+    public const STATUS_SUCCESS = 'success';
 
     public const AVAILABLE_STATUS = [
         self::STATUS_PENDING, self::STATUS_RUNNING, self::STATUS_FAILED, self::STATUS_SUCCESS

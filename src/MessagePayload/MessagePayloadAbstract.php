@@ -2,17 +2,16 @@
 
 namespace Ipedis\Rabbit\MessagePayload;
 
-
 /**
  * This class is responsible for standardizing the message body
  *
  */
 abstract class MessagePayloadAbstract implements MessagePayloadInterface
 {
-    const HEADER_UUID       = 'uuid';
-    const HEADER_TIMESTAMP  = 'sendAt';
-    const HEADER_TIMEZONE   = 'timezone';
-    const HEADER_CHANNEL    = 'channel';
+    public const HEADER_UUID       = 'uuid';
+    public const HEADER_TIMESTAMP  = 'sendAt';
+    public const HEADER_TIMEZONE   = 'timezone';
+    public const HEADER_CHANNEL    = 'channel';
 
     /**
      * data storage
@@ -129,7 +128,7 @@ abstract class MessagePayloadAbstract implements MessagePayloadInterface
         return $this->getHeader(self::HEADER_TIMESTAMP);
     }
 
-    public function getTimezone() : array
+    public function getTimezone(): array
     {
         return $this->getHeader(self::HEADER_TIMEZONE);
     }
@@ -164,7 +163,7 @@ abstract class MessagePayloadAbstract implements MessagePayloadInterface
      * @param $value
      * @return MessagePayloadAbstract
      */
-    protected function addHeader(string $key, $value) :self
+    protected function addHeader(string $key, $value): self
     {
         $this->headers[$key] = $value;
 

@@ -2,7 +2,6 @@
 
 namespace Ipedis\Demo\Rabbit\Utils;
 
-
 use Ipedis\Rabbit\Channel\Factory\ChannelFactory;
 
 abstract class WorkerAbstract extends ConnectorAbstract

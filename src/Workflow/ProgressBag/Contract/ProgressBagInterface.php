@@ -2,7 +2,6 @@
 
 namespace Ipedis\Rabbit\Workflow\ProgressBag\Contract;
 
-
 use Ipedis\Rabbit\Workflow\ProgressBag\Property\Percentage;
 use Ipedis\Rabbit\Workflow\ProgressBag\Property\Status;
 

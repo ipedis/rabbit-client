@@ -2,7 +2,6 @@
 
 namespace Ipedis\Demo\Rabbit\Worker\Workflow\Manager;
 
-
 use Ipedis\Demo\Rabbit\Utils\ConnectorAbstract;
 use Ipedis\Rabbit\Channel\Factory\ChannelFactory;
 use Ipedis\Rabbit\MessagePayload\Validator\ValidatorInterface;

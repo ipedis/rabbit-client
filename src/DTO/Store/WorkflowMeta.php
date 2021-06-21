@@ -1,8 +1,6 @@
 <?php
 
-
 namespace Ipedis\Rabbit\DTO\Store;
-
 
 use Ipedis\Rabbit\Workflow\Workflow;
 

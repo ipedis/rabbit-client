@@ -2,7 +2,6 @@
 
 namespace Ipedis\Rabbit\MessagePayload\Validator;
 
-
 use Ipedis\Rabbit\Exception\MessagePayload\MessagePayloadInvalidSchemaException;
 use Ipedis\Rabbit\MessagePayload\MessagePayloadInterface;
 

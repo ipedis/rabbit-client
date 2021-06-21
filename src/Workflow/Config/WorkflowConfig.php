@@ -1,8 +1,6 @@
 <?php
 
-
 namespace Ipedis\Rabbit\Workflow\Config;
-
 
 use Ipedis\Rabbit\Channel\Config\ChannelConfig;
 use Ipedis\Rabbit\Exception\Channel\InvalidChannelConfigException;

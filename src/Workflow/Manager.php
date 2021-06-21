@@ -2,7 +2,6 @@
 
 namespace Ipedis\Rabbit\Workflow;
 
-
 use AMQPChannel;
 use AMQPChannelException;
 use AMQPConnectionException;
@@ -112,7 +111,9 @@ trait Manager
                 /**
                  * if workflow is configure to stop execution on first failure, Don't run next group.
                  */
-                if(!$workflow->getConfig()->hasToContinueOnFailure()) break;
+                if (!$workflow->getConfig()->hasToContinueOnFailure()) {
+                    break;
+                }
             }
         }
 
@@ -335,9 +336,8 @@ trait Manager
         Group $group,
         Task $task
     ) {
-        switch ($message->getStatus())
-        {
-            case MessageHandlerInterface::TYPE_SUCCESS :
+        switch ($message->getStatus()) {
+            case MessageHandlerInterface::TYPE_SUCCESS:
                 $task->call(BindableEventInterface::TASK_ON_SUCCESS, $task);
                 $task->call(BindableEventInterface::TASK_ON_FINISH, $task);
 
@@ -347,7 +347,7 @@ trait Manager
                 $this->callWorkflowHookRecursively($workflow, BindableEventInterface::WORKFLOW_ON_TASKS_SUCCESS, $task);
                 $this->callWorkflowHookRecursively($workflow, BindableEventInterface::WORKFLOW_ON_TASKS_FINISH, $task);
                 break;
-            case MessageHandlerInterface::TYPE_ERROR :
+            case MessageHandlerInterface::TYPE_ERROR:
                 $task->call(BindableEventInterface::TASK_ON_FAILURE, $task);
                 $task->call(BindableEventInterface::TASK_ON_FINISH, $task);
 
@@ -357,7 +357,7 @@ trait Manager
                 $this->callWorkflowHookRecursively($workflow, BindableEventInterface::WORKFLOW_ON_TASKS_FAILURE, $task);
                 $this->callWorkflowHookRecursively($workflow, BindableEventInterface::WORKFLOW_ON_TASKS_FINISH, $task);
                 break;
-            case MessageHandlerInterface::TYPE_PROGRESS :
+            case MessageHandlerInterface::TYPE_PROGRESS:
                 $task->call(BindableEventInterface::TASK_ON_PROGRESS, $task);
                 break;
         }

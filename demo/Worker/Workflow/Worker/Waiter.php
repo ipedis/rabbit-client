@@ -2,7 +2,6 @@
 
 namespace Ipedis\Demo\Rabbit\Worker\Workflow\Worker;
 
-
 use AMQPEnvelope;
 use Closure;
 use Exception;
@@ -32,7 +31,9 @@ class Waiter extends WorkerAbstract implements OnBeforeMessage, OnAfterMessage
                 )
             );
             sleep(rand(0, 1));
-            if(!empty($params['failure']) && $params['failure'] === true) throw new Exception('oups');
+            if (!empty($params['failure']) && $params['failure'] === true) {
+                throw new Exception('oups');
+            }
             return ["step" => "step1 finished"];
         };
     }

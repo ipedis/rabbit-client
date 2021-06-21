@@ -1,4 +1,5 @@
 <?php
+
 namespace Ipedis\Rabbit\Workflow\ProgressBag\Model;
 
 use Ipedis\Rabbit\Exception\InvalidUuidException;

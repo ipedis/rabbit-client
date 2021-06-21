@@ -16,7 +16,8 @@
         "opis/json-schema": "^1.0",
         "ext-amqp": "^1.9",
         "guzzlehttp/guzzle": "~6.0",
-        "ipedis/http-signature": "^1.0.0"
+        "ipedis/http-signature": "^1.0.0",
+        "friendsofphp/php-cs-fixer": "^3.0"
     },
     "autoload": {
         "psr-4": {
@@ -29,5 +30,20 @@
             "type": "vcs",
             "url": "bitbucket:ipedis/http-signature.git"
         }
-    ]
+    ],
+    "extra": {
+        "hooks": {
+            "pre-commit": [
+                "echo committing as $(git config user.name)",
+                "php-cs-fixer fix ."
+            ],
+            "commit-msg": "grep -q '[A-Z]+-[0-9]+.*' $1",
+            "pre-push": [
+                "php-cs-fixer fix --dry-run ."
+            ]
+        }
+    },
+    "require-dev": {
+        "brainmaestro/composer-git-hooks": "^2.8"
+    }
 }

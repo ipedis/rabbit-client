@@ -2,7 +2,6 @@
 
 namespace Ipedis\Rabbit\Event;
 
-
 use AMQPEnvelope;
 use AMQPQueue;
 use Closure;
@@ -14,7 +13,6 @@ use Ipedis\Rabbit\Exception\MessagePayload\MessagePayloadFormatException;
 use Ipedis\Rabbit\Lifecyle\Hook\OnAfterMessage;
 use Ipedis\Rabbit\Lifecyle\Hook\OnBeforeMessage;
 use Ipedis\Rabbit\MessagePayload\EventMessagePayload;
-
 
 trait EventListener
 {
@@ -73,14 +71,18 @@ trait EventListener
             /**
              * We have before message hook to run
              */
-            if ( $this instanceOf OnBeforeMessage) $this->beforeMessageHandled();
+            if ($this instanceof OnBeforeMessage) {
+                $this->beforeMessageHandled();
+            }
 
             $this->consumeReceivedMessage($message);
 
             /**
              * We have after message hook to run
              */
-            if ( $this instanceOf OnAfterMessage) $this->afterMessageHandled();
+            if ($this instanceof OnAfterMessage) {
+                $this->afterMessageHandled();
+            }
         } catch (\Exception $exception) {
             /**
              * Handle exception from the hooks
@@ -153,7 +155,9 @@ trait EventListener
         }
 
         // If nobody was call, fallback to makeMessageHandler
-        if(!$wasCalled) $this->callHandler(['method' => 'makeMessageHandler'], $message);
+        if (!$wasCalled) {
+            $this->callHandler(['method' => 'makeMessageHandler'], $message);
+        }
     }
 
     /**
@@ -181,7 +185,7 @@ trait EventListener
     private function callHandler(array $handler, EventMessagePayload $message)
     {
         $result = $this->{$handler['method']}($message);
-        if(is_callable($result)) {
+        if (is_callable($result)) {
             $result($message);
         }
     }
@@ -235,7 +239,9 @@ trait EventListener
      *
      * @param Exception $exception
      */
-    protected function logException(\Exception $exception){}
+    protected function logException(\Exception $exception)
+    {
+    }
 
     /**
      * Check if message is valid json
@@ -270,11 +276,13 @@ trait EventListener
         $routingKey = $this->getBindingKey();
 
         // If is string, we cast it to array.
-        if(is_string($routingKey)) $routingKey = [$routingKey];
+        if (is_string($routingKey)) {
+            $routingKey = [$routingKey];
+        }
 
-        if(is_array($routingKey)) {
+        if (is_array($routingKey)) {
             foreach ($routingKey as $key) {
-                if(is_string($key)) {
+                if (is_string($key)) {
                     $this->queue->bind($this->exchange->getName(), $this->getRoutingKeyWithPrefix($key));
                 }
             }

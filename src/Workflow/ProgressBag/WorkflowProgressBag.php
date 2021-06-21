@@ -62,7 +62,7 @@ class WorkflowProgressBag implements ProgressBagInterface
     public function getPendingGroups(): array
     {
         return array_filter($this->groups, function (Group $group) {
-           return $group->getProgressBag()->isPending();
+            return $group->getProgressBag()->isPending();
         });
     }
 
@@ -408,7 +408,7 @@ class WorkflowProgressBag implements ProgressBagInterface
 
             if (is_null($startTime)) {
                 $startTime = $group->getProgressBag()->getStartedAt();
-            } else if($group->getProgressBag()->getStartedAt() < $startTime) {
+            } elseif ($group->getProgressBag()->getStartedAt() < $startTime) {
                 $startTime = $group->getProgressBag()->getStartedAt();
             }
         }
@@ -446,7 +446,7 @@ class WorkflowProgressBag implements ProgressBagInterface
 
             if (is_null($finishTime)) {
                 $finishTime = $group->getProgressBag()->getFinishedAt();
-            } else if($group->getProgressBag()->getFinishedAt() > $finishTime) {
+            } elseif ($group->getProgressBag()->getFinishedAt() > $finishTime) {
                 $finishTime = $group->getProgressBag()->getFinishedAt();
             }
         }

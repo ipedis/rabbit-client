@@ -78,7 +78,7 @@ class GroupProgressBag implements ProgressBagInterface
      */
     public function getPlanifiedTasks(): array
     {
-        return array_filter($this->getTasksInGroup(), function(Task $task) {
+        return array_filter($this->getTasksInGroup(), function (Task $task) {
             return $task->isPlanified();
         });
     }
@@ -90,7 +90,7 @@ class GroupProgressBag implements ProgressBagInterface
      */
     public function getDispatchedTasks(?string $taskType = null): array
     {
-        return array_filter($this->getTasksInGroup(), function(Task $task) use ($taskType) {
+        return array_filter($this->getTasksInGroup(), function (Task $task) use ($taskType) {
             if (!is_null($taskType)) {
                 return $task->isDispatched() && $task->getType() === $taskType;
             }
@@ -106,7 +106,7 @@ class GroupProgressBag implements ProgressBagInterface
      */
     public function getInProgressTasks(): array
     {
-        return array_filter($this->getTasksInGroup(), function(Task $task) {
+        return array_filter($this->getTasksInGroup(), function (Task $task) {
             return $task->isInProgress();
         });
     }
@@ -118,7 +118,7 @@ class GroupProgressBag implements ProgressBagInterface
      */
     public function getSuccessfulTasks(): array
     {
-        return array_filter($this->getTasksInGroup(), function(Task $task) {
+        return array_filter($this->getTasksInGroup(), function (Task $task) {
             return $task->isSuccess();
         });
     }
@@ -142,7 +142,7 @@ class GroupProgressBag implements ProgressBagInterface
      */
     public function getCompletedTasks(): array
     {
-        return array_filter($this->getTasksInGroup(), function(Task $task) {
+        return array_filter($this->getTasksInGroup(), function (Task $task) {
             return $task->isCompleted();
         });
     }
@@ -281,7 +281,7 @@ class GroupProgressBag implements ProgressBagInterface
             }
 
             return Status::buildSuccess();
-        }  elseif($this->isPending()) {
+        } elseif ($this->isPending()) {
             return Status::buildPending();
         } elseif ($this->isRunning()) {
             return Status::buildRunning();
@@ -344,7 +344,7 @@ class GroupProgressBag implements ProgressBagInterface
 
             if (is_null($startTime)) {
                 $startTime = $task->getStartTime();
-            } else if($task->getStartTime() < $startTime) {
+            } elseif ($task->getStartTime() < $startTime) {
                 $startTime = $task->getStartTime();
             }
         }
@@ -382,7 +382,7 @@ class GroupProgressBag implements ProgressBagInterface
 
             if (is_null($finishTime)) {
                 $finishTime = $task->getFinishedTime();
-            } else if($task->getFinishedTime() > $finishTime) {
+            } elseif ($task->getFinishedTime() > $finishTime) {
                 $finishTime = $task->getFinishedTime();
             }
         }

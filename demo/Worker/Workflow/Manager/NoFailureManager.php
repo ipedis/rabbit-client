@@ -2,7 +2,6 @@
 
 namespace Ipedis\Demo\Rabbit\Worker\Workflow\Manager;
 
-
 use Closure;
 use Ipedis\Rabbit\Channel\OrderChannel;
 use Ipedis\Rabbit\MessagePayload\OrderMessagePayload;
@@ -14,7 +13,7 @@ use Ipedis\Rabbit\Workflow\Group;
 
 class NoFailureManager extends ManagerAbstract
 {
-    const ACTIVATE_FULL_LOG = true;
+    public const ACTIVATE_FULL_LOG = true;
 
     /**
      * @throws \Ipedis\Rabbit\Exception\Group\InvalidGroupArgumentException
@@ -110,7 +109,7 @@ class NoFailureManager extends ManagerAbstract
             })
         ;
 
-        if(self::ACTIVATE_FULL_LOG) {
+        if (self::ACTIVATE_FULL_LOG) {
             $workflow
                 /**
                  * On each groups failure or success. you will receive as parameter the actual group and event name.
@@ -136,14 +135,22 @@ class NoFailureManager extends ManagerAbstract
             /**
              * once, on group layer, you will receive as parameter the actual group and event name.
              */
-            BindableEventInterface::GROUP_ON_FAILURE => function(Group $group, string $eventName) use ($id) {$this->print("-- GROUP $id FAILURE \n");},
-            BindableEventInterface::GROUP_ON_SUCCESS => function(Group $group, string $eventName) use ($id) {$this->print("-- GROUP $id SUCCESS \n");},
+            BindableEventInterface::GROUP_ON_FAILURE => function (Group $group, string $eventName) use ($id) {
+                $this->print("-- GROUP $id FAILURE \n");
+            },
+            BindableEventInterface::GROUP_ON_SUCCESS => function (Group $group, string $eventName) use ($id) {
+                $this->print("-- GROUP $id SUCCESS \n");
+            },
         ], self::ACTIVATE_FULL_LOG ? [
             /**
              * On each tasks failure or success, you will receive as parameter the actual task and the eventName.
              */
-            BindableEventInterface::GROUP_ON_TASKS_SUCCESS => function(Task $task, string $eventName) use ($id) {$this->print("-- GROUP TASKS $id SUCCESS \n");},
-            BindableEventInterface::GROUP_ON_TASKS_FAILURE => function(Task $task, string $eventName) use ($id) {$this->print("-- GROUP TASKS $id FAILURE \n");},
+            BindableEventInterface::GROUP_ON_TASKS_SUCCESS => function (Task $task, string $eventName) use ($id) {
+                $this->print("-- GROUP TASKS $id SUCCESS \n");
+            },
+            BindableEventInterface::GROUP_ON_TASKS_FAILURE => function (Task $task, string $eventName) use ($id) {
+                $this->print("-- GROUP TASKS $id FAILURE \n");
+            },
         ] : []);
     }
 
@@ -157,8 +164,12 @@ class NoFailureManager extends ManagerAbstract
          * On task layer, you will receive as parameter the actual task and the eventName.
          */
         return self::ACTIVATE_FULL_LOG ? [
-            BindableEventInterface::TASK_ON_FAILURE => function(Task $task, string $eventName) use ($id) { $this->print("---- TASK $id FAILURE \n"); },
-            BindableEventInterface::TASK_ON_SUCCESS => function(Task $task, string $eventName) use ($id) { $this->print("---- TASK $id SUCCESS \n"); },
+            BindableEventInterface::TASK_ON_FAILURE => function (Task $task, string $eventName) use ($id) {
+                $this->print("---- TASK $id FAILURE \n");
+            },
+            BindableEventInterface::TASK_ON_SUCCESS => function (Task $task, string $eventName) use ($id) {
+                $this->print("---- TASK $id SUCCESS \n");
+            },
         ] : [];
     }
 

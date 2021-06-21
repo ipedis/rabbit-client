@@ -103,5 +103,4 @@ class GroupedTasksProgress implements \JsonSerializable
             $validator->validate($taskUuid);
         }
     }
-
 }

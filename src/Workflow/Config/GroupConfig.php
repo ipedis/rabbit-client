@@ -1,8 +1,6 @@
 <?php
 
-
 namespace Ipedis\Rabbit\Workflow\Config;
-
 
 class GroupConfig
 {

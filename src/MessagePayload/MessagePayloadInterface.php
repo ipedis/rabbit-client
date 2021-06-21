@@ -2,7 +2,6 @@
 
 namespace Ipedis\Rabbit\MessagePayload;
 
-
 use JsonSerializable;
 
 interface MessagePayloadInterface extends JsonSerializable

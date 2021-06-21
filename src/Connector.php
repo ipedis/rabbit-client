@@ -2,7 +2,6 @@
 
 namespace Ipedis\Rabbit;
 
-
 use AMQPChannel;
 use AMQPConnection;
 use AMQPExchange;
@@ -61,8 +60,12 @@ trait Connector
      */
     protected function disconnect()
     {
-        if($this->channel !== null) $this->channel->close();
-        if($this->connection !== null) $this->connection->disconnect();
+        if ($this->channel !== null) {
+            $this->channel->close();
+        }
+        if ($this->connection !== null) {
+            $this->connection->disconnect();
+        }
     }
 
     /**
@@ -78,7 +81,9 @@ trait Connector
     {
         $routingKey = $this->getRoutingKeyWithPrefix($channel);
         try {
-            if($persistQueue) $this->declareQueueBindingIfNecessary($routingKey);
+            if ($persistQueue) {
+                $this->declareQueueBindingIfNecessary($routingKey);
+            }
             $this->exchange->publish($message, $routingKey, AMQP_NOPARAM, $messageProperties);
         } catch (\Exception $exception) {
             throw new RabbitClientPublishException(sprintf('IPEDIS RABBIT CLIENT - Publishing message on exchange failed with error { %s }', $exception->getMessage()));
@@ -86,8 +91,10 @@ trait Connector
     }
     protected function declareQueueBindingIfNecessary(string $queueName)
     {
-        if($this->exchange === null) $this->connect();
-        if(!empty($this->declaredQueues[$queueName])) {
+        if ($this->exchange === null) {
+            $this->connect();
+        }
+        if (!empty($this->declaredQueues[$queueName])) {
             $queue = new AMQPQueue(new AMQPChannel($this->connection));
             $queue->setFlags(AMQP_DURABLE);
             $queue->setName($queueName);

@@ -2,7 +2,6 @@
 
 namespace Ipedis\Demo\Rabbit\Worker\Event;
 
-
 use Ipedis\Demo\Rabbit\Utils\ConnectorAbstract;
 use Ipedis\Rabbit\Channel\EventChannel;
 use Ipedis\Rabbit\Channel\Factory\ChannelFactory;
@@ -14,7 +13,7 @@ class Dispatcher extends ConnectorAbstract
 {
     use EventDispatcher;
 
-    const EVENTS_TO_DISPATCH = [
+    public const EVENTS_TO_DISPATCH = [
         'v1.admin.publication.was-created',
         'v1.admin.publication.was-exported',
         'v1.preview.publication.was-updated',

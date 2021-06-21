@@ -1,8 +1,6 @@
 <?php
 
-
 namespace Ipedis\Rabbit\Workflow\ProgressBag\Property;
-
 
 use DateTime;
 use Ipedis\Rabbit\Exception\Timer\InvalidSpentTimeException;

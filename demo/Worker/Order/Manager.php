@@ -2,7 +2,6 @@
 
 namespace Ipedis\Demo\Rabbit\Worker\Order;
 
-
 use Ipedis\Demo\Rabbit\Utils\ConnectorAbstract;
 use Ipedis\Demo\Rabbit\Worker\Handler\ManagerHandler;
 use Ipedis\Rabbit\Channel\Factory\ChannelFactory;
@@ -89,7 +88,7 @@ class Manager extends ConnectorAbstract
             ]);
 
             $this->publish($orderMessagePayload, $messageHandler)
-                ->bind(MessageHandlerInterface::TYPE_PROGRESS, function(ReplyMessagePayload $message) {
+                ->bind(MessageHandlerInterface::TYPE_PROGRESS, function (ReplyMessagePayload $message) {
                     printf("[[ ----------- PROGRESSION PERCENTAGE %s%% COMPLETED ---------- ]]\n\n", (string) $this->getPercentageProgression());
                 })
             ;
@@ -99,7 +98,8 @@ class Manager extends ConnectorAbstract
 
         $this->run();
 
-        printf("All orders(%s in total) executed with %s orders as success and %s orders as error :). \n",
+        printf(
+            "All orders(%s in total) executed with %s orders as success and %s orders as error :). \n",
             count($this->getCompletedOrders()),
             count($this->getSuccessfulOrders()),
             count($this->getFailedOrders())

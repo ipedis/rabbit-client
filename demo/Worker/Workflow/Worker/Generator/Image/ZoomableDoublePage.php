@@ -2,7 +2,6 @@
 
 namespace Ipedis\Demo\Rabbit\Worker\Workflow\Worker\Generator\Image;
 
-
 use AMQPEnvelope;
 use Closure;
 use Exception;
@@ -28,7 +27,6 @@ class ZoomableDoublePage extends WorkerAbstract
     protected function makeExceptionHandler(): Closure
     {
         return function (Exception $exception, OrderMessagePayload $payload) {
-
         };
     }
 

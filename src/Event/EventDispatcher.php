@@ -2,7 +2,6 @@
 
 namespace Ipedis\Rabbit\Event;
 
-
 use Ipedis\HttpSignature\HttpClient\HttpClient;
 use Ipedis\Rabbit\Channel\EventChannel;
 use Ipedis\Rabbit\Channel\Factory\ChannelFactory;
@@ -43,7 +42,7 @@ trait EventDispatcher
     public function dispatch(EventMessagePayload $messagePayload)
     {
         try {
-            if ( $this->channel === null) {
+            if ($this->channel === null) {
                 $this->connect();
             }
 

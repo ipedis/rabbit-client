@@ -2,7 +2,6 @@
 
 namespace Ipedis\Demo\Rabbit\Worker\Workflow\Manager;
 
-
 use Closure;
 use Ipedis\Rabbit\Channel\OrderChannel;
 use Ipedis\Rabbit\Exception\Group\InvalidGroupArgumentException;
@@ -42,7 +41,7 @@ class AllCallbackManager extends ManagerAbstract
     private function craftFirstStep(): Closure
     {
         return function (Group $group) {
-             $group
+            $group
                 ->planifyOrder(
                     OrderMessagePayload::build(OrderChannel::fromString('v1.admin.publication.success')),
                     $this->getTaskEvents('1.1')
@@ -56,7 +55,7 @@ class AllCallbackManager extends ManagerAbstract
              */
             foreach ($this->getGroupEvents('1') as $event => $closure) {
                 $group->bind($event, $closure);
-             }
+            }
         };
     }
 
@@ -167,15 +166,27 @@ class AllCallbackManager extends ManagerAbstract
             /**
              * once, on group layer, you will receive as parameter the actual group and event name.
              */
-            BindableEventInterface::GROUP_ON_START => function(Group $group, string $eventName) use ($id) {$this->print("-- GROUP $id START \n");},
-            BindableEventInterface::GROUP_ON_FAILURE => function(Group $group, string $eventName) use ($id) {$this->print("-- GROUP $id FAILURE \n");},
-            BindableEventInterface::GROUP_ON_SUCCESS => function(Group $group, string $eventName) use ($id) {$this->print("-- GROUP $id SUCCESS \n");},
-            BindableEventInterface::GROUP_ON_FINISH => function(Group $group, string $eventName) use ($id) {$this->print("-- GROUP $id FINISH \n");},
+            BindableEventInterface::GROUP_ON_START => function (Group $group, string $eventName) use ($id) {
+                $this->print("-- GROUP $id START \n");
+            },
+            BindableEventInterface::GROUP_ON_FAILURE => function (Group $group, string $eventName) use ($id) {
+                $this->print("-- GROUP $id FAILURE \n");
+            },
+            BindableEventInterface::GROUP_ON_SUCCESS => function (Group $group, string $eventName) use ($id) {
+                $this->print("-- GROUP $id SUCCESS \n");
+            },
+            BindableEventInterface::GROUP_ON_FINISH => function (Group $group, string $eventName) use ($id) {
+                $this->print("-- GROUP $id FINISH \n");
+            },
             /**
              * On each tasks failure or success, you will receive as parameter the actual task and the eventName.
              */
-            BindableEventInterface::GROUP_ON_TASKS_SUCCESS => function(Task $task, string $eventName) use ($id) {$this->print("-- GROUP TASKS $id SUCCESS \n");},
-            BindableEventInterface::GROUP_ON_TASKS_FAILURE => function(Task $task, string $eventName) use ($id) {$this->print("-- GROUP TASKS $id FAILURE \n");},
+            BindableEventInterface::GROUP_ON_TASKS_SUCCESS => function (Task $task, string $eventName) use ($id) {
+                $this->print("-- GROUP TASKS $id SUCCESS \n");
+            },
+            BindableEventInterface::GROUP_ON_TASKS_FAILURE => function (Task $task, string $eventName) use ($id) {
+                $this->print("-- GROUP TASKS $id FAILURE \n");
+            },
         ];
     }
 
@@ -189,11 +200,21 @@ class AllCallbackManager extends ManagerAbstract
          * On task layer, you will receive as parameter the actual task and the eventName.
          */
         return [
-            BindableEventInterface::TASK_ON_START => function(Task $task, string $eventName) use ($id) { $this->print("---- TASK $id START \n"); },
-            BindableEventInterface::TASK_ON_PROGRESS => function(Task $task, string $eventName) use ($id) { $this->print("---- TASK $id PROGRESS \n"); },
-            BindableEventInterface::TASK_ON_FAILURE => function(Task $task, string $eventName) use ($id) { $this->print("---- TASK $id FAILURE \n"); },
-            BindableEventInterface::TASK_ON_SUCCESS => function(Task $task, string $eventName) use ($id) { $this->print("---- TASK $id SUCCESS \n"); },
-            BindableEventInterface::TASK_ON_FINISH => function(Task $task, string $eventName) use ($id) { $this->print("---- TASK $id FINISH \n"); },
+            BindableEventInterface::TASK_ON_START => function (Task $task, string $eventName) use ($id) {
+                $this->print("---- TASK $id START \n");
+            },
+            BindableEventInterface::TASK_ON_PROGRESS => function (Task $task, string $eventName) use ($id) {
+                $this->print("---- TASK $id PROGRESS \n");
+            },
+            BindableEventInterface::TASK_ON_FAILURE => function (Task $task, string $eventName) use ($id) {
+                $this->print("---- TASK $id FAILURE \n");
+            },
+            BindableEventInterface::TASK_ON_SUCCESS => function (Task $task, string $eventName) use ($id) {
+                $this->print("---- TASK $id SUCCESS \n");
+            },
+            BindableEventInterface::TASK_ON_FINISH => function (Task $task, string $eventName) use ($id) {
+                $this->print("---- TASK $id FINISH \n");
+            },
         ];
     }
 

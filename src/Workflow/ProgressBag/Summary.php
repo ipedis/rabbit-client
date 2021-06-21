@@ -1,4 +1,5 @@
 <?php
+
 namespace Ipedis\Rabbit\Workflow\ProgressBag;
 
 use Ipedis\Rabbit\Exception\Progress\InvalidProgressValueException;

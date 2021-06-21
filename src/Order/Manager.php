@@ -2,7 +2,6 @@
 
 namespace Ipedis\Rabbit\Order;
 
-
 use AMQPChannel;
 use AMQPChannelException;
 use AMQPConnectionException;
@@ -65,7 +64,7 @@ trait Manager
 
     public function resetOrdersQueue()
     {
-        if ( $this->channel === null) {
+        if ($this->channel === null) {
             $this->connect();
         }
 
@@ -178,7 +177,9 @@ trait Manager
          * Get order from collection
          */
         $order = $this->getOrderFromDispatchedList($messagePayload->getOrderId());
-        if (is_null($order)) { return; }
+        if (is_null($order)) {
+            return;
+        }
 
         /**
          * Update order status on collection
@@ -221,7 +222,7 @@ trait Manager
      * @param Closure $handler
      * @return self
      */
-    public function bind(string $event, Closure $handler) : self
+    public function bind(string $event, Closure $handler): self
     {
         if (in_array($event, MessageHandlerInterface::AVAILABLE_TYPES)) {
             $this->eventHandlers[$event] = $handler;
@@ -247,7 +248,7 @@ trait Manager
      */
     public function getCompletedOrders(): array
     {
-        return array_filter($this->orders, function(Order $order) {
+        return array_filter($this->orders, function (Order $order) {
             return $order->getStatus() === MessageHandlerInterface::TYPE_SUCCESS ||
                 $order->getStatus() === MessageHandlerInterface::TYPE_ERROR
             ;
@@ -261,7 +262,7 @@ trait Manager
      */
     public function getInProgressOrders(): array
     {
-        return array_filter($this->orders, function(Order $order) {
+        return array_filter($this->orders, function (Order $order) {
             return $order->getStatus() === MessageHandlerInterface::TYPE_PROGRESS;
         });
     }
@@ -273,7 +274,7 @@ trait Manager
      */
     public function getSuccessfulOrders(): array
     {
-        return array_filter($this->orders, function(Order $order) {
+        return array_filter($this->orders, function (Order $order) {
             return $order->getStatus() === MessageHandlerInterface::TYPE_SUCCESS;
         });
     }

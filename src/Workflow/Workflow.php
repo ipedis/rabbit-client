@@ -2,7 +2,6 @@
 
 namespace Ipedis\Rabbit\Workflow;
 
-
 use Exception;
 use Ipedis\Rabbit\Exception\Group\InvalidGroupArgumentException;
 use Ipedis\Rabbit\Exception\InvalidUuidException;
@@ -55,7 +54,9 @@ class Workflow extends Bindable
          * - Group : add group to collection
          * - Callable : create and provide new group to callable
          */
-        if ($workflowId) $this->assertUuid($workflowId);
+        if ($workflowId) {
+            $this->assertUuid($workflowId);
+        }
         $this->workflowId = $workflowId ?? uuid_create();
         if (!is_null($firstStep)) {
             $this->schedule($firstStep, $groupCallbacks);
@@ -71,7 +72,7 @@ class Workflow extends Bindable
      * @throws InvalidWorkflowArgumentException
      * @throws InvalidGroupArgumentException
      */
-    public function then($nextStep,  array $callbacks = []): self
+    public function then($nextStep, array $callbacks = []): self
     {
         $this->schedule($nextStep, $callbacks);
 
@@ -90,7 +91,7 @@ class Workflow extends Bindable
     {
         // Check all existing group if he contain particular order id.
         foreach ($this->groups as $group) {
-            if($group->has($message->getOrderId())) {
+            if ($group->has($message->getOrderId())) {
                 // Ask current group to update task based on received message.
                 $currentGroup = $group->update($message);
                 break;
@@ -109,7 +110,7 @@ class Workflow extends Bindable
     {
         // Check all existing group if he contain particular order id.
         foreach ($this->groups as $group) {
-            if($group->has($message->getOrderId())) {
+            if ($group->has($message->getOrderId())) {
                 // Ask current group to update task based on received message.
                 $currentGroup = $group->retryTask($message);
                 break;
@@ -189,7 +190,7 @@ class Workflow extends Bindable
      */
     public function findGroup(string $groupId): Group
     {
-        $group = array_filter($this->getGroups(), function(Group $group) use ($groupId) {
+        $group = array_filter($this->getGroups(), function (Group $group) use ($groupId) {
             return $group->getGroupId() === $groupId;
         });
 

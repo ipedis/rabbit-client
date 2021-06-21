@@ -2,7 +2,6 @@
 
 namespace Ipedis\Rabbit\Order;
 
-
 use AMQPEnvelope;
 use AMQPExchange;
 use AMQPQueue;
@@ -59,7 +58,9 @@ trait Worker
 
     public function __destruct()
     {
-        if($this->queue) $this->queue->delete();
+        if ($this->queue) {
+            $this->queue->delete();
+        }
         $this->disconnect();
     }
 
@@ -75,14 +76,18 @@ trait Worker
             /**
              * We have before message hook to run
              */
-            if ( $this instanceOf OnBeforeMessage) $this->beforeMessageHandled();
+            if ($this instanceof OnBeforeMessage) {
+                $this->beforeMessageHandled();
+            }
 
             $this->consumeReceivedMessage($message, $q);
 
             /**
              * We have after message hook to run
              */
-            if ( $this instanceOf OnAfterMessage) $this->afterMessageHandled();
+            if ($this instanceof OnAfterMessage) {
+                $this->afterMessageHandled();
+            }
         } catch (Exception $exception) {
             /**
              * Handle exception from hook and
@@ -310,7 +315,9 @@ trait Worker
      *
      * @param Exception $exception
      */
-    protected function logException(Exception $exception){}
+    protected function logException(Exception $exception)
+    {
+    }
 
     /**
      * Check if message is valid json

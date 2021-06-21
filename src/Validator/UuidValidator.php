@@ -1,8 +1,6 @@
 <?php
 
-
 namespace Ipedis\Rabbit\Validator;
-
 
 use Ipedis\Rabbit\Exception\InvalidUuidException;
 

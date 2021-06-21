@@ -2,7 +2,6 @@
 
 namespace Ipedis\Rabbit\Workflow;
 
-
 use Ipedis\Rabbit\Exception\Group\InvalidGroupArgumentException;
 use Ipedis\Rabbit\Exception\Task\InvalidStatusException;
 use Ipedis\Rabbit\Exception\Timer\InvalidSpentTimeException;

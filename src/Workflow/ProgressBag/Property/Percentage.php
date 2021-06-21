@@ -1,8 +1,6 @@
 <?php
 
-
 namespace Ipedis\Rabbit\Workflow\ProgressBag\Property;
-
 
 use Ipedis\Rabbit\Exception\Progress\InvalidProgressValueException;
 

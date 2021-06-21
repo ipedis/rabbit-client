@@ -1,8 +1,6 @@
 <?php
 
-
 namespace Ipedis\Rabbit\Channel;
-
 
 use Ipedis\Rabbit\Exception\Channel\ChannelNamingException;
 
@@ -11,12 +9,12 @@ abstract class ChannelAbstract
     /**
      * <protocol>.<service>.<aggregate>.<action>
      */
-    const CHANNEL_PATTERN = '#^(?<protocol>v\d+)\.(?<service>[\w-]+)\.(?<aggregate>[\w-]+(?:\.[\w-]+)?)\.(?<action>[\w-]+)$#';
+    public const CHANNEL_PATTERN = '#^(?<protocol>v\d+)\.(?<service>[\w-]+)\.(?<aggregate>[\w-]+(?:\.[\w-]+)?)\.(?<action>[\w-]+)$#';
 
     /**
      * <aggregate>.<action>
      */
-    const PARTIAL_CHANNEL_PATTERN = '#^(?<aggregate>[\w-]+(?:\.[\w-]+)?)\.(?<action>[\w-]+)$#';
+    public const PARTIAL_CHANNEL_PATTERN = '#^(?<aggregate>[\w-]+(?:\.[\w-]+)?)\.(?<action>[\w-]+)$#';
 
     /**
      * @var string
@@ -44,7 +42,7 @@ abstract class ChannelAbstract
         $this->assertService($service);
         $this->assertAggregate($aggregate);
         $this->assertAction($action);
-        
+
         $this->protocol = $protocol;
         $this->service = $service;
         $this->aggregate = $aggregate;
@@ -124,7 +122,7 @@ abstract class ChannelAbstract
         );
     }
 
-    public static function getTypeFromChannelName(string $channel) : string
+    public static function getTypeFromChannelName(string $channel): string
     {
         $channelDetails = self::assertChannel($channel);
 
@@ -150,28 +148,28 @@ abstract class ChannelAbstract
 
     private function assertProtocol(string $protocol)
     {
-        if(!preg_match('#^v\d+$#', $protocol)) {
+        if (!preg_match('#^v\d+$#', $protocol)) {
             throw new ChannelNamingException(sprintf('"%s" is not valid protocol.', $protocol));
         }
     }
 
     private function assertService(string $service)
     {
-        if(!preg_match('#^[\w-]+$#', $service)) {
+        if (!preg_match('#^[\w-]+$#', $service)) {
             throw new ChannelNamingException(sprintf('"%s" is not valid service.', $service));
         }
     }
 
     private function assertAggregate(string $aggregate)
     {
-        if(!preg_match('#^[\w-]+(?:\.[\w-]+)?$#', $aggregate)) {
+        if (!preg_match('#^[\w-]+(?:\.[\w-]+)?$#', $aggregate)) {
             throw new ChannelNamingException(sprintf('"%s" is not valid aggregate.', $aggregate));
         }
     }
 
     private function assertAction(string $action)
     {
-        if(!preg_match('#^[\w-]+$#', $action)) {
+        if (!preg_match('#^[\w-]+$#', $action)) {
             throw new ChannelNamingException(sprintf('"%s" is not valid action.', $action));
         }
     }

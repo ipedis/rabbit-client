@@ -1,4 +1,5 @@
 <?php
+
 namespace Ipedis\Rabbit\Utils\Helper;
 
 use DateTime;
@@ -10,7 +11,7 @@ trait DateTimeHelper
      */
     protected function getCurrentDateTimeWithMicroseconds(): DateTime
     {
-        $microseconds = sprintf('%.4f', microtime(TRUE));
+        $microseconds = sprintf('%.4f', microtime(true));
 
         return DateTime::createFromFormat('U.u', $microseconds);
     }

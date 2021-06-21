@@ -2,7 +2,6 @@
 
 namespace Ipedis\Demo\Rabbit\Worker\Workflow\Worker\Generator\Image;
 
-
 use AMQPEnvelope;
 use Closure;
 use Exception;
@@ -27,7 +26,6 @@ class ThumbnailDoublePage extends WorkerAbstract
     protected function makeExceptionHandler(): Closure
     {
         return function (Exception $exception, OrderMessagePayload $payload) {
-
         };
     }
 
@@ -41,4 +39,3 @@ class ThumbnailDoublePage extends WorkerAbstract
         return 'v1.admin.publication.generate-image-dbl-thumb';
     }
 }
-
