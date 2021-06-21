@@ -3,6 +3,7 @@
 namespace Ipedis\Test\Rabbit\Exception;
 
 use Ipedis\Rabbit\Exception\Helper\Error;
+use Ipedis\Rabbit\Exception\MessagePayload\MessagePayloadFormatException;
 use PHPUnit\Framework\TestCase;
 
 class ErrorTest extends TestCase
@@ -25,6 +26,9 @@ class ErrorTest extends TestCase
             ]),
             json_encode($this->makeError())
         );
+
+        $this->expectException(MessagePayloadFormatException::class);
+        $this->makeNotSerializableError();
     }
 
     public function testGetMessage()
@@ -56,6 +60,13 @@ class ErrorTest extends TestCase
         return Error::fromArray([
             'exception' => ['message' => 'foo message', 'code' => 0],
             'context' => [['this', 'context']]
+        ]);
+    }
+
+    protected function makeNotSerializableError(): Error
+    {
+        return Error::fromArray([
+            'context' => [['deep' => ['tree' => new self()]]]
         ]);
     }
 }

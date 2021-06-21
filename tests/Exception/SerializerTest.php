@@ -6,6 +6,7 @@ use Ipedis\Rabbit\Exception\Helper\Error;
 use Ipedis\Rabbit\Exception\Helper\Serializer;
 use Ipedis\Rabbit\MessagePayload\MessagePayloadInterface;
 use JsonSerializable;
+use LogicException;
 use PHPUnit\Framework\TestCase;
 
 class SerializerTest extends TestCase
@@ -42,6 +43,9 @@ class SerializerTest extends TestCase
         $this->assertContains($context1, $serializer->getContext());
         $this->assertContains($context2, $serializer->getContext());
         $this->assertContains($context3, $serializer->getContext());
+
+        $this->expectException(LogicException::class);
+        $serializer->addContext([['deep' => ['tree' => new self()]]]);
     }
 
     public function testJsonSerialize()
