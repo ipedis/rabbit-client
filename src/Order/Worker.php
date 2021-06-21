@@ -189,7 +189,11 @@ trait Worker
                 MessageHandlerInterface::TYPE_PROGRESS,
                 []
             ));
-
+            /*
+             * TODO :
+             *  - having automatic tracking for message consumation.
+             *  - Having conditional execution to accept closure or not. (something similar to EventListener)
+             */
             $answer = $this->makeMessageHandler()($message, $messagePayload);
             $answer['status'] = MessageHandlerInterface::TYPE_SUCCESS;
         } catch (Exception $exception) {
