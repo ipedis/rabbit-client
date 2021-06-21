@@ -17,7 +17,7 @@ class Manager extends ConnectorAbstract
 {
     use ManagerTrait;
 
-    const IS_VERBOSE = false;
+    public const IS_VERBOSE = false;
 
     /**
      * @var ChannelFactory $channelFactory
@@ -99,7 +99,6 @@ class Manager extends ConnectorAbstract
                 $this->bind(MessageHandlerInterface::TYPE_PROGRESS, function (ReplyMessagePayload $message) {
                     printf("[[ ----------- PROGRESSION PERCENTAGE %s%% COMPLETED ---------- ]]\n\n", (string) $this->getPercentageProgression());
                 });
-
             }
         }
 
