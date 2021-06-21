@@ -12,12 +12,10 @@ use Ipedis\Rabbit\Channel\Factory\ChannelFactory;
 use Ipedis\Rabbit\Consumer\Handler\MessageHandlerInterface;
 use Ipedis\Rabbit\Exception\Channel\ChannelFactoryException;
 use Ipedis\Rabbit\Exception\MessagePayload\MessagePayloadFormatException;
-use Ipedis\Rabbit\Exception\MessagePayload\MessagePayloadValidatorException;
 use Ipedis\Rabbit\Lifecyle\Hook\OnAfterMessage;
 use Ipedis\Rabbit\Lifecyle\Hook\OnBeforeMessage;
 use Ipedis\Rabbit\MessagePayload\OrderMessagePayload;
 use Ipedis\Rabbit\MessagePayload\ReplyMessagePayload;
-use Ipedis\Rabbit\MessagePayload\Validator\ValidatorInterface;
 
 /**
  * Class Worker
@@ -28,12 +26,12 @@ trait Worker
     /**
      * @var string $worker_id
      */
-    protected $worker_id;
+    protected string $worker_id;
 
     /**
      * @var AMQPQueue $queue
      */
-    protected $queue;
+    protected AMQPQueue $queue;
 
     /**
      * Method to initialise worker by
@@ -85,7 +83,7 @@ trait Worker
              * We have after message hook to run
              */
             if ( $this instanceOf OnAfterMessage) $this->afterMessageHandled();
-        } catch (\Exception $exception) {
+        } catch (Exception $exception) {
             /**
              * Handle exception from hook and
              * message payload creation
@@ -161,6 +159,11 @@ trait Worker
     private function consumeReceivedMessage(AMQPEnvelope $message, AMQPQueue $q)
     {
         /**
+         * Get current moment
+         */
+        $startAt = $this->getCurrentMoment();
+
+        /**
          * Ignore if message not proper json
          */
         if (!$this->isValidMessageFormat($message->getBody())) {
@@ -189,12 +192,12 @@ trait Worker
                 MessageHandlerInterface::TYPE_PROGRESS,
                 []
             ));
-            /*
-             * TODO :
-             *  - having automatic tracking for message consumation.
-             *  - Having conditional execution to accept closure or not. (something similar to EventListener)
-             */
+
             $answer = $this->makeMessageHandler()($message, $messagePayload);
+            if (is_callable($answer)) {
+                $answer = $answer($message, $messagePayload);
+            }
+            // force status to success.
             $answer['status'] = MessageHandlerInterface::TYPE_SUCCESS;
         } catch (Exception $exception) {
             $answer = [
@@ -215,7 +218,8 @@ trait Worker
             $replyToMessage = ReplyMessagePayload::buildFromOrderMessagePayload(
                 $messagePayload,
                 $answer['status'],
-                $answer
+                $answer,
+                ['executionTime' => ($this->getCurrentMoment() - $startAt)]
             );
 
             /**
@@ -263,7 +267,7 @@ trait Worker
     {
         try {
             $this->makeExceptionHandler()($exception, $messagePayload);
-        } catch (\Exception $exception) {
+        } catch (Exception $exception) {
             $this->logException($exception);
         }
     }
@@ -286,9 +290,9 @@ trait Worker
      * The client callback to be executed
      * on receiving a message
      *
-     * @return Closure
+     * @return Closure | array
      */
-    abstract protected function makeMessageHandler(): Closure;
+    abstract protected function makeMessageHandler();
 
     /**
      * The client callback to be executed
@@ -306,7 +310,7 @@ trait Worker
      *
      * @param Exception $exception
      */
-    protected function logException(\Exception $exception){}
+    protected function logException(Exception $exception){}
 
     /**
      * Check if message is valid json
@@ -328,5 +332,13 @@ trait Worker
     private function isValidChannelName(string $channelName): bool
     {
         return $this->getChannelFactory()->match($channelName);
+    }
+
+    /**
+     * get current timer
+     */
+    private function getCurrentMoment(): float
+    {
+        return microtime(true);
     }
 }

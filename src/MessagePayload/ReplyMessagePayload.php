@@ -10,6 +10,7 @@ final class ReplyMessagePayload extends MessagePayloadAbstract
 {
     const HEADER_CORRELATION_ID = 'correlation_id';
     const HEADER_STATUS = 'status';
+    const HEADER_EXECTIME = 'executionTime';
 
     /**
      * @var string $orderId
@@ -36,6 +37,10 @@ final class ReplyMessagePayload extends MessagePayloadAbstract
 
         $this->status = $status;
         $this->addHeader(self::HEADER_STATUS, $status);
+
+        if (!empty($headers[self::HEADER_EXECTIME])) {
+            $this->addHeader(self::HEADER_EXECTIME, $headers[self::HEADER_EXECTIME]);
+        }
     }
 
     /**
