@@ -2,6 +2,7 @@
 
 namespace Ipedis\Rabbit\Order;
 
+
 use AMQPChannel;
 use AMQPChannelException;
 use AMQPConnectionException;
