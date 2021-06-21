@@ -37,14 +37,14 @@ trait Manager
      *
      * @var AMQPQueue $replyQueue
      */
-    private $replyQueue;
+    private AMQPQueue $replyQueue;
 
     /**
      * Collection of orders
      *
      * @var array $order
      */
-    private $orders;
+    private array $orders;
 
     /**
      * Holds a collection of callable handlers to be
@@ -54,13 +54,7 @@ trait Manager
      *
      * @var array $handlers
      */
-    private $eventHandlers;
-
-    /**
-     * @return string
-     */
-    abstract protected function getExchangeName(): string;
-    abstract protected function getChannelFactory();
+    private array $eventHandlers;
 
     public function resetOrdersQueue()
     {
@@ -71,6 +65,24 @@ trait Manager
         $this->orders = [];
         $this->eventHandlers = [];
         $this->replyQueue = $this->createAnonymousQueue($this->channel);
+    }
+
+    /**
+     * Create anonymous queue
+     *
+     * @param AMQPChannel $channel
+     * @return AMQPQueue
+     * @throws AMQPChannelException
+     * @throws AMQPConnectionException
+     * @throws AMQPQueueException
+     */
+    private function createAnonymousQueue(AMQPChannel $channel): AMQPQueue
+    {
+        $queue = new AMQPQueue($channel);
+        $queue->setFlags(AMQP_EXCLUSIVE);
+        $queue->declareQueue();
+
+        return $queue;
     }
 
     /**
@@ -142,6 +154,82 @@ trait Manager
         );
 
         return $this;
+    }
+
+    protected function assertChannelFactory(): void
+    {
+        if (!$this->getChannelFactory() instanceof ChannelFactory) {
+            throw new ChannelFactoryException('Must provide channel factory {channelFactory} with version and service.');
+        }
+    }
+
+    abstract protected function getChannelFactory();
+
+    /**
+     * @throws MessagePayloadValidatorException
+     */
+    protected function assertMessagePayloadValidator(): void
+    {
+        if (!$this->getMessagePayloadValidator() instanceof ValidatorInterface) {
+            throw new MessagePayloadValidatorException("Must provide message payload validator {messagePayloadValidator}");
+        }
+    }
+
+    /**
+     * @param OrderMessagePayload $messagePayload
+     * @param $callback
+     * @throws InvalidCallableException
+     */
+    protected function assertCallback(OrderMessagePayload $messagePayload, $callback): void
+    {
+        if (
+            !is_callable($callback)
+            && !$callback instanceof MessageHandlerInterface
+        ) {
+            throw new InvalidCallableException(sprintf('Invalid callable provided for chanel {%s}', $messagePayload->getChannel()));
+        }
+    }
+
+    /**
+     * @param $queueName
+     * @return string
+     * @throws ChannelNamingException
+     */
+    private function getChannelName($queueName): string
+    {
+        if (is_string($queueName)) {
+            // if it is partial channel name
+            if ($this->getChannelFactory()->matchPartial($queueName)) {
+                return (string)$this->getChannelFactory()->getOrder($queueName);
+            }
+
+            // if it is full name, this will throw exception if full name is invalid.
+            $eventObj = OrderChannel::fromString($queueName);
+
+            return (string)$eventObj;
+        }
+        // if it is an instance, get channel full name
+        if ($queueName instanceof OrderChannel) {
+            return (string)$queueName;
+        }
+
+        // no criteria fulfilled, throw an exception.
+        throw new ChannelNamingException('Invalid channel provided.');
+    }
+
+    /**
+     * Append new order to collection
+     *
+     * @param string $orderId
+     * @param callable $callback
+     */
+    private function addOrderToDispatchedList(string $orderId, $callback)
+    {
+        $this->orders[$orderId] = Order::build(
+            $orderId,
+            MessageHandlerInterface::TYPE_PROGRESS,
+            $callback
+        );
     }
 
     /**
@@ -216,127 +304,6 @@ trait Manager
     }
 
     /**
-     * Bind handler to allowed event
-     *
-     * @param string $event
-     * @param Closure $handler
-     * @return self
-     */
-    public function bind(string $event, Closure $handler): self
-    {
-        if (in_array($event, MessageHandlerInterface::AVAILABLE_TYPES)) {
-            $this->eventHandlers[$event] = $handler;
-        }
-
-        return $this;
-    }
-
-    /**
-     * Get collection of dispatched orders
-     *
-     * @return array
-     */
-    public function getDispatchedOrders(): array
-    {
-        return $this->orders;
-    }
-
-    /**
-     * Get collection of completed tasks
-     *
-     * @return array
-     */
-    public function getCompletedOrders(): array
-    {
-        return array_filter($this->orders, function (Order $order) {
-            return $order->getStatus() === MessageHandlerInterface::TYPE_SUCCESS ||
-                $order->getStatus() === MessageHandlerInterface::TYPE_ERROR
-            ;
-        });
-    }
-
-    /**
-     * Get collection of in progress orders
-     *
-     * @return array
-     */
-    public function getInProgressOrders(): array
-    {
-        return array_filter($this->orders, function (Order $order) {
-            return $order->getStatus() === MessageHandlerInterface::TYPE_PROGRESS;
-        });
-    }
-
-    /**
-     * Get collection of successfully completed orders
-     *
-     * @return array
-     */
-    public function getSuccessfulOrders(): array
-    {
-        return array_filter($this->orders, function (Order $order) {
-            return $order->getStatus() === MessageHandlerInterface::TYPE_SUCCESS;
-        });
-    }
-
-    /**
-     * Get collection of completed orders which have failed
-     *
-     * @return array
-     */
-    public function getFailedOrders(): array
-    {
-        return array_filter($this->orders, function (Order $order) {
-            return $order->getStatus() === MessageHandlerInterface::TYPE_ERROR;
-        });
-    }
-
-    /**
-     * Get percentage progression of orders
-     *
-     * @return float
-     */
-    public function getPercentageProgression(): float
-    {
-        $percentage = (count($this->getCompletedOrders()) / count($this->getDispatchedOrders())) * 100;
-
-        return round($percentage, 2);
-    }
-
-    /**
-     * Create anonymous queue
-     *
-     * @param AMQPChannel $channel
-     * @return AMQPQueue
-     * @throws AMQPChannelException
-     * @throws AMQPConnectionException
-     * @throws AMQPQueueException
-     */
-    private function createAnonymousQueue(AMQPChannel $channel): AMQPQueue
-    {
-        $queue = new AMQPQueue($channel);
-        $queue->setFlags(AMQP_EXCLUSIVE);
-        $queue->declareQueue();
-
-        return $queue;
-    }
-
-    /**
-     * Append new order to collection
-     *
-     * @param string $orderId
-     * @param callable $callback
-     */
-    private function addOrderToDispatchedList(string $orderId, $callback)
-    {
-        $this->orders[$orderId] = Order::build(
-            $orderId,
-            MessageHandlerInterface::TYPE_PROGRESS,
-            $callback
-        );
-    }
-
-    /**
      * Get order from collection
      *
      * @param string $orderId
@@ -392,61 +359,94 @@ trait Manager
     }
 
     /**
-     * @param $queueName
+     * Get collection of in progress orders
+     *
+     * @return array
+     */
+    public function getInProgressOrders(): array
+    {
+        return array_filter($this->orders, function (Order $order) {
+            return $order->getStatus() === MessageHandlerInterface::TYPE_PROGRESS;
+        });
+    }
+
+    /**
+     * Bind handler to allowed event
+     *
+     * @param string $event
+     * @param Closure $handler
+     * @return self
+     */
+    public function bind(string $event, Closure $handler): self
+    {
+        if (in_array($event, MessageHandlerInterface::AVAILABLE_TYPES)) {
+            $this->eventHandlers[$event] = $handler;
+        }
+
+        return $this;
+    }
+
+    /**
+     * Get collection of successfully completed orders
+     *
+     * @return array
+     */
+    public function getSuccessfulOrders(): array
+    {
+        return array_filter($this->orders, function (Order $order) {
+            return $order->getStatus() === MessageHandlerInterface::TYPE_SUCCESS;
+        });
+    }
+
+    /**
+     * Get collection of completed orders which have failed
+     *
+     * @return array
+     */
+    public function getFailedOrders(): array
+    {
+        return array_filter($this->orders, function (Order $order) {
+            return $order->getStatus() === MessageHandlerInterface::TYPE_ERROR;
+        });
+    }
+
+    /**
+     * Get percentage progression of orders
+     *
+     * @return float
+     */
+    public function getPercentageProgression(): float
+    {
+        $percentage = (count($this->getCompletedOrders()) / count($this->getDispatchedOrders())) * 100;
+
+        return round($percentage, 2);
+    }
+
+    /**
+     * Get collection of completed tasks
+     *
+     * @return array
+     */
+    public function getCompletedOrders(): array
+    {
+        return array_filter($this->orders, function (Order $order) {
+            return $order->getStatus() === MessageHandlerInterface::TYPE_SUCCESS ||
+                $order->getStatus() === MessageHandlerInterface::TYPE_ERROR;
+        });
+    }
+
+    /**
+     * Get collection of dispatched orders
+     *
+     * @return array
+     */
+    public function getDispatchedOrders(): array
+    {
+        return $this->orders;
+    }
+
+    /**
      * @return string
-     * @throws ChannelNamingException
      */
-    private function getChannelName($queueName): string
-    {
-        if (is_string($queueName)) {
-            // if it is partial channel name
-            if ($this->getChannelFactory()->matchPartial($queueName)) {
-                return (string)$this->getChannelFactory()->getOrder($queueName);
-            }
-
-            // if it is full name, this will throw exception if full name is invalid.
-            $eventObj = OrderChannel::fromString($queueName);
-
-            return (string)$eventObj;
-        }
-        // if it is an instance, get channel full name
-        if ($queueName instanceof OrderChannel) {
-            return (string)$queueName;
-        }
-
-        // no criteria fulfilled, throw an exception.
-        throw new ChannelNamingException('Invalid channel provided.');
-    }
-
-    protected function assertChannelFactory(): void
-    {
-        if (!$this->getChannelFactory() instanceof ChannelFactory) {
-            throw new ChannelFactoryException('Must provide channel factory {channelFactory} with version and service.');
-        }
-    }
-
-    /**
-     * @throws MessagePayloadValidatorException
-     */
-    protected function assertMessagePayloadValidator(): void
-    {
-        if (!$this->getMessagePayloadValidator() instanceof ValidatorInterface) {
-            throw new MessagePayloadValidatorException("Must provide message payload validator {messagePayloadValidator}");
-        }
-    }
-
-    /**
-     * @param OrderMessagePayload $messagePayload
-     * @param $callback
-     * @throws InvalidCallableException
-     */
-    protected function assertCallback(OrderMessagePayload $messagePayload, $callback): void
-    {
-        if (
-            !is_callable($callback)
-            && !$callback instanceof MessageHandlerInterface
-        ) {
-            throw new InvalidCallableException(sprintf('Invalid callable provided for chanel {%s}', $messagePayload->getChannel()));
-        }
-    }
+    abstract protected function getExchangeName(): string;
 }

@@ -31,31 +31,6 @@ trait Connector
     protected $declaredQueues = [];
 
     /**
-     * Connection to rabbitMQ
-     */
-    protected function connect()
-    {
-        try {
-            /**
-             * Establish connection to AMQP
-             */
-            $this->connection = $this->getAMQPConnection();
-
-            /**
-             * Create and declare channel
-             */
-            $this->setChannel();
-
-            /**
-             * Create and declare exchange
-             */
-            $this->setExchange();
-        } catch (\Exception $exception) {
-            throw new RabbitClientConnectException(sprintf('IPEDIS RABBIT CLIENT - Connection to rabbitMQ failed with error { %s }', $exception->getMessage()));
-        }
-    }
-
-    /**
      * Disconnect to RabbitMQ
      */
     protected function disconnect()
@@ -89,6 +64,30 @@ trait Connector
             throw new RabbitClientPublishException(sprintf('IPEDIS RABBIT CLIENT - Publishing message on exchange failed with error { %s }', $exception->getMessage()));
         }
     }
+
+    /**
+     * @param string $routingKey
+     * @return string
+     */
+    protected function getRoutingKeyWithPrefix(string $routingKey)
+    {
+        if (empty($this->getQueuePrefix())) {
+            return $routingKey;
+        }
+
+        return sprintf('%s.%s', $this->getQueuePrefix(), $routingKey);
+    }
+
+    /**
+     * Optional prefix to attach to queue name.
+     * In case system has multiple environments using same rabbitmq server.
+     * @return string
+     */
+    public function getQueuePrefix(): string
+    {
+        return '';
+    }
+
     protected function declareQueueBindingIfNecessary(string $queueName)
     {
         if ($this->exchange === null) {
@@ -106,16 +105,64 @@ trait Connector
     }
 
     /**
-     * @param string $routingKey
-     * @return string
+     * Connection to rabbitMQ
      */
-    protected function getRoutingKeyWithPrefix(string $routingKey)
+    protected function connect()
     {
-        if (empty($this->getQueuePrefix())) {
-            return $routingKey;
-        }
+        try {
+            /**
+             * Establish connection to AMQP
+             */
+            $this->connection = $this->getAMQPConnection();
 
-        return sprintf('%s.%s', $this->getQueuePrefix(), $routingKey);
+            /**
+             * Create and declare channel
+             */
+            $this->setChannel();
+
+            /**
+             * Create and declare exchange
+             */
+            $this->setExchange();
+        } catch (\Exception $exception) {
+            throw new RabbitClientConnectException(sprintf('IPEDIS RABBIT CLIENT - Connection to rabbitMQ failed with error { %s }', $exception->getMessage()));
+        }
+    }
+
+    /**
+     * Create AMQP Connection
+     */
+    private function getAMQPConnection(): AMQPConnection
+    {
+        $connection = new AMQPConnection([
+            'host' => $this->getHost(),
+            'port' => $this->getPort(),
+            'login' => $this->getUser(),
+            'password' => $this->getPassword()
+        ]);
+
+        $connection->connect();
+
+        return $connection;
+    }
+
+    abstract public function getHost(): string;
+
+    abstract public function getPort(): int;
+
+    abstract public function getUser(): string;
+
+    abstract public function getPassword(): string;
+
+    /**
+     * Create and declare channel
+     *
+     * @throws \AMQPConnectionException
+     */
+    private function setChannel()
+    {
+        $this->channel = new AMQPChannel($this->connection);
+        $this->channel->setPrefetchCount(1);
     }
 
     /**
@@ -135,48 +182,7 @@ trait Connector
         $this->exchange->declareExchange();
     }
 
-    /**
-     * Create and declare channel
-     *
-     * @throws \AMQPConnectionException
-     */
-    private function setChannel()
-    {
-        $this->channel = new AMQPChannel($this->connection);
-        $this->channel->setPrefetchCount(1);
-    }
-
-    /**
-     * Create AMQP Connection
-     */
-    private function getAMQPConnection(): AMQPConnection
-    {
-        $connection = new AMQPConnection([
-            'host'      => $this->getHost(),
-            'port'      => $this->getPort(),
-            'login'     => $this->getUser(),
-            'password'  => $this->getPassword()
-        ]);
-
-        $connection->connect();
-
-        return $connection;
-    }
-
-    abstract public function getHost(): string;
-    abstract public function getPort(): int;
-    abstract public function getUser(): string;
-    abstract public function getPassword(): string;
-    abstract public function getExchangeName(): string;
     abstract public function getExchangeType(): string;
 
-    /**
-     * Optional prefix to attach to queue name.
-     * In case system has multiple environments using same rabbitmq server.
-     * @return string
-     */
-    public function getQueuePrefix(): string
-    {
-        return '';
-    }
+    abstract public function getExchangeName(): string;
 }

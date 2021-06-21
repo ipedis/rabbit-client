@@ -5,8 +5,6 @@ namespace Ipedis\Rabbit\Workflow\ProgressBag\Model\Summary;
 use Ipedis\Rabbit\Exception\Progress\InvalidProgressValueException;
 use Ipedis\Rabbit\Workflow\Group;
 use Ipedis\Rabbit\Workflow\ProgressBag\Model\Collection\GroupProgressCollection;
-use Ipedis\Rabbit\Workflow\ProgressBag\Model\Collection\TaskProgressCollection;
-use Ipedis\Rabbit\Workflow\ProgressBag\Model\GroupProgress;
 use Ipedis\Rabbit\Workflow\ProgressBag\Property\Status;
 use Ipedis\Rabbit\Workflow\ProgressBag\Summary;
 use Ipedis\Rabbit\Workflow\ProgressBag\WorkflowProgressBag;
@@ -57,6 +55,18 @@ class GroupProgressSummary implements \JsonSerializable
     }
 
     /**
+     * @return array
+     */
+    public function jsonSerialize(): array
+    {
+        return [
+            'status' => $this->getStatus(),
+            'summary' => $this->getSummary(),
+            'details' => $this->getGroupProgressCollection()
+        ];
+    }
+
+    /**
      * @return Status
      */
     public function getStatus(): Status
@@ -78,17 +88,5 @@ class GroupProgressSummary implements \JsonSerializable
     public function getGroupProgressCollection(): GroupProgressCollection
     {
         return $this->groupProgressCollection;
-    }
-
-    /**
-     * @return array
-     */
-    public function jsonSerialize(): array
-    {
-        return [
-            'status' => $this->getStatus(),
-            'summary' => $this->getSummary(),
-            'details' => $this->getGroupProgressCollection()
-        ];
     }
 }

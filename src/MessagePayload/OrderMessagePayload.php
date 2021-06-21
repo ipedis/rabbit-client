@@ -7,7 +7,7 @@ use Ipedis\Rabbit\Exception\MessagePayload\MessagePayloadFormatException;
 class OrderMessagePayload extends MessagePayloadAbstract
 {
     public const HEADER_CORRELATION_ID = 'correlation_id';
-    public const HEADER_REPLY_QUEUE    = 'replyQueue';
+    public const HEADER_REPLY_QUEUE = 'replyQueue';
 
     /**
      * @var string $orderId
@@ -48,34 +48,6 @@ class OrderMessagePayload extends MessagePayloadAbstract
     }
 
     /**
-     * Set Task Id
-     *
-     * @param string $orderId
-     * @return OrderMessagePayload
-     */
-    public function setOrderId(string $orderId): self
-    {
-        $this->orderId = $orderId;
-        $this->headers[self::HEADER_CORRELATION_ID] = $orderId;
-
-        return $this;
-    }
-
-    /**
-     * Set reply queue
-     *
-     * @param string $replyQueue
-     * @return OrderMessagePayload
-     */
-    public function setReplyQueue(string $replyQueue): self
-    {
-        $this->replyQueue = $replyQueue;
-        $this->headers[self::HEADER_REPLY_QUEUE] = $replyQueue;
-
-        return $this;
-    }
-
-    /**
      * Factory method to create message payload from json
      *
      * @param string $msg
@@ -105,11 +77,39 @@ class OrderMessagePayload extends MessagePayloadAbstract
     }
 
     /**
+     * Helper function
+     * to return custom properties for rabbitmq message obj
+     *
+     * @return array
+     */
+    public function getMessageProperties(): array
+    {
+        return [
+            'correlation_id' => $this->getOrderId(),
+            'reply_to' => $this->getReplyQueue()
+        ];
+    }
+
+    /**
      * @return string
      */
     public function getOrderId(): string
     {
         return $this->orderId;
+    }
+
+    /**
+     * Set Task Id
+     *
+     * @param string $orderId
+     * @return OrderMessagePayload
+     */
+    public function setOrderId(string $orderId): self
+    {
+        $this->orderId = $orderId;
+        $this->headers[self::HEADER_CORRELATION_ID] = $orderId;
+
+        return $this;
     }
 
     /**
@@ -121,16 +121,16 @@ class OrderMessagePayload extends MessagePayloadAbstract
     }
 
     /**
-     * Helper function
-     * to return custom properties for rabbitmq message obj
+     * Set reply queue
      *
-     * @return array
+     * @param string $replyQueue
+     * @return OrderMessagePayload
      */
-    public function getMessageProperties(): array
+    public function setReplyQueue(string $replyQueue): self
     {
-        return [
-            'correlation_id' => $this->getOrderId(),
-            'reply_to'       => $this->getReplyQueue()
-        ];
+        $this->replyQueue = $replyQueue;
+        $this->headers[self::HEADER_REPLY_QUEUE] = $replyQueue;
+
+        return $this;
     }
 }

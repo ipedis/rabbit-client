@@ -52,7 +52,7 @@ interface BindableEventInterface
         self::GROUP_ON_TASKS_FINISH,
     ];
 
-    public const TASK_ON_START  = 'task.started';
+    public const TASK_ON_START = 'task.started';
     public const TASK_ON_PROGRESS = 'task.progressed';
     public const TASK_ON_FAILURE = 'task.failed';
     public const TASK_ON_SUCCESS = 'task.successed';

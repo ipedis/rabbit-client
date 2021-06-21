@@ -53,6 +53,54 @@ trait EventListener
         $this->disconnect();
     }
 
+    abstract protected function getChannelFactory();
+
+    /**
+     * Declare Queue and bind with exchange
+     */
+    protected function declareQueueIfNecessary()
+    {
+        $this->queue = new AMQPQueue($this->channel);
+        $this->queue->setFlags(AMQP_EXCLUSIVE);
+        $this->queue->declareQueue();
+        $this->resolveRoutingKeys();
+    }
+
+    /**
+     * Bind listener to multiple events
+     *
+     * @throws \AMQPChannelException
+     * @throws \AMQPConnectionException
+     */
+    private function resolveRoutingKeys()
+    {
+        $routingKey = $this->getBindingKey();
+
+        // If is string, we cast it to array.
+        if (is_string($routingKey)) {
+            $routingKey = [$routingKey];
+        }
+
+        if (is_array($routingKey)) {
+            foreach ($routingKey as $key) {
+                if (is_string($key)) {
+                    $this->queue->bind($this->exchange->getName(), $this->getRoutingKeyWithPrefix($key));
+                }
+            }
+        }
+    }
+
+    abstract protected function getBindingKey();
+
+    /**
+     * Define callback to be executed
+     * when consuming message from queue
+     */
+    protected function queueConsume()
+    {
+        $this->queue->consume([$this, 'main']);
+    }
+
     public function __destruct()
     {
         $this->disconnect();
@@ -136,6 +184,38 @@ trait EventListener
     }
 
     /**
+     * Check if message is valid json
+     *
+     * @param $message
+     * @return bool
+     */
+    private function isValidMessageFormat(string $message): bool
+    {
+        return json_decode($message) != null;
+    }
+
+    /**
+     * Check if channel name follows proper naming
+     *
+     * @param string $channelName
+     * @return bool
+     */
+    private function isValidChannelName(string $channelName): bool
+    {
+        return $this->getChannelFactory()->match($channelName);
+    }
+
+    /**
+     * If you want to limit the call of callback for each message, you can filter by white list here.
+     * @param string $eventName
+     * @return bool
+     */
+    protected function isSubscribed(string $eventName): bool
+    {
+        return true;
+    }
+
+    /**
      * Handle the message by calling dedicated callback handler
      * or the general callback handler
      *
@@ -161,19 +241,11 @@ trait EventListener
     }
 
     /**
-     * Handle exception by calling
-     * client exception callback
-     *
-     * @param $exception
-     * @param EventMessagePayload|null $messagePayload
+     * By default there is no dedicated handler
      */
-    private function handleException($exception, ?EventMessagePayload $messagePayload = null)
+    protected function getHandledMessages(): iterable
     {
-        try {
-            $this->makeExceptionHandler()($exception, $messagePayload);
-        } catch (\Exception $exception) {
-            $this->logException($exception);
-        }
+        return [];
     }
 
     /**
@@ -191,47 +263,22 @@ trait EventListener
     }
 
     /**
-     * Declare Queue and bind with exchange
+     * Handle exception by calling
+     * client exception callback
+     *
+     * @param $exception
+     * @param EventMessagePayload|null $messagePayload
      */
-    protected function declareQueueIfNecessary()
+    private function handleException($exception, ?EventMessagePayload $messagePayload = null)
     {
-        $this->queue = new AMQPQueue($this->channel);
-        $this->queue->setFlags(AMQP_EXCLUSIVE);
-        $this->queue->declareQueue();
-        $this->resolveRoutingKeys();
+        try {
+            $this->makeExceptionHandler()($exception, $messagePayload);
+        } catch (\Exception $exception) {
+            $this->logException($exception);
+        }
     }
 
-    /**
-     * Define callback to be executed
-     * when consuming message from queue
-     */
-    protected function queueConsume()
-    {
-        $this->queue->consume([$this, 'main']);
-    }
-
-    abstract protected function makeMessageHandler(): Closure;
     abstract protected function makeExceptionHandler(): Closure;
-    abstract protected function getBindingKey();
-    abstract protected function getChannelFactory();
-
-    /**
-     * If you want to limit the call of callback for each message, you can filter by white list here.
-     * @param string $eventName
-     * @return bool
-     */
-    protected function isSubscribed(string $eventName): bool
-    {
-        return true;
-    }
-
-    /**
-     * By default there is no dedicated handler
-     */
-    protected function getHandledMessages(): iterable
-    {
-        return [];
-    }
 
     /**
      * Prototype method
@@ -243,49 +290,5 @@ trait EventListener
     {
     }
 
-    /**
-     * Check if message is valid json
-     *
-     * @param $message
-     * @return bool
-     */
-    private function isValidMessageFormat(string $message): bool
-    {
-        return json_decode($message) != null;
-    }
-
-    /**
-     * Check if channel name follows proper naming
-     *
-     * @param string $channelName
-     * @return bool
-     */
-    private function isValidChannelName(string $channelName): bool
-    {
-        return $this->getChannelFactory()->match($channelName);
-    }
-
-    /**
-     * Bind listener to multiple events
-     *
-     * @throws \AMQPChannelException
-     * @throws \AMQPConnectionException
-     */
-    private function resolveRoutingKeys()
-    {
-        $routingKey = $this->getBindingKey();
-
-        // If is string, we cast it to array.
-        if (is_string($routingKey)) {
-            $routingKey = [$routingKey];
-        }
-
-        if (is_array($routingKey)) {
-            foreach ($routingKey as $key) {
-                if (is_string($key)) {
-                    $this->queue->bind($this->exchange->getName(), $this->getRoutingKeyWithPrefix($key));
-                }
-            }
-        }
-    }
+    abstract protected function makeMessageHandler(): Closure;
 }

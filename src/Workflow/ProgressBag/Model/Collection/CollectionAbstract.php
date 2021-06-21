@@ -88,20 +88,20 @@ abstract class CollectionAbstract implements CollectionInterface
     }
 
     /**
-     * @param \Closure $closure
-     * @return CollectionInterface
-     */
-    public function map(\Closure $closure): CollectionInterface
-    {
-        return $this->build(array_map($closure, $this->items));
-    }
-
-    /**
      * @param array $items
      * @return $this
      */
     protected function build(array $items)
     {
         return new static($items);
+    }
+
+    /**
+     * @param \Closure $closure
+     * @return CollectionInterface
+     */
+    public function map(\Closure $closure): CollectionInterface
+    {
+        return $this->build(array_map($closure, $this->items));
     }
 }

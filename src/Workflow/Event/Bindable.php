@@ -7,12 +7,7 @@ abstract class Bindable
     /**
      * @var callable[][]
      */
-    protected $callbacks = [];
-
-    /**
-     * @return string[]
-     */
-    abstract protected function getAllowedBindableTypes(): array;
+    protected array $callbacks = [];
 
     /**
      * @param string $eventType
@@ -37,6 +32,11 @@ abstract class Bindable
 
         return $this;
     }
+
+    /**
+     * @return string[]
+     */
+    abstract protected function getAllowedBindableTypes(): array;
 
     /**
      * @param string $eventType

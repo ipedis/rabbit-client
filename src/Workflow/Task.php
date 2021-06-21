@@ -56,10 +56,10 @@ final class Task extends Bindable
 
     private function __construct(OrderMessagePayload $orderMessage, $callbacks = [])
     {
-        $this->status       = MessageHandlerInterface::TYPE_PLANIFIED;
-        $this->retryCount   = 0;
+        $this->status = MessageHandlerInterface::TYPE_PLANIFIED;
+        $this->retryCount = 0;
         $this->orderMessage = $orderMessage;
-        $this->callbacks    = $this->assertCallbacks($callbacks);
+        $this->callbacks = $this->assertCallbacks($callbacks);
     }
 
     /**
@@ -73,19 +73,19 @@ final class Task extends Bindable
     }
 
     /**
-     * @return OrderMessagePayload
-     */
-    public function getOrderMessage(): OrderMessagePayload
-    {
-        return $this->orderMessage;
-    }
-
-    /**
      * @return string
      */
     public function getTaskId(): string
     {
         return $this->getOrderMessage()->getOrderId();
+    }
+
+    /**
+     * @return OrderMessagePayload
+     */
+    public function getOrderMessage(): OrderMessagePayload
+    {
+        return $this->orderMessage;
     }
 
     /**
@@ -102,53 +102,35 @@ final class Task extends Bindable
     }
 
     /**
-     * Retry dispatching task
-     * - revert status to planified
-     * - increment retry count
-     *
-     * @return Task
+     * @param string $newStatus
      * @throws InvalidStatusException
      */
-    public function retry(): self
+    protected function transitionTo(string $newStatus)
     {
-        $this->transitionTo(MessageHandlerInterface::TYPE_PLANIFIED);
-        $this->retryCount ++;
+        if (!in_array($newStatus, MessageHandlerInterface::AVAILABLE_TYPES)) {
+            throw new InvalidStatusException('type not allowed');
+        }
 
-        return $this;
-    }
+        $this->status = $newStatus;
 
-    /**
-     * Task status changed to DISPATCHED
-     */
-    public function setTaskAsDispatched()
-    {
-        if ($this->isPlanified()) {
-            $this->transitionTo(MessageHandlerInterface::TYPE_DISPATCHED);
+        /**
+         * Track execution start and execution complete
+         */
+        if ($this->isInProgress() && is_null($this->timeStart)) {
+            $this->taskExecutionStarted();
+        } elseif ($this->isCompleted()) {
+            $this->taskExecutionCompleted();
         }
     }
 
     /**
-     * @return array
-     */
-    public function getReplyMessages(): array
-    {
-        return $this->replyMessages;
-    }
-
-    /**
-     * @return ReplyMessagePayload|null
-     */
-    public function getLastReplyMessage(): ?ReplyMessagePayload
-    {
-        return $this->hasReplyMessage() ? $this->replyMessages[count($this->replyMessages) - 1] : null;
-    }
-
-    /**
+     * The task is in progress
+     *
      * @return bool
      */
-    public function hasReplyMessage(): bool
+    public function isInProgress(): bool
     {
-        return !empty($this->replyMessages);
+        return $this->getStatus() === MessageHandlerInterface::TYPE_PROGRESS;
     }
 
     /**
@@ -157,6 +139,14 @@ final class Task extends Bindable
     public function getStatus(): string
     {
         return $this->status;
+    }
+
+    /**
+     * Called when task execution starts
+     */
+    private function taskExecutionStarted(): void
+    {
+        $this->timeStart = $this->getCurrentDateTimeWithMicroseconds();
     }
 
     /**
@@ -191,13 +181,72 @@ final class Task extends Bindable
     }
 
     /**
-     * The task is in progress
+     * Called when task execution completes
+     */
+    private function taskExecutionCompleted(): void
+    {
+        $this->timeFinished = $this->getCurrentDateTimeWithMicroseconds();
+    }
+
+    /**
+     * Retry dispatching task
+     * - revert status to planified
+     * - increment retry count
+     *
+     * @return Task
+     * @throws InvalidStatusException
+     */
+    public function retry(): self
+    {
+        $this->transitionTo(MessageHandlerInterface::TYPE_PLANIFIED);
+        $this->retryCount++;
+
+        return $this;
+    }
+
+    /**
+     * Task status changed to DISPATCHED
+     */
+    public function setTaskAsDispatched()
+    {
+        if ($this->isPlanified()) {
+            $this->transitionTo(MessageHandlerInterface::TYPE_DISPATCHED);
+        }
+    }
+
+    /**
+     * The task has been planified and
+     * not yet dispatched
      *
      * @return bool
      */
-    public function isInProgress(): bool
+    public function isPlanified(): bool
     {
-        return $this->getStatus() === MessageHandlerInterface::TYPE_PROGRESS;
+        return $this->getStatus() === MessageHandlerInterface::TYPE_PLANIFIED;
+    }
+
+    /**
+     * @return array
+     */
+    public function getReplyMessages(): array
+    {
+        return $this->replyMessages;
+    }
+
+    /**
+     * @return ReplyMessagePayload|null
+     */
+    public function getLastReplyMessage(): ?ReplyMessagePayload
+    {
+        return $this->hasReplyMessage() ? $this->replyMessages[count($this->replyMessages) - 1] : null;
+    }
+
+    /**
+     * @return bool
+     */
+    public function hasReplyMessage(): bool
+    {
+        return !empty($this->replyMessages);
     }
 
     /**
@@ -211,14 +260,35 @@ final class Task extends Bindable
     }
 
     /**
-     * The task has been planified and
-     * not yet dispatched
-     *
-     * @return bool
+     * @return int
      */
-    public function isPlanified(): bool
+    public function getRetryCount(): int
     {
-        return $this->getStatus() === MessageHandlerInterface::TYPE_PLANIFIED;
+        return $this->retryCount;
+    }
+
+    /**
+     * @return TaskProgress
+     * @throws InvalidSpentTimeException
+     * @throws InvalidTimeException
+     * @throws InvalidUuidException
+     */
+    public function getTaskProgress(): TaskProgress
+    {
+        return TaskProgress::build(
+            $this->getOrderMessage()->getOrderId(),
+            $this->getType(),
+            $this->getProgressStatus(),
+            $this->getTimer()
+        );
+    }
+
+    /**
+     * @return string
+     */
+    public function getType()
+    {
+        return ChannelAbstract::getTypeFromChannelName($this->getOrderMessage()->getChannel());
     }
 
     /**
@@ -254,14 +324,6 @@ final class Task extends Bindable
     }
 
     /**
-     * @return string
-     */
-    public function getType()
-    {
-        return ChannelAbstract::getTypeFromChannelName($this->getOrderMessage()->getChannel());
-    }
-
-    /**
      * Get task execution time
      * @return float
      */
@@ -291,72 +353,10 @@ final class Task extends Bindable
     }
 
     /**
-     * @return int
-     */
-    public function getRetryCount(): int
-    {
-        return $this->retryCount;
-    }
-
-    /**
-     * @return TaskProgress
-     * @throws InvalidSpentTimeException
-     * @throws InvalidTimeException
-     * @throws InvalidUuidException
-     */
-    public function getTaskProgress(): TaskProgress
-    {
-        return TaskProgress::build(
-            $this->getOrderMessage()->getOrderId(),
-            $this->getType(),
-            $this->getProgressStatus(),
-            $this->getTimer()
-        );
-    }
-
-    /**
-     * @param string $newStatus
-     * @throws InvalidStatusException
-     */
-    protected function transitionTo(string $newStatus)
-    {
-        if (!in_array($newStatus, MessageHandlerInterface::AVAILABLE_TYPES)) {
-            throw new InvalidStatusException('type not allowed');
-        }
-
-        $this->status = $newStatus;
-
-        /**
-         * Track execution start and execution complete
-         */
-        if ($this->isInProgress() && is_null($this->timeStart)) {
-            $this->taskExecutionStarted();
-        } elseif ($this->isCompleted()) {
-            $this->taskExecutionCompleted();
-        }
-    }
-
-    /**
      * @return array
      */
     protected function getAllowedBindableTypes(): array
     {
         return BindableEventInterface::TASK_ALLOW_TYPES;
-    }
-
-    /**
-     * Called when task execution starts
-     */
-    private function taskExecutionStarted(): void
-    {
-        $this->timeStart = $this->getCurrentDateTimeWithMicroseconds();
-    }
-
-    /**
-     * Called when task execution completes
-     */
-    private function taskExecutionCompleted(): void
-    {
-        $this->timeFinished = $this->getCurrentDateTimeWithMicroseconds();
     }
 }

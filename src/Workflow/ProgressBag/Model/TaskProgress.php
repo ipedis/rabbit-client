@@ -45,6 +45,15 @@ class TaskProgress implements \JsonSerializable
 
     /**
      * @param string $uuid
+     * @throws InvalidUuidException
+     */
+    private function assertUuid(string $uuid)
+    {
+        (new UuidValidator())->validate($uuid);
+    }
+
+    /**
+     * @param string $uuid
      * @param string $type
      * @param Status $status
      * @param Timer $timer
@@ -54,6 +63,16 @@ class TaskProgress implements \JsonSerializable
     public static function build(string $uuid, string $type, Status $status, Timer $timer): self
     {
         return new self($uuid, $type, $status, $timer);
+    }
+
+    public function jsonSerialize()
+    {
+        return [
+            'uuid' => $this->getUuid(),
+            'type' => $this->getType(),
+            'status' => $this->getStatus(),
+            'timer' => $this->getTimer()
+        ];
     }
 
     /**
@@ -86,24 +105,5 @@ class TaskProgress implements \JsonSerializable
     public function getTimer(): Timer
     {
         return $this->timer;
-    }
-
-    public function jsonSerialize()
-    {
-        return [
-            'uuid' => $this->getUuid(),
-            'type' => $this->getType(),
-            'status' => $this->getStatus(),
-            'timer' => $this->getTimer()
-        ];
-    }
-
-    /**
-     * @param string $uuid
-     * @throws InvalidUuidException
-     */
-    private function assertUuid(string $uuid)
-    {
-        (new UuidValidator())->validate($uuid);
     }
 }

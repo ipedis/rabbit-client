@@ -49,6 +49,51 @@ abstract class ChannelAbstract
         $this->action = $action;
     }
 
+    private function assertProtocol(string $protocol)
+    {
+        if (!preg_match('#^v\d+$#', $protocol)) {
+            throw new ChannelNamingException(sprintf('"%s" is not valid protocol.', $protocol));
+        }
+    }
+
+    private function assertService(string $service)
+    {
+        if (!preg_match('#^[\w-]+$#', $service)) {
+            throw new ChannelNamingException(sprintf('"%s" is not valid service.', $service));
+        }
+    }
+
+    private function assertAggregate(string $aggregate)
+    {
+        if (!preg_match('#^[\w-]+(?:\.[\w-]+)?$#', $aggregate)) {
+            throw new ChannelNamingException(sprintf('"%s" is not valid aggregate.', $aggregate));
+        }
+    }
+
+    private function assertAction(string $action)
+    {
+        if (!preg_match('#^[\w-]+$#', $action)) {
+            throw new ChannelNamingException(sprintf('"%s" is not valid action.', $action));
+        }
+    }
+
+    /**
+     * @param string $channel
+     * @return static
+     * @throws ChannelNamingException
+     */
+    public static function fromString(string $channel): self
+    {
+        $catched = self::assertChannel($channel);
+
+        return new static(
+            $catched['protocol'],
+            $catched['service'],
+            $catched['aggregate'],
+            $catched['action']
+        );
+    }
+
     /**
      * @param string $channel
      * @return array
@@ -66,6 +111,35 @@ abstract class ChannelAbstract
             throw new ChannelNamingException('Channel can\'t be parsed.');
         }
         return $catched;
+    }
+
+    public static function getTypeFromChannelName(string $channel): string
+    {
+        $channelDetails = self::assertChannel($channel);
+
+        return sprintf('%s.%s.%s', $channelDetails['service'], $channelDetails['aggregate'], $channelDetails['action']);
+    }
+
+    /**
+     * @param string $protocol
+     * @param string $service
+     * @param string $aggregate
+     * @param string $action
+     * @return static
+     */
+    public static function build(string $protocol, string $service, string $aggregate, string $action): self
+    {
+        return new static(
+            $protocol,
+            $service,
+            $aggregate,
+            $action
+        );
+    }
+
+    public function __toString()
+    {
+        return "{$this->getProtocol()}.{$this->getService()}.{$this->getAggregate()}.{$this->getAction()}";
     }
 
     /**
@@ -98,79 +172,5 @@ abstract class ChannelAbstract
     public function getAction(): string
     {
         return $this->action;
-    }
-
-    public function __toString()
-    {
-        return "{$this->getProtocol()}.{$this->getService()}.{$this->getAggregate()}.{$this->getAction()}";
-    }
-
-    /**
-     * @param string $channel
-     * @return static
-     * @throws ChannelNamingException
-     */
-    public static function fromString(string $channel): self
-    {
-        $catched = self::assertChannel($channel);
-
-        return new static(
-            $catched['protocol'],
-            $catched['service'],
-            $catched['aggregate'],
-            $catched['action']
-        );
-    }
-
-    public static function getTypeFromChannelName(string $channel): string
-    {
-        $channelDetails = self::assertChannel($channel);
-
-        return sprintf('%s.%s.%s', $channelDetails['service'], $channelDetails['aggregate'], $channelDetails['action']);
-    }
-
-    /**
-     * @param string $protocol
-     * @param string $service
-     * @param string $aggregate
-     * @param string $action
-     * @return static
-     */
-    public static function build(string $protocol, string $service, string $aggregate, string $action): self
-    {
-        return new static(
-            $protocol,
-            $service,
-            $aggregate,
-            $action
-        );
-    }
-
-    private function assertProtocol(string $protocol)
-    {
-        if (!preg_match('#^v\d+$#', $protocol)) {
-            throw new ChannelNamingException(sprintf('"%s" is not valid protocol.', $protocol));
-        }
-    }
-
-    private function assertService(string $service)
-    {
-        if (!preg_match('#^[\w-]+$#', $service)) {
-            throw new ChannelNamingException(sprintf('"%s" is not valid service.', $service));
-        }
-    }
-
-    private function assertAggregate(string $aggregate)
-    {
-        if (!preg_match('#^[\w-]+(?:\.[\w-]+)?$#', $aggregate)) {
-            throw new ChannelNamingException(sprintf('"%s" is not valid aggregate.', $aggregate));
-        }
-    }
-
-    private function assertAction(string $action)
-    {
-        if (!preg_match('#^[\w-]+$#', $action)) {
-            throw new ChannelNamingException(sprintf('"%s" is not valid action.', $action));
-        }
     }
 }

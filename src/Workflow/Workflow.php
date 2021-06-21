@@ -64,6 +64,74 @@ class Workflow extends Bindable
     }
 
     /**
+     * @param string $uuid
+     * @throws InvalidUuidException
+     */
+    protected function assertUuid(string $uuid)
+    {
+        (new UuidValidator())->validate($uuid);
+    }
+
+    /**
+     * Attach group of task to workflow
+     * - Group provided, add group to collection
+     * - Callable provided, create group and pass it to callable
+     *   (which can add tasks to the group)
+     *
+     * @param $step
+     * @param array $callbacks
+     * @throws InvalidWorkflowArgumentException
+     * @throws InvalidGroupArgumentException
+     */
+    private function schedule($step, array $callbacks = [])
+    {
+        $this->assertGroup($step);
+
+        if ($step instanceof Group) {
+            /**
+             * In case we provide groupCallback, we must bind it.
+             */
+            foreach ($callbacks as $eventType => $callback) {
+                $step->bind($eventType, $callback);
+            }
+            /**
+             * Add group to collection
+             */
+            $this->groups[] = $step;
+        } else {
+            /**
+             * Create and provide callable with new group
+             */
+            $workflowGroup = Group::build([], $callbacks);
+
+            /**
+             * Callable to add tasks in workflow group
+             */
+            $returnedGroup = $step($workflowGroup);
+
+            /**
+             * Plan/Schedule the workflow group
+             * Add group to collection, if Group are returned by callback, then use it in place of the original one.
+             */
+            $this->groups[] = ($returnedGroup instanceof Group) ? $returnedGroup : $workflowGroup;
+        }
+    }
+
+    /**
+     * @param $step
+     * @throws InvalidWorkflowArgumentException
+     */
+    private function assertGroup($step)
+    {
+        if (
+            !$step instanceof Group &&
+            !is_callable($step)
+        ) {
+            throw new InvalidWorkflowArgumentException(sprintf('Argument should be either instance of "%s" or a callable', Group::class));
+        }
+    }
+
+    /**
      * Schedule next group of orders
      *
      * @param $nextStep
@@ -121,67 +189,6 @@ class Workflow extends Bindable
     }
 
     /**
-     * @return WorkflowConfig
-     */
-    public function getConfig(): WorkflowConfig
-    {
-        return $this->config;
-    }
-
-    /**
-     * Attach group of task to workflow
-     * - Group provided, add group to collection
-     * - Callable provided, create group and pass it to callable
-     *   (which can add tasks to the group)
-     *
-     * @param $step
-     * @param array $callbacks
-     * @throws InvalidWorkflowArgumentException
-     * @throws InvalidGroupArgumentException
-     */
-    private function schedule($step, array $callbacks = [])
-    {
-        $this->assertGroup($step);
-
-        if ($step instanceof Group) {
-            /**
-             * In case we provide groupCallback, we must bind it.
-             */
-            foreach ($callbacks as $eventType => $callback) {
-                $step->bind($eventType, $callback);
-            }
-            /**
-             * Add group to collection
-             */
-            $this->groups[] = $step;
-        } else {
-            /**
-             * Create and provide callable with new group
-             */
-            $workflowGroup = Group::build([], $callbacks);
-
-            /**
-             * Callable to add tasks in workflow group
-             */
-            $returnedGroup = $step($workflowGroup);
-
-            /**
-             * Plan/Schedule the workflow group
-             * Add group to collection, if Group are returned by callback, then use it in place of the original one.
-             */
-            $this->groups[] = ($returnedGroup instanceof Group) ? $returnedGroup : $workflowGroup;
-        }
-    }
-
-    /**
-     * @return Group[]
-     */
-    public function getGroups(): array
-    {
-        return $this->groups;
-    }
-
-    /**
      * Find group
      *
      * @param string $groupId
@@ -202,6 +209,14 @@ class Workflow extends Bindable
     }
 
     /**
+     * @return Group[]
+     */
+    public function getGroups(): array
+    {
+        return $this->groups;
+    }
+
+    /**
      * Check if retry is allowed for task
      *
      * @param Task $task
@@ -213,34 +228,15 @@ class Workflow extends Bindable
         return
             !$group->hasConfig() &&
             $this->getConfig()->hasToRetry() &&
-            $task->getRetryCount() < $this->getConfig()->getMaxRetry()
-            ;
+            $task->getRetryCount() < $this->getConfig()->getMaxRetry();
     }
 
     /**
-     * @return WorkflowProgressBag
+     * @return WorkflowConfig
      */
-    public function getProgressBag(): WorkflowProgressBag
+    public function getConfig(): WorkflowConfig
     {
-        return new WorkflowProgressBag($this->getGroups(), $this->workflowId);
-    }
-
-    /**
-     * get current workflow progress percentage
-     * @return float
-     * @throws InvalidProgressValueException
-     */
-    public function getProgressPercentage(): float
-    {
-        return $this->getProgressBag()->getPercentage()->getCompleted();
-    }
-
-    /**
-     * @return string|null
-     */
-    public function getWorkflowId(): ?string
-    {
-        return $this->workflowId;
+        return $this->config;
     }
 
     /**
@@ -255,17 +251,29 @@ class Workflow extends Bindable
     }
 
     /**
-     * @param $step
-     * @throws InvalidWorkflowArgumentException
+     * get current workflow progress percentage
+     * @return float
+     * @throws InvalidProgressValueException
      */
-    private function assertGroup($step)
+    public function getProgressPercentage(): float
     {
-        if (
-            !$step instanceof Group &&
-            !is_callable($step)
-        ) {
-            throw new InvalidWorkflowArgumentException(sprintf('Argument should be either instance of "%s" or a callable', Group::class));
-        }
+        return $this->getProgressBag()->getPercentage()->getCompleted();
+    }
+
+    /**
+     * @return WorkflowProgressBag
+     */
+    public function getProgressBag(): WorkflowProgressBag
+    {
+        return new WorkflowProgressBag($this->getGroups(), $this->workflowId);
+    }
+
+    /**
+     * @return string|null
+     */
+    public function getWorkflowId(): ?string
+    {
+        return $this->workflowId;
     }
 
     /**
@@ -274,14 +282,5 @@ class Workflow extends Bindable
     protected function getAllowedBindableTypes(): array
     {
         return BindableEventInterface::WORKFLOW_ALLOW_TYPES;
-    }
-
-    /**
-     * @param string $uuid
-     * @throws InvalidUuidException
-     */
-    protected function assertUuid(string $uuid)
-    {
-        (new UuidValidator())->validate($uuid);
     }
 }

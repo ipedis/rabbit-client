@@ -5,7 +5,6 @@ namespace Ipedis\Rabbit\Workflow\ProgressBag\Model;
 use Ipedis\Rabbit\Exception\Progress\InvalidProgressValueException;
 use Ipedis\Rabbit\Exception\Timer\InvalidSpentTimeException;
 use Ipedis\Rabbit\Exception\Timer\InvalidTimeException;
-use Ipedis\Rabbit\Workflow\ProgressBag\Model\Collection\GroupedTasksProgressCollection;
 use Ipedis\Rabbit\Workflow\ProgressBag\Model\Summary\GroupedTasksProgressSummary;
 use Ipedis\Rabbit\Workflow\ProgressBag\Model\Summary\GroupProgressSummary;
 use Ipedis\Rabbit\Workflow\ProgressBag\Property\Percentage;
@@ -57,7 +56,8 @@ class WorkflowProgress implements \JsonSerializable
         Percentage $percentage,
         GroupProgressSummary $groupProgressSummary,
         GroupedTasksProgressSummary $groupedTasksSummary
-    ) {
+    )
+    {
         $this->uuid = $uuid;
         $this->status = $status;
         $this->timer = $timer;
@@ -82,7 +82,8 @@ class WorkflowProgress implements \JsonSerializable
         Percentage $percentage,
         GroupProgressSummary $groupProgressSummary,
         GroupedTasksProgressSummary $groupedTasksSummary
-    ): self {
+    ): self
+    {
         return new self($uuid, $status, $timer, $percentage, $groupProgressSummary, $groupedTasksSummary);
     }
 
@@ -107,6 +108,21 @@ class WorkflowProgress implements \JsonSerializable
             GroupProgressSummary::fromWorkflow($workflowProgressBag),
             GroupedTasksProgressSummary::fromWorkflow($workflowProgressBag)
         );
+    }
+
+    /**
+     * @return array
+     */
+    public function jsonSerialize(): array
+    {
+        return [
+            'uuid' => $this->getUuid(),
+            'status' => $this->getStatus(),
+            'timer' => $this->getTimer(),
+            'percentage' => $this->getPercentage(),
+            'groups' => $this->getGroupProgressSummary(),
+            'tasks' => $this->getGroupedTasksSummary()
+        ];
     }
 
     /**
@@ -155,21 +171,6 @@ class WorkflowProgress implements \JsonSerializable
     public function getGroupedTasksSummary(): GroupedTasksProgressSummary
     {
         return $this->groupedTasksSummary;
-    }
-
-    /**
-     * @return array
-     */
-    public function jsonSerialize(): array
-    {
-        return [
-            'uuid' => $this->getUuid(),
-            'status' => $this->getStatus(),
-            'timer' => $this->getTimer(),
-            'percentage' => $this->getPercentage(),
-            'groups' => $this->getGroupProgressSummary(),
-            'tasks' => $this->getGroupedTasksSummary()
-        ];
     }
 
     /**

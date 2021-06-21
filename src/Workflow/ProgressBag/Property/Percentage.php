@@ -36,71 +36,6 @@ class Percentage implements \JsonSerializable
      * @param float $completed
      * @param float $success
      * @param float $failed
-     * @return Percentage
-     * @throws InvalidProgressValueException
-     */
-    public static function build(float $completed, float $success, float $failed): self
-    {
-        return new self($completed, $success, $failed);
-    }
-
-    /**
-     * Initialize progress object.
-     * @return Percentage
-     * @throws InvalidProgressValueException
-     */
-    public static function init(): self
-    {
-        return new self(0, 0, 0);
-    }
-
-    /**
-     * @param int $completed
-     * @param int $total
-     * @return float
-     */
-    public static function calculate(int $completed, int $total): float
-    {
-        return (100 * $completed)/$total;
-    }
-
-    /**
-     * @return float
-     */
-    public function getCompleted(): float
-    {
-        return $this->completed;
-    }
-
-    /**
-     * @return float
-     */
-    public function getSuccess(): float
-    {
-        return $this->success;
-    }
-
-    /**
-     * @return float
-     */
-    public function getFailed(): float
-    {
-        return $this->failed;
-    }
-
-    public function jsonSerialize()
-    {
-        return [
-            'completed' => $this->getCompleted(),
-            'success'   => $this->getSuccess(),
-            'failed'    => $this->getFailed()
-        ];
-    }
-
-    /**
-     * @param float $completed
-     * @param float $success
-     * @param float $failed
      * @throws InvalidProgressValueException
      */
     private function assertProgress(float $completed, float $success, float $failed)
@@ -127,6 +62,71 @@ class Percentage implements \JsonSerializable
      */
     private function isPercentageValid(float $percentage): bool
     {
-        return $percentage >=0 && $percentage <= 100;
+        return $percentage >= 0 && $percentage <= 100;
+    }
+
+    /**
+     * @param float $completed
+     * @param float $success
+     * @param float $failed
+     * @return Percentage
+     * @throws InvalidProgressValueException
+     */
+    public static function build(float $completed, float $success, float $failed): self
+    {
+        return new self($completed, $success, $failed);
+    }
+
+    /**
+     * Initialize progress object.
+     * @return Percentage
+     * @throws InvalidProgressValueException
+     */
+    public static function init(): self
+    {
+        return new self(0, 0, 0);
+    }
+
+    /**
+     * @param int $completed
+     * @param int $total
+     * @return float
+     */
+    public static function calculate(int $completed, int $total): float
+    {
+        return (100 * $completed) / $total;
+    }
+
+    public function jsonSerialize()
+    {
+        return [
+            'completed' => $this->getCompleted(),
+            'success' => $this->getSuccess(),
+            'failed' => $this->getFailed()
+        ];
+    }
+
+    /**
+     * @return float
+     */
+    public function getCompleted(): float
+    {
+        return $this->completed;
+    }
+
+    /**
+     * @return float
+     */
+    public function getSuccess(): float
+    {
+        return $this->success;
+    }
+
+    /**
+     * @return float
+     */
+    public function getFailed(): float
+    {
+        return $this->failed;
     }
 }

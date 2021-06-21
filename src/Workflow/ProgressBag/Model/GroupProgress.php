@@ -50,6 +50,35 @@ class GroupProgress implements \JsonSerializable
 
     /**
      * @param string $uuid
+     * @param TaskProgressCollection $taskCollection
+     * @throws InvalidUuidException
+     */
+    private function validateInputs(string $uuid, TaskProgressCollection $taskCollection)
+    {
+        $this->assertUuid($uuid);
+        $this->assertTasks($taskCollection);
+    }
+
+    /**
+     * @param string $uuid
+     * @throws InvalidUuidException
+     */
+    private function assertUuid(string $uuid)
+    {
+        (new UuidValidator())->validate($uuid);
+    }
+
+    private function assertTasks(TaskProgressCollection $tasks)
+    {
+        foreach ($tasks as $task) {
+            if (!$task instanceof TaskProgress) {
+                throw new \InvalidArgumentException(sprintf('Object of %s expected.', TaskProgress::class));
+            }
+        }
+    }
+
+    /**
+     * @param string $uuid
      * @param Status $status
      * @param Timer $timer
      * @param Percentage $percentage
@@ -60,6 +89,17 @@ class GroupProgress implements \JsonSerializable
     public static function build(string $uuid, Status $status, Timer $timer, Percentage $percentage, TaskProgressCollection $tasks): self
     {
         return new self($uuid, $status, $timer, $percentage, $tasks);
+    }
+
+    public function jsonSerialize()
+    {
+        return [
+            'uuid' => $this->getUuid(),
+            'status' => $this->getStatus(),
+            'timer' => $this->getTimer(),
+            'percentage' => $this->getPercentage(),
+            'tasks' => $this->getTasks()
+        ];
     }
 
     /**
@@ -100,45 +140,5 @@ class GroupProgress implements \JsonSerializable
     public function getTasks(): TaskProgressCollection
     {
         return $this->tasks;
-    }
-
-    public function jsonSerialize()
-    {
-        return [
-            'uuid'          => $this->getUuid(),
-            'status'        => $this->getStatus(),
-            'timer'         => $this->getTimer(),
-            'percentage'    => $this->getPercentage(),
-            'tasks'         => $this->getTasks()
-        ];
-    }
-
-    /**
-     * @param string $uuid
-     * @param TaskProgressCollection $taskCollection
-     * @throws InvalidUuidException
-     */
-    private function validateInputs(string $uuid, TaskProgressCollection $taskCollection)
-    {
-        $this->assertUuid($uuid);
-        $this->assertTasks($taskCollection);
-    }
-
-    /**
-     * @param string $uuid
-     * @throws InvalidUuidException
-     */
-    private function assertUuid(string $uuid)
-    {
-        (new UuidValidator())->validate($uuid);
-    }
-
-    private function assertTasks(TaskProgressCollection $tasks)
-    {
-        foreach ($tasks as $task) {
-            if (!$task instanceof TaskProgress) {
-                throw new \InvalidArgumentException(sprintf('Object of %s expected.', TaskProgress::class));
-            }
-        }
     }
 }

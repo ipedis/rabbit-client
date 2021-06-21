@@ -10,27 +10,27 @@ class WorkflowConfig
     /**
      * @var bool
      */
-    private $retry;
+    private bool $retry;
 
     /**
      * @var int
      */
-    private $maxRetry;
+    private int $maxRetry;
 
     /**
      * @var bool
      */
-    private $continueOnFailure;
+    private bool $continueOnFailure;
 
     /**
      * @var bool
      */
-    private $ignoreParentHooks;
+    private bool $ignoreParentHooks;
 
     /**
      * @var array
      */
-    private $channelsConfig;
+    private array $channelsConfig;
 
     public function __construct(
         bool $continueOnFailure = false,
@@ -38,12 +38,30 @@ class WorkflowConfig
         $maxRetry = 3,
         bool $ignoreParentHooks = false,
         array $channelsConfig = []
-    ) {
+    )
+    {
         $this->retry = $hasToRetry;
         $this->maxRetry = $maxRetry;
         $this->continueOnFailure = $continueOnFailure;
         $this->ignoreParentHooks = $ignoreParentHooks;
         $this->setChannelsConfig($channelsConfig);
+    }
+
+    /**
+     * Set channel configs
+     *
+     * @param array $channelConfigs
+     * @throws InvalidChannelConfigException
+     */
+    protected function setChannelsConfig(array $channelConfigs)
+    {
+        foreach ($channelConfigs as $channelConfig) {
+            if (!($channelConfig instanceof ChannelConfig)) {
+                throw new InvalidChannelConfigException('Invalid channel config supplied for workflow');
+            }
+
+            $this->channelsConfig[$channelConfig->getChannelName()] = $channelConfig;
+        }
     }
 
     public function hasToRetry(): bool
@@ -86,18 +104,6 @@ class WorkflowConfig
 
     /**
      * @param string $channelName
-     * @return int
-     */
-    public function getConcurrencyLimitForChannel(string $channelName): int
-    {
-        return $this
-            ->getChannelConfig($channelName)
-            ->getMaxWorkers()
-        ;
-    }
-
-    /**
-     * @param string $channelName
      * @return bool
      */
     public function hasChannelConfig(string $channelName): bool
@@ -107,27 +113,21 @@ class WorkflowConfig
 
     /**
      * @param string $channelName
+     * @return int
+     */
+    public function getConcurrencyLimitForChannel(string $channelName): int
+    {
+        return $this
+            ->getChannelConfig($channelName)
+            ->getMaxWorkers();
+    }
+
+    /**
+     * @param string $channelName
      * @return ChannelConfig
      */
     public function getChannelConfig(string $channelName): ChannelConfig
     {
         return $this->channelsConfig[$channelName];
-    }
-
-    /**
-     * Set channel configs
-     *
-     * @param array $channelConfigs
-     * @throws InvalidChannelConfigException
-     */
-    protected function setChannelsConfig(array $channelConfigs)
-    {
-        foreach ($channelConfigs as $channelConfig) {
-            if (!($channelConfig instanceof ChannelConfig)) {
-                throw new InvalidChannelConfigException('Invalid channel config supplied for workflow');
-            }
-
-            $this->channelsConfig[$channelConfig->getChannelName()] = $channelConfig;
-        }
     }
 }

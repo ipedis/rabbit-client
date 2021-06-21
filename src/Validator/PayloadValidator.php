@@ -8,27 +8,27 @@
 
 namespace Ipedis\Rabbit\Validator;
 
-use Opis\JsonSchema\Validator;
-use Opis\JsonSchema\ValidationResult;
-use Opis\JsonSchema\ValidationError;
 use Opis\JsonSchema\Schema;
+use Opis\JsonSchema\ValidationError;
+use Opis\JsonSchema\ValidationResult;
+use Opis\JsonSchema\Validator;
 
 class PayloadValidator
 {
     /**
      * @var JsonValidator
      */
-    private $jsonValidator;
+    private JsonValidator $jsonValidator;
 
     /**
      * @var ValidationResult|null
      */
-    private $validationResult = null;
+    private ?ValidationResult $validationResult = null;
 
     /**
      * @var bool
      */
-    private $inputValid = false;
+    private bool $inputValid = false;
 
     public function __construct()
     {
@@ -56,26 +56,25 @@ class PayloadValidator
     /**
      * @return bool
      */
+    public function isValid(): bool
+    {
+        return $this->isInputValid() &&
+            $this->validationResult &&
+            $this->validationResult->isValid();
+    }
+
+    /**
+     * @return bool
+     */
     public function isInputValid(): bool
     {
         return $this->inputValid;
     }
 
     /**
-     * @return bool
-     */
-    public function isValid()
-    {
-        return $this->isInputValid() &&
-            $this->validationResult &&
-            $this->validationResult->isValid()
-            ;
-    }
-
-    /**
      * @return null|ValidationResult
      */
-    public function getValidationResult(): ValidationResult
+    public function getValidationResult(): ?ValidationResult
     {
         return $this->validationResult;
     }

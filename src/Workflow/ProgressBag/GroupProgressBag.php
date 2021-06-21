@@ -40,11 +40,34 @@ class GroupProgressBag implements ProgressBagInterface
     }
 
     /**
-     * @return string
+     * @return bool
      */
-    public function getGroupId(): string
+    public function hasPendingTasks(): bool
     {
-        return $this->groupId;
+        return $this->countPlanifiedTasks() > 0;
+    }
+
+    /**
+     * Count of planified tasks
+     *
+     * @return int
+     */
+    public function countPlanifiedTasks(): int
+    {
+        return count($this->getPlanifiedTasks());
+    }
+
+    /**
+     * Get collection of planified tasks
+     * waiting to be dispatched
+     *
+     * @return array
+     */
+    public function getPlanifiedTasks(): array
+    {
+        return array_filter($this->getTasksInGroup(), function (Task $task) {
+            return $task->isPlanified();
+        });
     }
 
     /**
@@ -71,32 +94,13 @@ class GroupProgressBag implements ProgressBagInterface
     }
 
     /**
-     * Get collection of planified tasks
-     * waiting to be dispatched
+     * Count of in progress tasks
      *
-     * @return array
+     * @return int
      */
-    public function getPlanifiedTasks(): array
+    public function countInProgressTasks(): int
     {
-        return array_filter($this->getTasksInGroup(), function (Task $task) {
-            return $task->isPlanified();
-        });
-    }
-
-    /**
-     * Get Collection of dispatched tasks
-     * @param string|null $taskType
-     * @return array
-     */
-    public function getDispatchedTasks(?string $taskType = null): array
-    {
-        return array_filter($this->getTasksInGroup(), function (Task $task) use ($taskType) {
-            if (!is_null($taskType)) {
-                return $task->isDispatched() && $task->getType() === $taskType;
-            }
-
-            return $task->isDispatched();
-        });
+        return count($this->getInProgressTasks());
     }
 
     /**
@@ -112,156 +116,31 @@ class GroupProgressBag implements ProgressBagInterface
     }
 
     /**
-     * Get collection of successfully completed tasks
-     *
-     * @return array
+     * @return GroupProgress
+     * @throws InvalidSpentTimeException
+     * @throws InvalidTimeException
+     * @throws InvalidUuidException
+     * @throws InvalidProgressValueException
      */
-    public function getSuccessfulTasks(): array
+    public function getGroupProgress(): GroupProgress
     {
-        return array_filter($this->getTasksInGroup(), function (Task $task) {
-            return $task->isSuccess();
-        });
+        return GroupProgress::build(
+            $this->getGroupId(),
+            $this->getStatus(),
+            $this->getTimer(),
+            $this->getPercentage(),
+            new TaskProgressCollection(array_map(function (Task $task) {
+                return $task->getTaskProgress();
+            }, $this->getTasksInGroup()))
+        );
     }
 
     /**
-     * Get collection of completed tasks which have failed
-     *
-     * @return array
+     * @return string
      */
-    public function getFailedTasks(): array
+    public function getGroupId(): string
     {
-        return array_filter($this->getTasksInGroup(), function (Task $task) {
-            return $task->isOnFailure();
-        });
-    }
-
-    /**
-     * Get collection of completed tasks
-     *
-     * @return array
-     */
-    public function getCompletedTasks(): array
-    {
-        return array_filter($this->getTasksInGroup(), function (Task $task) {
-            return $task->isCompleted();
-        });
-    }
-
-    /**
-     * @return bool
-     */
-    public function hasPendingTasks(): bool
-    {
-        return $this->countPlanifiedTasks() > 0;
-    }
-
-    /**
-     * Count of orders in group
-     *
-     * @return int
-     */
-    public function countTasksInGroup(): int
-    {
-        return count($this->getTasksInGroup());
-    }
-
-    /**
-     * Count of planified tasks
-     *
-     * @return int
-     */
-    public function countPlanifiedTasks(): int
-    {
-        return count($this->getPlanifiedTasks());
-    }
-
-    /**
-     * Count of dispatched tasks
-     * @return int
-     */
-    public function countDispatchedTasks(?string $taskType = null): int
-    {
-        return count($this->getDispatchedTasks($taskType));
-    }
-
-    /**
-     * Count of in progress tasks
-     *
-     * @return int
-     */
-    public function countInProgressTasks(): int
-    {
-        return count($this->getInProgressTasks());
-    }
-
-    /**
-     * Count of successful tasks
-     *
-     * @return int
-     */
-    public function countSuccessfulTasks(): int
-    {
-        return count($this->getSuccessfulTasks());
-    }
-
-    /**
-     * Count of failed tasks
-     *
-     * @return int
-     */
-    public function countFailedTasks(): int
-    {
-        return count($this->getFailedTasks());
-    }
-
-    /**
-     * Count of completed tasks
-     *
-     * @return int
-     */
-    public function countCompletedTasks(): int
-    {
-        return count($this->getCompletedTasks());
-    }
-
-    /**
-     * No task yet dispatched
-     *
-     * @return bool
-     */
-    public function isPending(): bool
-    {
-        return !$this->isCompleted() && $this->countDispatchedTasks() === 0;
-    }
-
-    /**
-     * At least a task has been dispatched
-     *
-     * @return bool
-     */
-    public function isRunning(): bool
-    {
-        return !$this->isPending();
-    }
-
-    /**
-     * Has all tasks in group completed
-     *
-     * @return bool
-     */
-    public function isCompleted(): bool
-    {
-        return $this->countTasksInGroup() === $this->countCompletedTasks();
-    }
-
-    /**
-     * At least a task has failed
-     *
-     * @return bool
-     */
-    public function hasFailure(): bool
-    {
-        return $this->countFailedTasks() > 0;
+        return $this->groupId;
     }
 
     /**
@@ -286,6 +165,139 @@ class GroupProgressBag implements ProgressBagInterface
         } elseif ($this->isRunning()) {
             return Status::buildRunning();
         }
+    }
+
+    /**
+     * Has all tasks in group completed
+     *
+     * @return bool
+     */
+    public function isCompleted(): bool
+    {
+        return $this->countTasksInGroup() === $this->countCompletedTasks();
+    }
+
+    /**
+     * Count of orders in group
+     *
+     * @return int
+     */
+    public function countTasksInGroup(): int
+    {
+        return count($this->getTasksInGroup());
+    }
+
+    /**
+     * Count of completed tasks
+     *
+     * @return int
+     */
+    public function countCompletedTasks(): int
+    {
+        return count($this->getCompletedTasks());
+    }
+
+    /**
+     * Get collection of completed tasks
+     *
+     * @return array
+     */
+    public function getCompletedTasks(): array
+    {
+        return array_filter($this->getTasksInGroup(), function (Task $task) {
+            return $task->isCompleted();
+        });
+    }
+
+    /**
+     * At least a task has failed
+     *
+     * @return bool
+     */
+    public function hasFailure(): bool
+    {
+        return $this->countFailedTasks() > 0;
+    }
+
+    /**
+     * Count of failed tasks
+     *
+     * @return int
+     */
+    public function countFailedTasks(): int
+    {
+        return count($this->getFailedTasks());
+    }
+
+    /**
+     * Get collection of completed tasks which have failed
+     *
+     * @return array
+     */
+    public function getFailedTasks(): array
+    {
+        return array_filter($this->getTasksInGroup(), function (Task $task) {
+            return $task->isOnFailure();
+        });
+    }
+
+    /**
+     * No task yet dispatched
+     *
+     * @return bool
+     */
+    public function isPending(): bool
+    {
+        return !$this->isCompleted() && $this->countDispatchedTasks() === 0;
+    }
+
+    /**
+     * Count of dispatched tasks
+     * @return int
+     */
+    public function countDispatchedTasks(?string $taskType = null): int
+    {
+        return count($this->getDispatchedTasks($taskType));
+    }
+
+    /**
+     * Get Collection of dispatched tasks
+     * @param string|null $taskType
+     * @return array
+     */
+    public function getDispatchedTasks(?string $taskType = null): array
+    {
+        return array_filter($this->getTasksInGroup(), function (Task $task) use ($taskType) {
+            if (!is_null($taskType)) {
+                return $task->isDispatched() && $task->getType() === $taskType;
+            }
+
+            return $task->isDispatched();
+        });
+    }
+
+    /**
+     * At least a task has been dispatched
+     *
+     * @return bool
+     */
+    public function isRunning(): bool
+    {
+        return !$this->isPending();
+    }
+
+    /**
+     * @return Timer
+     * @throws InvalidSpentTimeException
+     * @throws InvalidTimeException
+     */
+    public function getTimer(): Timer
+    {
+        return Timer::build(
+            $this->getExecutionTime(),
+            $this->getStartedAt(),
+            $this->getFinishedAt()
+        );
     }
 
     /**
@@ -408,36 +420,24 @@ class GroupProgressBag implements ProgressBagInterface
     }
 
     /**
-     * @return Timer
-     * @throws InvalidSpentTimeException
-     * @throws InvalidTimeException
+     * Count of successful tasks
+     *
+     * @return int
      */
-    public function getTimer(): Timer
+    public function countSuccessfulTasks(): int
     {
-        return Timer::build(
-            $this->getExecutionTime(),
-            $this->getStartedAt(),
-            $this->getFinishedAt()
-        );
+        return count($this->getSuccessfulTasks());
     }
 
     /**
-     * @return GroupProgress
-     * @throws InvalidSpentTimeException
-     * @throws InvalidTimeException
-     * @throws InvalidUuidException
-     * @throws InvalidProgressValueException
+     * Get collection of successfully completed tasks
+     *
+     * @return array
      */
-    public function getGroupProgress(): GroupProgress
+    public function getSuccessfulTasks(): array
     {
-        return GroupProgress::build(
-            $this->getGroupId(),
-            $this->getStatus(),
-            $this->getTimer(),
-            $this->getPercentage(),
-            new TaskProgressCollection(array_map(function (Task $task) {
-                return $task->getTaskProgress();
-            }, $this->getTasksInGroup()))
-        );
+        return array_filter($this->getTasksInGroup(), function (Task $task) {
+            return $task->isSuccess();
+        });
     }
 }

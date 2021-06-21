@@ -113,23 +113,6 @@ trait EventDispatcher
     }
 
     /**
-     * Store event on recovery
-     *
-     * @param EventMessagePayload $payload
-     */
-    private function storeEventOnRecovery(EventMessagePayload $payload)
-    {
-        $this->getClient()
-            ->post($this->getRecoveryEventStoreEndpoint(), [
-                'body' => json_encode($payload),
-                'headers' => [
-                    'Accept' => 'application/json'
-                ]
-            ])
-        ;
-    }
-
-    /**
      * prepare data of message payload
      *
      * @param EventMessagePayload $payload
@@ -150,6 +133,22 @@ trait EventDispatcher
 
         //rebuild payload with encoded data
         return EventMessagePayload::build($payload->getChannel(), $data, $payload->getHeaders());
+    }
+
+    /**
+     * Store event on recovery
+     *
+     * @param EventMessagePayload $payload
+     */
+    private function storeEventOnRecovery(EventMessagePayload $payload)
+    {
+        $this->getClient()
+            ->post($this->getRecoveryEventStoreEndpoint(), [
+                'body' => json_encode($payload),
+                'headers' => [
+                    'Accept' => 'application/json'
+                ]
+            ]);
     }
 
     abstract public function getRecoveryEventStoreEndpoint(): string;

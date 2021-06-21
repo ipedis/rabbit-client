@@ -21,6 +21,18 @@ trait DateTimeHelper
      * @param DateTime $endTime
      * @return float
      */
+    protected function getDifferenceInMilliseconds(DateTime $startTime, DateTime $endTime): float
+    {
+        $microseconds = $this->getDifferenceWithMicroseconds($startTime, $endTime);
+
+        return $microseconds * 1000;
+    }
+
+    /**
+     * @param DateTime $startTime
+     * @param DateTime $endTime
+     * @return float
+     */
     protected function getDifferenceWithMicroseconds(DateTime $startTime, DateTime $endTime): float
     {
         $start = (float)$startTime->format('U.u');
@@ -31,17 +43,5 @@ trait DateTimeHelper
         }
 
         return number_format(abs($end - $start), 6);
-    }
-
-    /**
-     * @param DateTime $startTime
-     * @param DateTime $endTime
-     * @return float
-     */
-    protected function getDifferenceInMilliseconds(DateTime $startTime, DateTime $endTime): float
-    {
-        $microseconds = $this->getDifferenceWithMicroseconds($startTime, $endTime);
-
-        return $microseconds * 1000;
     }
 }
