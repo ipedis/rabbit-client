@@ -10,6 +10,7 @@ use Exception;
 use Ipedis\Rabbit\Channel\Factory\ChannelFactory;
 use Ipedis\Rabbit\Consumer\Handler\MessageHandlerInterface;
 use Ipedis\Rabbit\Exception\Channel\ChannelFactoryException;
+use Ipedis\Rabbit\Exception\Helper\Serializer;
 use Ipedis\Rabbit\Exception\MessagePayload\MessagePayloadFormatException;
 use Ipedis\Rabbit\Lifecyle\Hook\OnAfterMessage;
 use Ipedis\Rabbit\Lifecyle\Hook\OnBeforeMessage;
@@ -195,16 +196,19 @@ trait Worker
             // force status to success.
             $answer['status'] = MessageHandlerInterface::TYPE_SUCCESS;
         } catch (Exception $exception) {
+            $context = $this->handleException($exception, $messagePayload);
+
             $answer = [
                 'worker' => self::class,
                 'id' => $this->worker_id,
                 'status' => MessageHandlerInterface::TYPE_ERROR,
+                'correlation_id' => $messagePayload->getOrderId(),
+                /** todo remove message and code as is duplicated from error */
                 'message' => $exception->getMessage(),
                 'code' => $exception->getCode(),
-                'correlation_id' => $messagePayload->getOrderId()
+                'error' => Serializer::fromException($exception, $context ?? [])
             ];
 
-            $this->handleException($exception, $messagePayload);
         } finally {
             /**
              * Create final message to reply back to manager with
@@ -296,14 +300,17 @@ trait Worker
      *
      * @param $exception
      * @param OrderMessagePayload|null $messagePayload
-     * @return void
+     * @return array
      */
     private function handleException($exception, ?OrderMessagePayload $messagePayload = null)
     {
         try {
-            $this->makeExceptionHandler()($exception, $messagePayload);
+            $context = $this->makeExceptionHandler()($exception, $messagePayload);
         } catch (Exception $exception) {
             $this->logException($exception);
+            $context = [];
+        } finally {
+            return $context;
         }
     }
 

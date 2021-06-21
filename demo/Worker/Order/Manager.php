@@ -7,6 +7,7 @@ use Ipedis\Demo\Rabbit\Worker\Handler\ManagerHandler;
 use Ipedis\Rabbit\Channel\Factory\ChannelFactory;
 use Ipedis\Rabbit\Channel\OrderChannel;
 use Ipedis\Rabbit\Consumer\Handler\MessageHandlerInterface;
+use Ipedis\Rabbit\Exception\Helper\Error;
 use Ipedis\Rabbit\Exception\RabbitClientConnectException;
 use Ipedis\Rabbit\MessagePayload\OrderMessagePayload;
 use Ipedis\Rabbit\MessagePayload\ReplyMessagePayload;
@@ -90,8 +91,8 @@ class Manager extends ConnectorAbstract
             ]);
 
             $this->publish($orderMessagePayload, $messageHandler)
-                ->bind(MessageHandlerInterface::TYPE_ERROR, function (ReplyMessagePayload $message, $error) {
-                    var_dump($error);
+                ->bind(MessageHandlerInterface::TYPE_ERROR, function (ReplyMessagePayload $message, Error $error) {
+                    var_dump($error->getMessage(), $error->getContext());
                 })
             ;
 

@@ -77,6 +77,8 @@ class Worker extends WorkerAbstract implements OnBeforeMessage, OnAfterMessage
     {
         return function (\Exception $exception, ?OrderMessagePayload $messagePayload) {
             printf($exception->getMessage()."\n\n");
+            // we can return extra context for better manager context handling.
+            return ['publication' => 1234, 'another' => 'context'];
         };
     }
 

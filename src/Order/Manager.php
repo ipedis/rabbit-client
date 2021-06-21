@@ -16,6 +16,7 @@ use Ipedis\Rabbit\Consumer\Handler\MessageHandlerInterface;
 use Ipedis\Rabbit\DTO\Order\Order;
 use Ipedis\Rabbit\Exception\Channel\ChannelFactoryException;
 use Ipedis\Rabbit\Exception\Channel\ChannelNamingException;
+use Ipedis\Rabbit\Exception\Helper\Serializer;
 use Ipedis\Rabbit\Exception\InvalidCallableException;
 use Ipedis\Rabbit\Exception\MessagePayload\MessagePayloadFormatException;
 use Ipedis\Rabbit\Exception\MessagePayload\MessagePayloadValidatorException;
@@ -345,7 +346,14 @@ trait Manager
     {
         if (isset($this->eventHandlers[$status])) {
             $handler = $this->eventHandlers[$status];
-            $handler($message);
+            switch ($status) {
+                case MessageHandlerInterface::TYPE_ERROR:
+                    $handler($message, Serializer::fromMessage($message));
+                    break;
+                default:
+                    $handler($message);
+                break;
+            }
         }
     }
 
