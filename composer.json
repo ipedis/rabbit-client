@@ -16,8 +16,7 @@
         "opis/json-schema": "^1.0",
         "ext-amqp": "^1.9",
         "guzzlehttp/guzzle": "~6.0",
-        "ipedis/http-signature": "^1.0.0",
-        "friendsofphp/php-cs-fixer": "^3.0"
+        "ipedis/http-signature": "^1.0.0"
     },
     "autoload": {
         "psr-4": {
@@ -35,15 +34,16 @@
         "hooks": {
             "pre-commit": [
                 "echo committing as $(git config user.name)",
-                "./vendore/bin/php-cs-fixer fix ."
+                "./vendor/bin/php-cs-fixer fix ."
             ],
             "commit-msg": "grep -q '[A-Z]+-[0-9]+.*' $1",
             "pre-push": [
-                "./vendore/bin/php-cs-fixer fix --dry-run ."
+                "./vendor/bin/php-cs-fixer fix --dry-run ."
             ]
         }
     },
     "require-dev": {
+        "friendsofphp/php-cs-fixer": "^3.0",
         "brainmaestro/composer-git-hooks": "^2.8"
     }
 }
