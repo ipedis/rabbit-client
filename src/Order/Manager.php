@@ -24,7 +24,6 @@ use Ipedis\Rabbit\MessagePayload\MessagePayloadInterface;
 use Ipedis\Rabbit\MessagePayload\OrderMessagePayload;
 use Ipedis\Rabbit\MessagePayload\ReplyMessagePayload;
 use Ipedis\Rabbit\MessagePayload\Validator\ValidatorInterface;
-use function GuzzleHttp\default_user_agent;
 
 /**
  * Trait Manager
