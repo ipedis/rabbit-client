@@ -35,11 +35,11 @@
         "hooks": {
             "pre-commit": [
                 "echo committing as $(git config user.name)",
-                "php-cs-fixer fix ."
+                "./vendore/bin/php-cs-fixer fix ."
             ],
             "commit-msg": "grep -q '[A-Z]+-[0-9]+.*' $1",
             "pre-push": [
-                "php-cs-fixer fix --dry-run ."
+                "./vendore/bin/php-cs-fixer fix --dry-run ."
             ]
         }
     },
