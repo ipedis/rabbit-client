@@ -1,6 +1,5 @@
 <?php
 
-
 namespace Ipedis\Rabbit\Exception\Helper;
 
 use Ipedis\Rabbit\Exception\MessagePayload\MessagePayloadFormatException;
@@ -16,7 +15,8 @@ class Error implements JsonSerializable
      * @param array $exception
      * @param array $context
      */
-    protected function __construct(array $exception, array $context = []) {
+    protected function __construct(array $exception, array $context = [])
+    {
         $this->exception = $exception;
         $this->context = $context;
     }
@@ -28,7 +28,9 @@ class Error implements JsonSerializable
      */
     public static function fromArray(array $error)
     {
-        if (empty($error['exception'])) throw new MessagePayloadFormatException('error message status must contain [error][exception]');
+        if (empty($error['exception'])) {
+            throw new MessagePayloadFormatException('error message status must contain [error][exception]');
+        }
         return new static($error['exception'], empty($error['context']) ? [] : $error['context']);
     }
 

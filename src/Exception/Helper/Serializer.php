@@ -1,6 +1,5 @@
 <?php
 
-
 namespace Ipedis\Rabbit\Exception\Helper;
 
 use Exception;
@@ -46,7 +45,7 @@ class Serializer implements JsonSerializable
             foreach ($data as $item) {
                 $this->assertContext($item);
             }
-        } else if (is_object($data) && !($data instanceof JsonSerializable)) {
+        } elseif (is_object($data) && !($data instanceof JsonSerializable)) {
             throw new LogicException(sprintf('object with type "%s" can\'t be serialize as it is not implementing JsonSerializable', get_class($data)));
         }
     }
@@ -54,7 +53,8 @@ class Serializer implements JsonSerializable
     /**
      * @param mixed $data
      */
-    public function addContext($data) {
+    public function addContext($data)
+    {
         $this->assertContext($data);
         $this->context[] = $data;
     }
@@ -72,7 +72,7 @@ class Serializer implements JsonSerializable
      */
     public function jsonSerialize()
     {
-       return [
+        return [
            'context' => $this->context,
            'exception' => $this->serializeException()
        ];

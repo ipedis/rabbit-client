@@ -208,7 +208,6 @@ trait Worker
                 'code' => $exception->getCode(),
                 'error' => Serializer::fromException($exception, $context ?? [])
             ];
-
         } finally {
             /**
              * Create final message to reply back to manager with
