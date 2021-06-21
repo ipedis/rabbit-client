@@ -21,7 +21,7 @@ class Serializer implements JsonSerializable
     {
         $this->exception = $exception;
         $this->assertContext($context);
-        $this->context = $context;
+        $this->context[] = $context;
     }
 
     /**
@@ -53,10 +53,20 @@ class Serializer implements JsonSerializable
     /**
      * @param mixed $data
      */
-    public function addContext($data)
+    public function addContext($data): self
     {
         $this->assertContext($data);
         $this->context[] = $data;
+
+        return $this;
+    }
+
+    /**
+     * @return array
+     */
+    public function getContext(): array
+    {
+        return $this->context;
     }
 
     protected function serializeException()
