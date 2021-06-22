@@ -1,0 +1,9 @@
+pipelines:
+  pull-requests:
+    '**':
+      - step:
+          image: yanisipedis/php7.4-amqp:0.2
+          caches:
+            - node
+          script:
+            - bin/test.sh

@@ -143,8 +143,11 @@ final class ReplyMessagePayload extends MessagePayloadAbstract implements ReplyM
      */
     public function getMessage()
     {
-        if ($this->hasMessage()) return $this->getData()[self::MESSAGE_INDEX];
-        else return null;
+        if ($this->hasMessage()) {
+            return $this->getData()[self::MESSAGE_INDEX];
+        } else {
+            return null;
+        }
     }
 
     /**

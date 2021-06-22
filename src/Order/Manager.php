@@ -118,7 +118,10 @@ trait Manager
          * instance of MessageHandlerInterface
          *
          */
-        if (is_null($callback)) $callback = function () {};
+        if (is_null($callback)) {
+            $callback = function () {
+            };
+        }
         $this->assertCallback($messagePayload, $callback);
 
         /**

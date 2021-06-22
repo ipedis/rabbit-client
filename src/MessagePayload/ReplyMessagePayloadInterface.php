@@ -1,8 +1,6 @@
 <?php
 
-
 namespace Ipedis\Rabbit\MessagePayload;
-
 
 interface ReplyMessagePayloadInterface extends MessagePayloadInterface
 {
