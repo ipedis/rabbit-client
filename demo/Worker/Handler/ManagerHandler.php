@@ -3,6 +3,7 @@
 namespace Ipedis\Demo\Rabbit\Worker\Handler;
 
 use Ipedis\Rabbit\Consumer\Handler\MessageHandler;
+use Ipedis\Rabbit\Exception\Helper\Error;
 use Ipedis\Rabbit\MessagePayload\ReplyMessagePayload;
 
 class ManagerHandler extends MessageHandler
@@ -32,7 +33,7 @@ class ManagerHandler extends MessageHandler
         //print_r("\t success :) - ".json_encode($messagePayload->getData())."\n\n\n");
     }
 
-    public function onError(ReplyMessagePayload $messagePayload)
+    public function onError(ReplyMessagePayload $messagePayload, Error $error)
     {
         //print_r("\t fail :( - ".json_encode($messagePayload->getData())."\n\n\n");
     }

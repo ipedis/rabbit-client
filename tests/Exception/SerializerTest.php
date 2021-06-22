@@ -2,6 +2,7 @@
 
 namespace Ipedis\Test\Rabbit\Exception;
 
+use Exception;
 use Ipedis\Rabbit\Exception\Helper\Context;
 use Ipedis\Rabbit\Exception\Helper\Error;
 use Ipedis\Rabbit\Exception\Helper\Serializer;
@@ -17,11 +18,11 @@ class SerializerTest extends TestCase
         // check if Serializer have a right type..
         $this->assertInstanceOf(
             Serializer::class,
-            Serializer::fromException(new \Exception('foo message'))
+            Serializer::fromException(new Exception('foo message'))
         );
         // check if we can use fromException factory.
         $context = ['this', 'context'];
-        $serializer = Serializer::fromException(new \Exception('foo message'), Context::fromArray($context));
+        $serializer = Serializer::fromException(new Exception('foo message'), Context::fromArray($context));
         $this->assertInstanceOf(
             Serializer::class,
             $serializer
@@ -43,7 +44,7 @@ class SerializerTest extends TestCase
         $context2 = ['another' => 'one'];
         $context3 = 'foo';
 
-        $serializer = Serializer::fromException(new \Exception('foo message'));
+        $serializer = Serializer::fromException(new Exception('foo message'));
         $serializer
             ->addContext('context1', $context1)
             ->addContext('context2', $context2)
@@ -60,12 +61,12 @@ class SerializerTest extends TestCase
 
     public function testJsonSerialize()
     {
-        $serializer = Serializer::fromException(new \Exception('foo message'), Context::fromArray(['this', 'context']));
+        $serializer = Serializer::fromException(new Exception('foo message'), Context::fromArray(['this', 'context']));
         $json = json_encode($serializer);
         $this->assertJson($json);
         $this->assertJsonStringEqualsJsonString(
             json_encode([
-                'exception' => ['message' => 'foo message', 'code' => 0],
+                'exception' => ['message' => 'foo message', 'code' => 0, 'className' => 'Exception'],
                 'context' => ['this', 'context']
             ]),
             $json

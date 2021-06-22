@@ -2,6 +2,7 @@
 
 namespace Ipedis\Rabbit\Consumer\Handler;
 
+use Ipedis\Rabbit\Exception\Helper\Error;
 use Ipedis\Rabbit\MessagePayload\ReplyMessagePayload;
 
 interface MessageHandlerInterface
@@ -15,11 +16,11 @@ interface MessageHandlerInterface
     public const POSSIBLE_FINISH_TYPES = [self::TYPE_SUCCESS, self::TYPE_ERROR];
     public const STATUS_KEY = 'status';
 
-    public function on(ReplyMessagePayload $messagePayload);
+    public function on(ReplyMessagePayload $message);
 
     public function onSuccess(ReplyMessagePayload $messagePayload);
 
-    public function onError(ReplyMessagePayload $messagePayload);
+    public function onError(ReplyMessagePayload $messagePayload, Error $error);
 
     public function onProgress(ReplyMessagePayload $messagePayload);
 

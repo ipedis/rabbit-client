@@ -79,7 +79,8 @@ class Serializer implements JsonSerializable
     {
         return [
            'message' => $this->exception->getMessage(),
-           'code' => $this->exception->getCode()
+           'code' => $this->exception->getCode(),
+           'className' => get_class($this->exception)
         ];
     }
 

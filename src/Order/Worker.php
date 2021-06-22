@@ -186,6 +186,8 @@ trait Worker
          * Re-construct message payload objectValue from request body
          */
         $messagePayload = OrderMessagePayload::fromJson($message->getBody());
+        /** add original message on the context */
+        $this->context->add('from', $messagePayload);
 
         try {
             /**
