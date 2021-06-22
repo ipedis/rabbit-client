@@ -10,6 +10,7 @@ use Exception;
 use Ipedis\Rabbit\Channel\Factory\ChannelFactory;
 use Ipedis\Rabbit\Consumer\Handler\MessageHandlerInterface;
 use Ipedis\Rabbit\Exception\Channel\ChannelFactoryException;
+use Ipedis\Rabbit\Exception\Helper\Context;
 use Ipedis\Rabbit\Exception\Helper\Serializer;
 use Ipedis\Rabbit\Exception\MessagePayload\MessagePayloadFormatException;
 use Ipedis\Rabbit\Lifecyle\Hook\OnAfterMessage;
@@ -32,6 +33,11 @@ trait Worker
      * @var AMQPQueue $queue
      */
     protected AMQPQueue $queue;
+
+    /**
+     * @var Context
+     */
+    protected Context $context;
 
     /**
      * Method to initialise worker by
@@ -115,6 +121,10 @@ trait Worker
     {
         try {
             /**
+             * We reset the context bag for each consumed message.
+             */
+            $this->context = Context::initialize();
+            /**
              * We have before message hook to run
              */
             if ($this instanceof OnBeforeMessage) {
@@ -135,6 +145,12 @@ trait Worker
              * message payload creation
              */
             $this->handleException($exception);
+        } finally {
+            /**
+             * to prevent future memory leak due to object reference inside context.
+             *
+             */
+            $this->context = Context::initialize();
         }
     }
 
@@ -197,6 +213,13 @@ trait Worker
             $answer['status'] = MessageHandlerInterface::TYPE_SUCCESS;
         } catch (Exception $exception) {
             $context = $this->handleException($exception, $messagePayload);
+            if ($context instanceof Context) {
+                $this->context = $context;
+            } else if (is_array($context)) {
+                foreach ($context as $index => $item) {
+                    $this->context->add($index, $item);
+                }
+            }
 
             $answer = [
                 'worker' => self::class,
@@ -206,7 +229,7 @@ trait Worker
                 /** todo remove message and code as is duplicated from error */
                 'message' => $exception->getMessage(),
                 'code' => $exception->getCode(),
-                'error' => Serializer::fromException($exception, $context ?? [])
+                'error' => Serializer::fromException($exception, $this->context)
             ];
         } finally {
             /**

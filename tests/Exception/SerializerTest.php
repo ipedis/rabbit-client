@@ -2,6 +2,7 @@
 
 namespace Ipedis\Test\Rabbit\Exception;
 
+use Ipedis\Rabbit\Exception\Helper\Context;
 use Ipedis\Rabbit\Exception\Helper\Error;
 use Ipedis\Rabbit\Exception\Helper\Serializer;
 use Ipedis\Rabbit\MessagePayload\MessagePayloadInterface;
@@ -13,18 +14,27 @@ class SerializerTest extends TestCase
 {
     public function testFromExceptionTyping()
     {
+        // check if Serializer have a right type..
         $this->assertInstanceOf(
             Serializer::class,
             Serializer::fromException(new \Exception('foo message'))
         );
-
+        // check if we can use fromException factory.
         $context = ['this', 'context'];
-        $serializer = Serializer::fromException(new \Exception('foo message'), $context);
+        $serializer = Serializer::fromException(new \Exception('foo message'), Context::fromArray($context));
         $this->assertInstanceOf(
             Serializer::class,
             $serializer
         );
-        $this->assertContains($context, $serializer->getContext());
+        // check if context getter return the right type.
+        $contextBag = $serializer->getContext();
+        $this->assertInstanceOf(
+            Context::class,
+            $contextBag
+        );
+        // check if the bag contain our original context.
+        $this->assertEquals($context[0], $contextBag->get(0));
+        $this->assertEquals($context[1], $contextBag->get(1));
     }
 
     public function testAddContext()
@@ -35,9 +45,9 @@ class SerializerTest extends TestCase
 
         $serializer = Serializer::fromException(new \Exception('foo message'));
         $serializer
-            ->addContext($context1)
-            ->addContext($context2)
-            ->addContext($context3)
+            ->addContext('context1', $context1)
+            ->addContext('context2', $context2)
+            ->addContext('bar', $context3)
         ;
 
         $this->assertContains($context1, $serializer->getContext());
@@ -45,18 +55,18 @@ class SerializerTest extends TestCase
         $this->assertContains($context3, $serializer->getContext());
 
         $this->expectException(LogicException::class);
-        $serializer->addContext([['deep' => ['tree' => new self()]]]);
+        $serializer->addContext('deep', ['deep' => ['tree' => new self()]]);
     }
 
     public function testJsonSerialize()
     {
-        $serializer = Serializer::fromException(new \Exception('foo message'), ['this', 'context']);
+        $serializer = Serializer::fromException(new \Exception('foo message'), Context::fromArray(['this', 'context']));
         $json = json_encode($serializer);
         $this->assertJson($json);
         $this->assertJsonStringEqualsJsonString(
             json_encode([
                 'exception' => ['message' => 'foo message', 'code' => 0],
-                'context' => [['this', 'context']]
+                'context' => ['this', 'context']
             ]),
             $json
         );

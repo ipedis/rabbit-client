@@ -2,6 +2,7 @@
 
 namespace Ipedis\Test\Rabbit\Exception;
 
+use Ipedis\Rabbit\Exception\Helper\Context;
 use Ipedis\Rabbit\Exception\Helper\Error;
 use Ipedis\Rabbit\Exception\MessagePayload\MessagePayloadFormatException;
 use PHPUnit\Framework\TestCase;
@@ -22,7 +23,7 @@ class ErrorTest extends TestCase
             json_encode([
                 'message' => 'foo message',
                 'code' => 0,
-                'context' => [['this', 'context']]
+                'context' => ['this', 'context' => 'information']
             ]),
             json_encode($this->makeError())
         );
@@ -51,15 +52,18 @@ class ErrorTest extends TestCase
     public function testGetContext()
     {
         $context = $this->makeError()->getContext();
-        $this->assertIsArray($context);
-        $this->assertContains('context', $context[0]);
+        $this->assertInstanceOf(
+    Context::class,
+            $context
+        );
+        $this->assertEquals(true, $context->has('context'));
     }
 
     protected function makeError(): Error
     {
         return Error::fromArray([
             'exception' => ['message' => 'foo message', 'code' => 0],
-            'context' => [['this', 'context']]
+            'context' => ['this', 'context' => 'information']
         ]);
     }
 

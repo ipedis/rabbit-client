@@ -10,28 +10,27 @@ use LogicException;
 class Serializer implements JsonSerializable
 {
     private Exception $exception;
-    private array $context = [];
+    private Context $context;
 
     /**
      * Serializer constructor.
      * @param Exception $exception
-     * @param array $context
+     * @param Context $context
      */
-    protected function __construct(Exception $exception, array $context = [])
+    protected function __construct(Exception $exception, Context $context)
     {
         $this->exception = $exception;
-        $this->assertContext($context);
-        $this->context[] = $context;
+        $this->context = $context;
     }
 
     /**
      * @param Exception $exception
-     * @param array $context
+     * @param ?Context $context
      * @return static
      */
-    public static function fromException(Exception $exception, array $context = []): self
+    public static function fromException(Exception $exception, ?Context $context = null): self
     {
-        return new static($exception, $context);
+        return new static($exception, $context ?? Context::initialize());
     }
 
     public static function fromMessage(MessagePayloadInterface $message): Error
@@ -39,32 +38,39 @@ class Serializer implements JsonSerializable
         return Error::fromArray($message->getData()['error']);
     }
 
-    protected function assertContext($data)
-    {
-        if (is_iterable($data)) {
-            foreach ($data as $item) {
-                $this->assertContext($item);
-            }
-        } elseif (is_object($data) && !($data instanceof JsonSerializable)) {
-            throw new LogicException(sprintf('object with type "%s" can\'t be serialize as it is not implementing JsonSerializable', get_class($data)));
-        }
-    }
-
     /**
-     * @param mixed $data
+     * @param Context | array $context
+     * @return $this
      */
-    public function addContext($data): self
+    public function setContext($context): self
     {
-        $this->assertContext($data);
-        $this->context[] = $data;
+        if (is_object($context) && $context instanceof Context) {
+            $this->context = $context;
+        } else if (is_array($context)) {
+            $this->context = Context::fromArray($context);
+        } else {
+            throw new LogicException(sprintf('%s::setContext parameter must have type array or Context class.', get_class($this)));
+        }
 
         return $this;
     }
 
     /**
-     * @return array
+     * @param string $name
+     * @param string | int | object | array $state
+     * @return $this
      */
-    public function getContext(): array
+    public function addContext(string $name, $state): self
+    {
+        Context::assertContext($state);
+        $this->context->add($name, $state);
+        return $this;
+    }
+
+    /**
+     * @return Context
+     */
+    public function getContext(): Context
     {
         return $this->context;
     }

@@ -27,7 +27,7 @@ class Worker extends WorkerAbstract implements OnBeforeMessage, OnAfterMessage
     {
         return function (AMQPEnvelope $message, OrderMessagePayload $messagePayload) {
             $params = $messagePayload->getData();
-
+            $this->context->add('some', 'information');
             /**
              * Do some traitment.
              *
@@ -78,6 +78,7 @@ class Worker extends WorkerAbstract implements OnBeforeMessage, OnAfterMessage
         return function (\Exception $exception, ?OrderMessagePayload $messagePayload) {
             printf($exception->getMessage()."\n\n");
             // we can return extra context for better manager context handling.
+            // you can also return a Context object if you prefer.
             return ['publication' => 1234, 'another' => 'context'];
         };
     }

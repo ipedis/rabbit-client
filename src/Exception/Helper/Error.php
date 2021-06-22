@@ -8,14 +8,14 @@ use JsonSerializable;
 class Error implements JsonSerializable
 {
     private array $exception;
-    private array $context;
+    private Context $context;
 
     /**
      * Error constructor.
      * @param array $exception
-     * @param array $context
+     * @param Context $context
      */
-    protected function __construct(array $exception, array $context = [])
+    protected function __construct(array $exception, Context $context)
     {
         $this->exception = $exception;
         $this->context = $context;
@@ -31,7 +31,10 @@ class Error implements JsonSerializable
         if (empty($error['exception'])) {
             throw new MessagePayloadFormatException('error message status must contain [error][exception]');
         }
-        return new static($error['exception'], empty($error['context']) ? [] : $error['context']);
+        return new static(
+            $error['exception'],
+            Context::fromArray(empty($error['context']) ? [] : $error['context'])
+        );
     }
 
     /**
@@ -51,9 +54,9 @@ class Error implements JsonSerializable
     }
 
     /**
-     * @return array
+     * @return Context
      */
-    public function getContext(): array
+    public function getContext(): Context
     {
         return $this->context;
     }
@@ -63,7 +66,7 @@ class Error implements JsonSerializable
      */
     public function hasContext(): bool
     {
-        return !empty($this->context);
+        return !$this->context->isEmpty();
     }
 
     public function jsonSerialize()
