@@ -9,7 +9,6 @@ use IteratorAggregate;
 use JsonSerializable;
 use LogicException;
 
-
 class Context implements ArrayAccess, Countable, IteratorAggregate, JsonSerializable
 {
     /**
@@ -86,8 +85,8 @@ class Context implements ArrayAccess, Countable, IteratorAggregate, JsonSerializ
      */
     public function offsetSet($offset, $value)
     {
-       self::assertContext($value);
-       $this->items[$offset] = $value;
+        self::assertContext($value);
+        $this->items[$offset] = $value;
     }
 
     /**

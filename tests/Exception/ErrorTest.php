@@ -53,7 +53,7 @@ class ErrorTest extends TestCase
     {
         $context = $this->makeError()->getContext();
         $this->assertInstanceOf(
-    Context::class,
+            Context::class,
             $context
         );
         $this->assertEquals(true, $context->has('context'));

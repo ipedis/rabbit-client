@@ -46,7 +46,7 @@ class Serializer implements JsonSerializable
     {
         if (is_object($context) && $context instanceof Context) {
             $this->context = $context;
-        } else if (is_array($context)) {
+        } elseif (is_array($context)) {
             $this->context = Context::fromArray($context);
         } else {
             throw new LogicException(sprintf('%s::setContext parameter must have type array or Context class.', get_class($this)));

@@ -8,7 +8,6 @@ use LogicException;
 
 class ContextTest extends TestCase
 {
-
     public function testAssertContext()
     {
         $this->expectException(LogicException::class);

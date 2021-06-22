@@ -215,7 +215,7 @@ trait Worker
             $context = $this->handleException($exception, $messagePayload);
             if ($context instanceof Context) {
                 $this->context = $context;
-            } else if (is_array($context)) {
+            } elseif (is_array($context)) {
                 foreach ($context as $index => $item) {
                     $this->context->add($index, $item);
                 }
