@@ -327,7 +327,9 @@ trait Worker
     {
         try {
             $context = $this->makeExceptionHandler()($exception, $messagePayload);
-            if (!is_array($context) and !($context instanceof Context) ) $context = [];
+            if (!is_array($context) and !($context instanceof Context)) {
+                $context = [];
+            }
         } catch (Exception $exception) {
             $this->logException($exception);
             $context = [];
