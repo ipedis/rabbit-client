@@ -18,23 +18,18 @@ abstract class MessageHandler implements MessageHandlerInterface
         switch (strtolower($message->getStatus())) {
             case self::TYPE_SUCCESS:
                 $this->onSuccess($message);
-                break;
+                $this->onFinish($message);
+            break;
             case self::TYPE_ERROR:
                 $this->onError($message, Error::fromArray($message->getData()['error']));
-                break;
+                $this->onFinish($message);
+            break;
             case self::TYPE_PROGRESS:
                 $this->onProgress($message);
-                break;
-        }
-
-        /**
-         * An error or success eventually leads to completion
-         */
-        if (
-            $message->getStatus() === self::TYPE_SUCCESS ||
-            $message->getStatus() === self::TYPE_ERROR
-        ) {
-            $this->onFinish($message);
+            break;
+            case self::TYPE_STARTING:
+                $this->onStarting($message);
+            break;
         }
     }
 }

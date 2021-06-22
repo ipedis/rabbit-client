@@ -23,6 +23,11 @@ class ManagerHandler extends MessageHandler
         return $this->numberTask;
     }
 
+    public function onStarting(ReplyMessagePayload $messagePayload)
+    {
+//        print_r("\t starting :) - ".json_encode($messagePayload->getData())."\n\n\n");
+    }
+
     public function onProgress(ReplyMessagePayload $messagePayload)
     {
 //        print_r("\t progress :| - ".json_encode($messagePayload->getData())."\n\n\n");

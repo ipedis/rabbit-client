@@ -203,7 +203,7 @@ trait Worker
              */
             $this->notifyTo($message, ReplyMessagePayload::buildFromOrderMessagePayload(
                 $messagePayload,
-                MessageHandlerInterface::TYPE_PROGRESS,
+                MessageHandlerInterface::TYPE_STARTING,
                 []
             ));
 

@@ -40,7 +40,7 @@ class Worker extends WorkerAbstract implements OnBeforeMessage, OnAfterMessage
                 ReplyMessagePayload::buildFromOrderMessagePayload(
                     $messagePayload,
                     MessageHandlerInterface::TYPE_PROGRESS,
-                    ['status' => 'PROGRESS', 'step' => 1]
+                    ['status' => 'PROGRESS', 'step' => 1000]
                 )
             );
 
@@ -61,7 +61,7 @@ class Worker extends WorkerAbstract implements OnBeforeMessage, OnAfterMessage
             );
 
             if ($params["hasToFail"]) {
-                throw new \Exception('oups something bad happen', 10);
+                //throw new \Exception('oups something bad happen', 10);
             }
 
             return ["foo" => "bar"];

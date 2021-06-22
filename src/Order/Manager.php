@@ -19,6 +19,7 @@ use Ipedis\Rabbit\Exception\Channel\ChannelNamingException;
 use Ipedis\Rabbit\Exception\Helper\Serializer;
 use Ipedis\Rabbit\Exception\InvalidCallableException;
 use Ipedis\Rabbit\Exception\MessagePayload\MessagePayloadFormatException;
+use Ipedis\Rabbit\Exception\MessagePayload\MessagePayloadInvalidSchemaException;
 use Ipedis\Rabbit\Exception\MessagePayload\MessagePayloadValidatorException;
 use Ipedis\Rabbit\MessagePayload\MessagePayloadInterface;
 use Ipedis\Rabbit\MessagePayload\OrderMessagePayload;
@@ -97,9 +98,9 @@ trait Manager
      * @throws ChannelFactoryException
      * @throws ChannelNamingException
      * @throws InvalidCallableException
-     * @throws MessagePayloadValidatorException
+     * @throws MessagePayloadValidatorException|MessagePayloadInvalidSchemaException
      */
-    public function publish(OrderMessagePayload $messagePayload, $callback): self
+    public function publish(OrderMessagePayload $messagePayload, $callback = null): self
     {
         /**
          * Channel factory must be provided to
@@ -117,6 +118,7 @@ trait Manager
          * instance of MessageHandlerInterface
          *
          */
+        if (is_null($callback)) $callback = function () {};
         $this->assertCallback($messagePayload, $callback);
 
         /**
@@ -228,7 +230,7 @@ trait Manager
     {
         $this->orders[$orderId] = Order::build(
             $orderId,
-            MessageHandlerInterface::TYPE_PROGRESS,
+            MessageHandlerInterface::TYPE_STARTING,
             $callback
         );
     }
@@ -261,7 +263,6 @@ trait Manager
          * Re-construct message payload from request body
          */
         $messagePayload = ReplyMessagePayload::fromJson($message->getBody());
-
         /**
          * Get order from collection
          */
@@ -374,7 +375,7 @@ trait Manager
     public function getInProgressOrders(): array
     {
         return array_filter($this->orders, function (Order $order) {
-            return $order->getStatus() === MessageHandlerInterface::TYPE_PROGRESS;
+            return in_array($order->getStatus(), [MessageHandlerInterface::TYPE_PROGRESS, MessageHandlerInterface::TYPE_STARTING]);
         });
     }
 
