@@ -2,8 +2,10 @@ pipelines:
   pull-requests:
     '**':
       - step:
+          name: "Unit test"
           image: yanisipedis/php7.4-amqp:0.2
-          caches:
-            - node
           script:
+            - composer install
             - bin/test.sh
+          caches:
+            - composer
