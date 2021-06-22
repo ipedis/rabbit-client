@@ -3,7 +3,7 @@
 namespace Ipedis\Rabbit\Exception\Helper;
 
 use Exception;
-use Ipedis\Rabbit\MessagePayload\MessagePayloadInterface;
+use Ipedis\Rabbit\MessagePayload\ReplyMessagePayloadInterface;
 use JsonSerializable;
 use LogicException;
 
@@ -33,9 +33,9 @@ class Serializer implements JsonSerializable
         return new static($exception, $context ?? Context::initialize());
     }
 
-    public static function fromMessage(MessagePayloadInterface $message): Error
+    public static function fromMessage(ReplyMessagePayloadInterface $message): Error
     {
-        return Error::fromArray($message->getData()['error']);
+        return Error::fromArray($message->getReply()['error']);
     }
 
     /**

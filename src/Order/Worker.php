@@ -208,9 +208,7 @@ trait Worker
             ));
 
             $answer = $this->makeMessageHandler()($message, $messagePayload);
-            if (is_callable($answer)) {
-                $answer = $answer($message, $messagePayload);
-            }
+
             // force status to success.
             $answer['status'] = MessageHandlerInterface::TYPE_SUCCESS;
         } catch (Exception $exception) {
@@ -222,7 +220,6 @@ trait Worker
                     $this->context->add($index, $item);
                 }
             }
-
             $answer = [
                 'worker' => self::class,
                 'id' => $this->worker_id,
@@ -314,9 +311,9 @@ trait Worker
      * The client callback to be executed
      * on receiving a message
      *
-     * @return Closure | array
+     * @return Closure
      */
-    abstract protected function makeMessageHandler();
+    abstract protected function makeMessageHandler(): Closure;
 
     /**
      * Handle exception by calling
@@ -330,6 +327,7 @@ trait Worker
     {
         try {
             $context = $this->makeExceptionHandler()($exception, $messagePayload);
+            if (!is_array($context) and !($context instanceof Context) ) $context = [];
         } catch (Exception $exception) {
             $this->logException($exception);
             $context = [];

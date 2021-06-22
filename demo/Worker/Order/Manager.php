@@ -90,14 +90,15 @@ class Manager extends ConnectorAbstract
                 "name"      => "task {$i}"
             ]);
 
-            $this->publish($orderMessagePayload, $messageHandler)
+            $this->publish($orderMessagePayload)
                 ->bind(MessageHandlerInterface::TYPE_ERROR, function (ReplyMessagePayload $message, Error $error) {
-                    var_dump($error->getMessage(), $error->getContext());
+                    var_dump($error);
                 })
             ;
 
             if (self::IS_VERBOSE) {
                 $this->bind(MessageHandlerInterface::TYPE_PROGRESS, function (ReplyMessagePayload $message) {
+                    // pro tips: if you want to find only the reply, you can use $message->getReply().
                     printf("[[ ----------- PROGRESSION PERCENTAGE %s%% COMPLETED ---------- ]]\n\n", (string) $this->getPercentageProgression());
                 });
             }

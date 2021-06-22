@@ -65,7 +65,7 @@ final class ReplyMessagePayload extends MessagePayloadAbstract implements ReplyM
          * Add order payload to data
          */
         $data = array_merge(
-            [ReplyMessagePayloadInterface::MESSAGE_INDEX => $data],
+            [ReplyMessagePayloadInterface::REPLY_INDEX => $data],
             ['orderPayload' => $orderMessagePayload->getData()]
         );
 
@@ -141,10 +141,10 @@ final class ReplyMessagePayload extends MessagePayloadAbstract implements ReplyM
     /**
      * @return mixed
      */
-    public function getMessage()
+    public function getReply()
     {
-        if ($this->hasMessage()) {
-            return $this->getData()[self::MESSAGE_INDEX];
+        if ($this->hasReply()) {
+            return $this->getData()[self::REPLY_INDEX];
         } else {
             return null;
         }
@@ -153,8 +153,8 @@ final class ReplyMessagePayload extends MessagePayloadAbstract implements ReplyM
     /**
      * @return bool
      */
-    public function hasMessage(): bool
+    public function hasReply(): bool
     {
-        return !empty($this->getData()) && !empty($this->getData()[self::MESSAGE_INDEX]);
+        return !empty($this->getData()) && !empty($this->getData()[self::REPLY_INDEX]);
     }
 }

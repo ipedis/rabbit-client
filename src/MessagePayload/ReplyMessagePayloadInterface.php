@@ -4,8 +4,8 @@ namespace Ipedis\Rabbit\MessagePayload;
 
 interface ReplyMessagePayloadInterface extends MessagePayloadInterface
 {
-    public const MESSAGE_INDEX = 'message';
+    public const REPLY_INDEX = 'reply';
 
-    public function getMessage();
-    public function hasMessage(): bool;
+    public function getReply();
+    public function hasReply(): bool;
 }
