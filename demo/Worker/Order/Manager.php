@@ -7,6 +7,7 @@ use Ipedis\Demo\Rabbit\Worker\Handler\ManagerHandler;
 use Ipedis\Rabbit\Channel\Factory\ChannelFactory;
 use Ipedis\Rabbit\Channel\OrderChannel;
 use Ipedis\Rabbit\Consumer\Handler\MessageHandlerInterface;
+use Ipedis\Rabbit\Exception\Helper\Error;
 use Ipedis\Rabbit\Exception\RabbitClientConnectException;
 use Ipedis\Rabbit\MessagePayload\OrderMessagePayload;
 use Ipedis\Rabbit\MessagePayload\ReplyMessagePayload;
@@ -16,6 +17,8 @@ use Ipedis\Rabbit\Order\Manager as ManagerTrait;
 class Manager extends ConnectorAbstract
 {
     use ManagerTrait;
+
+    public const IS_VERBOSE = false;
 
     /**
      * @var ChannelFactory $channelFactory
@@ -71,7 +74,7 @@ class Manager extends ConnectorAbstract
         /**
          * Example of binding a handler to an event
          */
-        $messageHandler = new ManagerHandler();
+        $messageHandler = new ManagerHandler(1);
 
         /**
          * We publish N Tasks on queue "Worker" who should be consume by this Worker.
@@ -87,23 +90,34 @@ class Manager extends ConnectorAbstract
                 "name"      => "task {$i}"
             ]);
 
-            $this->publish($orderMessagePayload, $messageHandler)
-                ->bind(MessageHandlerInterface::TYPE_PROGRESS, function (ReplyMessagePayload $message) {
-                    printf("[[ ----------- PROGRESSION PERCENTAGE %s%% COMPLETED ---------- ]]\n\n", (string) $this->getPercentageProgression());
+            $this->publish($orderMessagePayload)
+                ->bind(MessageHandlerInterface::TYPE_ERROR, function (ReplyMessagePayload $message, Error $error) {
+                    var_dump($error);
                 })
             ;
+
+            if (self::IS_VERBOSE) {
+                $this->bind(MessageHandlerInterface::TYPE_PROGRESS, function (ReplyMessagePayload $message) {
+                    // pro tips: if you want to find only the reply, you can use $message->getReply().
+                    printf("[[ ----------- PROGRESSION PERCENTAGE %s%% COMPLETED ---------- ]]\n\n", (string) $this->getPercentageProgression());
+                });
+            }
         }
 
-        printf("%s messages are published on queue\n\n", count($this->getDispatchedOrders()));
+        if (self::IS_VERBOSE) {
+            printf("%s messages are published on queue\n\n", count($this->getDispatchedOrders()));
+        }
 
         $this->run();
 
-        printf(
-            "All orders(%s in total) executed with %s orders as success and %s orders as error :). \n",
-            count($this->getCompletedOrders()),
-            count($this->getSuccessfulOrders()),
-            count($this->getFailedOrders())
-        );
+        if (self::IS_VERBOSE) {
+            printf(
+                "All orders(%s in total) executed with %s orders as success and %s orders as error :). \n",
+                count($this->getCompletedOrders()),
+                count($this->getSuccessfulOrders()),
+                count($this->getFailedOrders())
+            );
+        }
     }
 
     /**

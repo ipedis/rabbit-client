@@ -5,7 +5,7 @@ namespace Ipedis\Rabbit\MessagePayload;
 use Ipedis\Rabbit\Consumer\Handler\MessageHandlerInterface;
 use Ipedis\Rabbit\Exception\MessagePayload\MessagePayloadFormatException;
 
-final class ReplyMessagePayload extends MessagePayloadAbstract
+final class ReplyMessagePayload extends MessagePayloadAbstract implements ReplyMessagePayloadInterface
 {
     public const HEADER_CORRELATION_ID = 'correlation_id';
     public const HEADER_STATUS = 'status';
@@ -64,9 +64,10 @@ final class ReplyMessagePayload extends MessagePayloadAbstract
         /**
          * Add order payload to data
          */
-        $data = array_merge($data, [
-            'orderPayload' => $orderMessagePayload->getData()
-        ]);
+        $data = array_merge(
+            [ReplyMessagePayloadInterface::REPLY_INDEX => $data],
+            ['orderPayload' => $orderMessagePayload->getData()]
+        );
 
         return new self(
             $orderMessagePayload->getReplyQueue(),
@@ -135,5 +136,25 @@ final class ReplyMessagePayload extends MessagePayloadAbstract
     public function getOrderId(): string
     {
         return $this->orderId;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getReply()
+    {
+        if ($this->hasReply()) {
+            return $this->getData()[self::REPLY_INDEX];
+        } else {
+            return null;
+        }
+    }
+
+    /**
+     * @return bool
+     */
+    public function hasReply(): bool
+    {
+        return !empty($this->getData()) && !empty($this->getData()[self::REPLY_INDEX]);
     }
 }

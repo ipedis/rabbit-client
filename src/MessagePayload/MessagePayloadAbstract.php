@@ -18,21 +18,21 @@ abstract class MessagePayloadAbstract implements MessagePayloadInterface
      *
      * @var array
      */
-    protected $data;
+    protected array $data;
 
     /**
      * header storage
      *
      * @var array
      */
-    protected $headers;
+    protected array $headers;
 
     /**
      * Channel for the message
      *
      * @var string
      */
-    protected $channel;
+    protected string $channel;
 
     /**
      * PayloadAbstract constructor.
@@ -90,6 +90,15 @@ abstract class MessagePayloadAbstract implements MessagePayloadInterface
     public function getData(): array
     {
         return $this->data;
+    }
+
+    /**
+     * @alias
+     * @return array
+     */
+    public function toArray(): array
+    {
+        return $this->getData();
     }
 
     /**

@@ -16,8 +16,10 @@ use Ipedis\Rabbit\Consumer\Handler\MessageHandlerInterface;
 use Ipedis\Rabbit\DTO\Order\Order;
 use Ipedis\Rabbit\Exception\Channel\ChannelFactoryException;
 use Ipedis\Rabbit\Exception\Channel\ChannelNamingException;
+use Ipedis\Rabbit\Exception\Helper\Serializer;
 use Ipedis\Rabbit\Exception\InvalidCallableException;
 use Ipedis\Rabbit\Exception\MessagePayload\MessagePayloadFormatException;
+use Ipedis\Rabbit\Exception\MessagePayload\MessagePayloadInvalidSchemaException;
 use Ipedis\Rabbit\Exception\MessagePayload\MessagePayloadValidatorException;
 use Ipedis\Rabbit\MessagePayload\MessagePayloadInterface;
 use Ipedis\Rabbit\MessagePayload\OrderMessagePayload;
@@ -96,9 +98,9 @@ trait Manager
      * @throws ChannelFactoryException
      * @throws ChannelNamingException
      * @throws InvalidCallableException
-     * @throws MessagePayloadValidatorException
+     * @throws MessagePayloadValidatorException|MessagePayloadInvalidSchemaException
      */
-    public function publish(OrderMessagePayload $messagePayload, $callback): self
+    public function publish(OrderMessagePayload $messagePayload, $callback = null): self
     {
         /**
          * Channel factory must be provided to
@@ -116,6 +118,10 @@ trait Manager
          * instance of MessageHandlerInterface
          *
          */
+        if (is_null($callback)) {
+            $callback = function () {
+            };
+        }
         $this->assertCallback($messagePayload, $callback);
 
         /**
@@ -227,7 +233,7 @@ trait Manager
     {
         $this->orders[$orderId] = Order::build(
             $orderId,
-            MessageHandlerInterface::TYPE_PROGRESS,
+            MessageHandlerInterface::TYPE_STARTING,
             $callback
         );
     }
@@ -260,7 +266,6 @@ trait Manager
          * Re-construct message payload from request body
          */
         $messagePayload = ReplyMessagePayload::fromJson($message->getBody());
-
         /**
          * Get order from collection
          */
@@ -337,14 +342,21 @@ trait Manager
     /**
      * Helper function to execute handlers for event
      *
-     * @param string $event
-     * @param MessagePayloadInterface $messagePayload
+     * @param string $status
+     * @param MessagePayloadInterface $message
      */
-    private function executeEventHandler(string $event, MessagePayloadInterface $messagePayload)
+    private function executeEventHandler(string $status, MessagePayloadInterface $message)
     {
-        if (isset($this->eventHandlers[$event])) {
-            $handler = $this->eventHandlers[$event];
-            $handler($messagePayload);
+        if (isset($this->eventHandlers[$status])) {
+            $handler = $this->eventHandlers[$status];
+            switch ($status) {
+                case MessageHandlerInterface::TYPE_ERROR:
+                    $handler($message, Serializer::fromMessage($message));
+                    break;
+                default:
+                    $handler($message);
+                break;
+            }
         }
     }
 
@@ -366,7 +378,7 @@ trait Manager
     public function getInProgressOrders(): array
     {
         return array_filter($this->orders, function (Order $order) {
-            return $order->getStatus() === MessageHandlerInterface::TYPE_PROGRESS;
+            return in_array($order->getStatus(), [MessageHandlerInterface::TYPE_PROGRESS, MessageHandlerInterface::TYPE_STARTING]);
         });
     }
 

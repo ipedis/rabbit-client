@@ -3,6 +3,7 @@
 namespace Ipedis\Demo\Rabbit\Worker\Handler;
 
 use Ipedis\Rabbit\Consumer\Handler\MessageHandler;
+use Ipedis\Rabbit\Exception\Helper\Error;
 use Ipedis\Rabbit\MessagePayload\ReplyMessagePayload;
 
 class ManagerHandler extends MessageHandler
@@ -10,16 +11,21 @@ class ManagerHandler extends MessageHandler
     /**
      * @var int
      */
-    protected $numberTask;
+    protected int $numberTask;
 
-    public function __construct()
+    public function __construct(int $numberTask)
     {
-        $this->numberTask = 10;
+        $this->numberTask = $numberTask;
     }
 
     public function getNumberTask(): int
     {
         return $this->numberTask;
+    }
+
+    public function onStarting(ReplyMessagePayload $messagePayload)
+    {
+//        print_r("\t starting :) - ".json_encode($messagePayload->getData())."\n\n\n");
     }
 
     public function onProgress(ReplyMessagePayload $messagePayload)
@@ -32,7 +38,7 @@ class ManagerHandler extends MessageHandler
         //print_r("\t success :) - ".json_encode($messagePayload->getData())."\n\n\n");
     }
 
-    public function onError(ReplyMessagePayload $messagePayload)
+    public function onError(ReplyMessagePayload $messagePayload, Error $error)
     {
         //print_r("\t fail :( - ".json_encode($messagePayload->getData())."\n\n\n");
     }

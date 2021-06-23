@@ -10,6 +10,8 @@ use Exception;
 use Ipedis\Rabbit\Channel\Factory\ChannelFactory;
 use Ipedis\Rabbit\Consumer\Handler\MessageHandlerInterface;
 use Ipedis\Rabbit\Exception\Channel\ChannelFactoryException;
+use Ipedis\Rabbit\Exception\Helper\Context;
+use Ipedis\Rabbit\Exception\Helper\Serializer;
 use Ipedis\Rabbit\Exception\MessagePayload\MessagePayloadFormatException;
 use Ipedis\Rabbit\Lifecyle\Hook\OnAfterMessage;
 use Ipedis\Rabbit\Lifecyle\Hook\OnBeforeMessage;
@@ -31,6 +33,11 @@ trait Worker
      * @var AMQPQueue $queue
      */
     protected AMQPQueue $queue;
+
+    /**
+     * @var Context
+     */
+    protected Context $context;
 
     /**
      * Method to initialise worker by
@@ -114,6 +121,10 @@ trait Worker
     {
         try {
             /**
+             * We reset the context bag for each consumed message.
+             */
+            $this->context = Context::initialize();
+            /**
              * We have before message hook to run
              */
             if ($this instanceof OnBeforeMessage) {
@@ -134,6 +145,12 @@ trait Worker
              * message payload creation
              */
             $this->handleException($exception);
+        } finally {
+            /**
+             * to prevent future memory leak due to object reference inside context.
+             *
+             */
+            $this->context = Context::initialize();
         }
     }
 
@@ -169,6 +186,8 @@ trait Worker
          * Re-construct message payload objectValue from request body
          */
         $messagePayload = OrderMessagePayload::fromJson($message->getBody());
+        /** add original message on the context */
+        $this->context->add('from', $messagePayload);
 
         try {
             /**
@@ -184,27 +203,33 @@ trait Worker
              */
             $this->notifyTo($message, ReplyMessagePayload::buildFromOrderMessagePayload(
                 $messagePayload,
-                MessageHandlerInterface::TYPE_PROGRESS,
+                MessageHandlerInterface::TYPE_STARTING,
                 []
             ));
 
             $answer = $this->makeMessageHandler()($message, $messagePayload);
-            if (is_callable($answer)) {
-                $answer = $answer($message, $messagePayload);
-            }
+
             // force status to success.
             $answer['status'] = MessageHandlerInterface::TYPE_SUCCESS;
         } catch (Exception $exception) {
+            $context = $this->handleException($exception, $messagePayload);
+            if ($context instanceof Context) {
+                $this->context = $context;
+            } elseif (is_array($context)) {
+                foreach ($context as $index => $item) {
+                    $this->context->add($index, $item);
+                }
+            }
             $answer = [
                 'worker' => self::class,
                 'id' => $this->worker_id,
                 'status' => MessageHandlerInterface::TYPE_ERROR,
+                'correlation_id' => $messagePayload->getOrderId(),
+                /** todo remove message and code as is duplicated from error */
                 'message' => $exception->getMessage(),
                 'code' => $exception->getCode(),
-                'correlation_id' => $messagePayload->getOrderId()
+                'error' => Serializer::fromException($exception, $this->context)
             ];
-
-            $this->handleException($exception, $messagePayload);
         } finally {
             /**
              * Create final message to reply back to manager with
@@ -286,9 +311,9 @@ trait Worker
      * The client callback to be executed
      * on receiving a message
      *
-     * @return Closure | array
+     * @return Closure
      */
-    abstract protected function makeMessageHandler();
+    abstract protected function makeMessageHandler(): Closure;
 
     /**
      * Handle exception by calling
@@ -296,14 +321,20 @@ trait Worker
      *
      * @param $exception
      * @param OrderMessagePayload|null $messagePayload
-     * @return void
+     * @return array
      */
     private function handleException($exception, ?OrderMessagePayload $messagePayload = null)
     {
         try {
-            $this->makeExceptionHandler()($exception, $messagePayload);
+            $context = $this->makeExceptionHandler()($exception, $messagePayload);
+            if (!is_array($context) and !($context instanceof Context)) {
+                $context = [];
+            }
         } catch (Exception $exception) {
             $this->logException($exception);
+            $context = [];
+        } finally {
+            return $context;
         }
     }
 

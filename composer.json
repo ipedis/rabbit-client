@@ -16,12 +16,14 @@
         "opis/json-schema": "^1.0",
         "ext-amqp": "^1.9",
         "guzzlehttp/guzzle": "~6.0",
-        "ipedis/http-signature": "^1.0.0"
+        "ipedis/http-signature": "^1.0.0",
+        "phpunit/phpunit": "^9.5"
     },
     "autoload": {
         "psr-4": {
             "Ipedis\\Rabbit\\": "src/",
-            "Ipedis\\Demo\\Rabbit\\": "demo/"
+            "Ipedis\\Demo\\Rabbit\\": "demo/",
+	    "Ipedis\\Test\\Rabbit\\": "tests"
         }
     },
     "repositories": [
