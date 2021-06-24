@@ -157,4 +157,14 @@ final class ReplyMessagePayload extends MessagePayloadAbstract implements ReplyM
     {
         return !empty($this->getData()) && !empty($this->getData()[self::REPLY_INDEX]);
     }
+
+    public function isError(): bool
+    {
+        return $this->getStatus() === MessageHandlerInterface::TYPE_ERROR;
+    }
+
+    public function isSuccess(): bool
+    {
+        return $this->getStatus() === MessageHandlerInterface::TYPE_SUCCESS;
+    }
 }

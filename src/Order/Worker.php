@@ -376,7 +376,13 @@ trait Worker
 
         /*
          * Acknowledging the message
+         * nack or reject mechanism in case of failure.
          */
-        $q->ack($message->getDeliveryTag());
+        if ($replyToMessagePayload->isError()) {
+            $q->reject($message->getDeliveryTag());
+        }
+        else {
+            $q->ack($message->getDeliveryTag());
+        }
     }
 }

@@ -26,6 +26,7 @@ class ProgressManager extends ManagerAbstract
         $workflow = new Workflow($this->craftGroup('v1.admin.publication.success', 5));
         $workflow->then($this->craftGroup('v1.admin.publication.waiter', 5));
 
+
         $workflow->bind(BindableEventInterface::WORKFLOW_ON_FINISH, $this->json($workflow));
         echo "| index | event | uuid | sendAt |\n|---|---|---|---|\n";
         $this->run($workflow);

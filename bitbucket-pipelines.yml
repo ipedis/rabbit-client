@@ -5,6 +5,8 @@ pipelines:
           name: "Unit test"
           image: yanisipedis/php7.4-amqp:0.2
           script:
+            - sed -i 's/bitbucket:ipedis/git@bitbucket.org:ipedis/g' composer.json
+            - sed -i 's/bitbucket:ipedis/git@bitbucket.org:ipedis/g' composer.lock
             - composer install
             - bin/test.sh
           caches:
