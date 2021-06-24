@@ -7,6 +7,7 @@ use Ipedis\Rabbit\Exception\Helper\Context;
 use Ipedis\Rabbit\Exception\Helper\Error;
 use Ipedis\Rabbit\Exception\Helper\Serializer;
 use Ipedis\Rabbit\MessagePayload\MessagePayloadInterface;
+use Ipedis\Rabbit\MessagePayload\ReplyMessagePayloadInterface;
 use JsonSerializable;
 use LogicException;
 use PHPUnit\Framework\TestCase;
@@ -75,7 +76,7 @@ class SerializerTest extends TestCase
 
     public function testFromMessage()
     {
-        $error = Serializer::fromMessage(new class() implements JsonSerializable, MessagePayloadInterface {
+        $error = Serializer::fromMessage(new class() implements JsonSerializable, MessagePayloadInterface, ReplyMessagePayloadInterface {
             public function getHeaders(): array
             {
                 return [];
@@ -83,10 +84,7 @@ class SerializerTest extends TestCase
 
             public function getData(): array
             {
-                return ['error' => [
-                    'exception' => ['message' => 'foo message', 'code' => 0],
-                    'context' => [['this', 'context']]
-                ]];
+                return [];
             }
 
             public function getChannel(): string
@@ -102,6 +100,19 @@ class SerializerTest extends TestCase
             public function jsonSerialize()
             {
                 return '';
+            }
+
+            public function getReply()
+            {
+                return ['error' => [
+                    'exception' => ['message' => 'foo message', 'code' => 0],
+                    'context' => [['this', 'context']]
+                ]];
+            }
+
+            public function hasReply(): bool
+            {
+                return true;
             }
         });
 

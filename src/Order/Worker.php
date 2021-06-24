@@ -380,8 +380,7 @@ trait Worker
          */
         if ($replyToMessagePayload->isError()) {
             $q->reject($message->getDeliveryTag());
-        }
-        else {
+        } else {
             $q->ack($message->getDeliveryTag());
         }
     }
