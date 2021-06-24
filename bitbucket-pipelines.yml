@@ -8,6 +8,7 @@ pipelines:
             - sed -i 's/bitbucket:ipedis/git@bitbucket.org:ipedis/g' composer.json
             - sed -i 's/bitbucket:ipedis/git@bitbucket.org:ipedis/g' composer.lock
             - composer install
-            - bin/test.sh
+            - php vendor/bin/phpunit tests
+
           caches:
             - composer
