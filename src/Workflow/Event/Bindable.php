@@ -58,23 +58,24 @@ abstract class Bindable
 
         foreach ($this->callbacks[$eventType] as $callback) {
             //ignore evey type which is not callable.
-            if (!is_callable($callback)) continue;
+            if (!is_callable($callback)) {
+                continue;
+            }
 
             // if you do not have any payload, we only provide the event type.
             if (is_null($payload)) {
                 $callback($eventType);
-            } else if(
+            } elseif (
+                // TODO we should have Interface to materialize Bindable Class which also can have Error.
                 // if we are on case error.
-                preg_match('#(?:failed|error)$#',$eventType) &&
+                preg_match('#(?:failed|error)$#', $eventType) &&
                 method_exists($payload, 'getLastReplyMessage')
             ) {
                 $callback($payload, $eventType, Serializer::fromMessage($payload->getLastReplyMessage()));
-            }
-            else {
+            } else {
                 // any other callable type.
                 $callback($payload, $eventType);
             }
-
         }
 
         return $this;

@@ -257,7 +257,7 @@ class Group extends Bindable
      */
     public function getErrors(): array
     {
-        return array_map(fn(Task $task) => Serializer::fromMessage($task->getLastReplyMessage()), $this->getFailedOrders());
+        return array_map(fn (Task $task) => Serializer::fromMessage($task->getLastReplyMessage()), $this->getFailedOrders());
     }
 
     /**

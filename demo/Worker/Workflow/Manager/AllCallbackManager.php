@@ -15,6 +15,8 @@ use Ipedis\Rabbit\Workflow\Group;
 
 class AllCallbackManager extends ManagerAbstract
 {
+    public const ENABLE_GLOBAL_PRINTING = true;
+
     /**
      * @throws InvalidGroupArgumentException
      * @throws InvalidWorkflowArgumentException
@@ -23,7 +25,7 @@ class AllCallbackManager extends ManagerAbstract
     {
         $workflow = (
             new Workflow($this->craftFirstStep()))
-//            ->then($this->craftSecondStep())
+            ->then($this->craftSecondStep())
         ;
 
         /**
@@ -32,7 +34,7 @@ class AllCallbackManager extends ManagerAbstract
         $workflow = $this->bindWorkflowEvents($workflow);
 
         $this->run($workflow);
-//        print_r(sprintf("Summary : %s", json_encode($workflow->getProgressBag()->getWorkflowProgress(), JSON_PRETTY_PRINT)));
+        print_r(sprintf("Summary : %s", json_encode($workflow->getProgressBag()->getWorkflowProgress(), JSON_PRETTY_PRINT)));
     }
 
     /**
@@ -111,7 +113,7 @@ class AllCallbackManager extends ManagerAbstract
      */
     protected function bindWorkflowEvents(Workflow $workflow): Workflow
     {
-        $workflow = $workflow
+        $workflow
             /**
              * Once on workflow. you will receive as parameter the event name.
              */
@@ -122,10 +124,11 @@ class AllCallbackManager extends ManagerAbstract
                 $this->print("WORKFLOW FINISH \n");
             })
             ->bind(BindableEventInterface::WORKFLOW_ON_FAILURE, function (string $eventName) use ($workflow) {
-                foreach ($workflow->getErrors() as $taskId => $error) {
-                    $workflow->find($taskId);
-                }
                 $this->print("WORKFLOW FAILURE \n");
+                foreach ($workflow->getErrors() as $taskId => $error) {
+                    $task = $workflow->find($taskId);
+                    $this->print(sprintf("-- %s was failed with message - %s \n", $task->getType(), $error->getMessage()));
+                }
             })
             ->bind(BindableEventInterface::WORKFLOW_ON_SUCCESS, function (string $eventName) {
                 $this->print("WORKFLOW SUCCESS \n");
@@ -151,6 +154,7 @@ class AllCallbackManager extends ManagerAbstract
             ->bind(BindableEventInterface::WORKFLOW_ON_TASKS_FINISH, function (Task $task, string $eventName) {
                 $this->print("WORKFLOW TASKS FINISH \n");
             });
+
         return $workflow;
     }
 
@@ -173,10 +177,11 @@ class AllCallbackManager extends ManagerAbstract
                 $this->print("-- GROUP $id START \n");
             },
             BindableEventInterface::GROUP_ON_FAILURE => function (Group $group, string $eventName) use ($id) {
-//                foreach ($group->getErrors() as $taskId => $error) {
-//                    $group->find($taskId) is belong to $error
-//                }
                 $this->print("-- GROUP $id FAILURE \n");
+                foreach ($group->getErrors() as $taskId => $error) {
+                    $task = $group->find($taskId);
+                    $this->print(sprintf("---- %s was failed with message - %s \n", $task->getType(), $error->getMessage()));
+                }
             },
             BindableEventInterface::GROUP_ON_SUCCESS => function (Group $group, string $eventName) use ($id) {
                 $this->print("-- GROUP $id SUCCESS \n");
@@ -229,6 +234,8 @@ class AllCallbackManager extends ManagerAbstract
      */
     private function print(string $message)
     {
-//        print_r($message);
+        if (self::ENABLE_GLOBAL_PRINTING) {
+            print_r($message);
+        }
     }
 }

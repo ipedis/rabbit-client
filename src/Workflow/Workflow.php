@@ -199,7 +199,7 @@ class Workflow extends Bindable
      */
     public function findGroup(string $groupId): Group
     {
-        $group = array_filter($this->getGroups(), fn(Group $group) => $group->getGroupId() === $groupId);
+        $group = array_filter($this->getGroups(), fn (Group $group) => $group->getGroupId() === $groupId);
 
         if (count($group) === 0) {
             throw new Exception('Group not found');
@@ -242,7 +242,7 @@ class Workflow extends Bindable
         foreach ($this->groups as $group) {
             $errors = array_merge(
                 $errors,
-                array_map(fn(Task $task) => Serializer::fromMessage($task->getLastReplyMessage()), $group->getFailedOrders())
+                array_map(fn (Task $task) => Serializer::fromMessage($task->getLastReplyMessage()), $group->getFailedOrders())
             );
         }
         return $errors;
