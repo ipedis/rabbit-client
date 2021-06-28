@@ -9,8 +9,8 @@ interface MessageHandlerInterface
 {
     public const TYPE_PLANIFIED = 'planified';
     public const TYPE_DISPATCHED = 'dispatched';
-    public const TYPE_PROGRESS = 'progress';
     public const TYPE_STARTING = 'starting';
+    public const TYPE_PROGRESS = 'progress';
     public const TYPE_SUCCESS = 'success';
     public const TYPE_ERROR = 'error';
     public const AVAILABLE_TYPES = [self::TYPE_STARTING, self::TYPE_PLANIFIED, self::TYPE_DISPATCHED, self::TYPE_PROGRESS, self::TYPE_SUCCESS, self::TYPE_ERROR];

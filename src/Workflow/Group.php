@@ -2,10 +2,14 @@
 
 namespace Ipedis\Rabbit\Workflow;
 
+use Ipedis\Rabbit\Consumer\Handler\MessageHandlerInterface;
 use Ipedis\Rabbit\Exception\Group\InvalidGroupArgumentException;
+use Ipedis\Rabbit\Exception\Helper\Error;
+use Ipedis\Rabbit\Exception\Helper\Serializer;
 use Ipedis\Rabbit\Exception\Task\InvalidStatusException;
 use Ipedis\Rabbit\Exception\Timer\InvalidSpentTimeException;
 use Ipedis\Rabbit\Exception\Timer\InvalidTimeException;
+use Ipedis\Rabbit\MessagePayload\MessagePayloadInterface;
 use Ipedis\Rabbit\MessagePayload\OrderMessagePayload;
 use Ipedis\Rabbit\MessagePayload\ReplyMessagePayload;
 use Ipedis\Rabbit\Workflow\Config\GroupConfig;
@@ -238,6 +242,22 @@ class Group extends Bindable
     public function getOrders(): array
     {
         return $this->orders;
+    }
+
+    /**
+     * @return Task[]
+     */
+    public function getFailedOrders(): array
+    {
+        return array_filter($this->getOrders(), fn (Task $task) => $task->getStatus() === MessageHandlerInterface::TYPE_ERROR);
+    }
+
+    /**
+     * @return Error[]
+     */
+    public function getErrors(): array
+    {
+        return array_map(fn (Task $task) => Serializer::fromMessage($task->getLastReplyMessage()), $this->getFailedOrders());
     }
 
     /**

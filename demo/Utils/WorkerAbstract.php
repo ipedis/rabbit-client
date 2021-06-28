@@ -9,7 +9,7 @@ abstract class WorkerAbstract extends ConnectorAbstract
     /**
      * @var ChannelFactory $channelFactory
      */
-    private $channelFactory;
+    private ChannelFactory $channelFactory;
 
     public function __construct(
         string $host,

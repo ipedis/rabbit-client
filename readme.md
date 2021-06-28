@@ -46,3 +46,9 @@ Folder structure:
 * **demo** Will contain all examples for actual covered behavior from this library.
 * **src** Set of class or trait available.
 * **docs** All documentation.
+
+
+Available commande:
+==
+`composer test` to run unit testing.
+`composer lint` to run `php-cs-fix`.
