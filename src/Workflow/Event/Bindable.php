@@ -2,6 +2,8 @@
 
 namespace Ipedis\Rabbit\Workflow\Event;
 
+use Ipedis\Rabbit\Exception\Helper\Serializer;
+
 abstract class Bindable
 {
     /**
@@ -55,14 +57,24 @@ abstract class Bindable
         }
 
         foreach ($this->callbacks[$eventType] as $callback) {
-            // if we have real callable.
-            if (is_callable($callback)) {
-                if (is_null($payload)) {
-                    $callback($eventType);
-                } else {
-                    $callback($payload, $eventType);
-                }
+            //ignore evey type which is not callable.
+            if (!is_callable($callback)) continue;
+
+            // if you do not have any payload, we only provide the event type.
+            if (is_null($payload)) {
+                $callback($eventType);
+            } else if(
+                // if we are on case error.
+                preg_match('#(?:failed|error)$#',$eventType) &&
+                method_exists($payload, 'getLastReplyMessage')
+            ) {
+                $callback($payload, $eventType, Serializer::fromMessage($payload->getLastReplyMessage()));
             }
+            else {
+                // any other callable type.
+                $callback($payload, $eventType);
+            }
+
         }
 
         return $this;

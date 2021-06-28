@@ -4,6 +4,8 @@ namespace Ipedis\Rabbit\Workflow;
 
 use Exception;
 use Ipedis\Rabbit\Exception\Group\InvalidGroupArgumentException;
+use Ipedis\Rabbit\Exception\Helper\Error;
+use Ipedis\Rabbit\Exception\Helper\Serializer;
 use Ipedis\Rabbit\Exception\InvalidUuidException;
 use Ipedis\Rabbit\Exception\Progress\InvalidProgressValueException;
 use Ipedis\Rabbit\Exception\Task\InvalidStatusException;
@@ -197,9 +199,7 @@ class Workflow extends Bindable
      */
     public function findGroup(string $groupId): Group
     {
-        $group = array_filter($this->getGroups(), function (Group $group) use ($groupId) {
-            return $group->getGroupId() === $groupId;
-        });
+        $group = array_filter($this->getGroups(), fn(Group $group) => $group->getGroupId() === $groupId);
 
         if (count($group) === 0) {
             throw new Exception('Group not found');
@@ -209,11 +209,43 @@ class Workflow extends Bindable
     }
 
     /**
+     * @return Task
+     */
+    public function find(string $orderId): Task
+    {
+        $task = null;
+        foreach ($this->getGroups() as $group) {
+            if ($group->has($orderId)) {
+                $task = $group->find($orderId);
+                break;
+            }
+        }
+        if (is_null($task)) {
+            throw new Exception('Task not found');
+        }
+        return $task;
+    }
+
+    /**
      * @return Group[]
      */
     public function getGroups(): array
     {
         return $this->groups;
+    }
+    /**
+     * @return Error[]
+     */
+    public function getErrors(): array
+    {
+        $errors = [];
+        foreach ($this->groups as $group) {
+            $errors = array_merge(
+                $errors,
+                array_map(fn(Task $task) => Serializer::fromMessage($task->getLastReplyMessage()), $group->getFailedOrders())
+            );
+        }
+        return $errors;
     }
 
     /**

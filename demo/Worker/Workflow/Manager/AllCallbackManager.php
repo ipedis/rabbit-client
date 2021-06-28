@@ -5,6 +5,7 @@ namespace Ipedis\Demo\Rabbit\Worker\Workflow\Manager;
 use Closure;
 use Ipedis\Rabbit\Channel\OrderChannel;
 use Ipedis\Rabbit\Exception\Group\InvalidGroupArgumentException;
+use Ipedis\Rabbit\Exception\Helper\Error;
 use Ipedis\Rabbit\Exception\Workflow\InvalidWorkflowArgumentException;
 use Ipedis\Rabbit\MessagePayload\OrderMessagePayload;
 use Ipedis\Rabbit\Workflow\Event\BindableEventInterface;
@@ -22,7 +23,7 @@ class AllCallbackManager extends ManagerAbstract
     {
         $workflow = (
             new Workflow($this->craftFirstStep()))
-            ->then($this->craftSecondStep())
+//            ->then($this->craftSecondStep())
         ;
 
         /**
@@ -31,8 +32,7 @@ class AllCallbackManager extends ManagerAbstract
         $workflow = $this->bindWorkflowEvents($workflow);
 
         $this->run($workflow);
-
-        print_r(sprintf("Summary : %s", json_encode($workflow->getProgressBag()->getWorkflowProgress(), JSON_PRETTY_PRINT)));
+//        print_r(sprintf("Summary : %s", json_encode($workflow->getProgressBag()->getWorkflowProgress(), JSON_PRETTY_PRINT)));
     }
 
     /**
@@ -43,11 +43,11 @@ class AllCallbackManager extends ManagerAbstract
         return function (Group $group) {
             $group
                 ->planifyOrder(
-                    OrderMessagePayload::build(OrderChannel::fromString('v1.admin.publication.success')),
+                    OrderMessagePayload::build(OrderChannel::fromString('v1.admin.publication.failure')),
                     $this->getTaskEvents('1.1')
                 )
                 ->planifyOrder(
-                    OrderMessagePayload::build(OrderChannel::fromString('v1.admin.publication.success')),
+                    OrderMessagePayload::build(OrderChannel::fromString('v1.admin.publication.failure')),
                     $this->getTaskEvents('1.2')
                 );
             /**
@@ -121,7 +121,10 @@ class AllCallbackManager extends ManagerAbstract
             ->bind(BindableEventInterface::WORKFLOW_ON_FINISH, function (string $eventName) {
                 $this->print("WORKFLOW FINISH \n");
             })
-            ->bind(BindableEventInterface::WORKFLOW_ON_FAILURE, function (string $eventName) {
+            ->bind(BindableEventInterface::WORKFLOW_ON_FAILURE, function (string $eventName) use ($workflow) {
+                foreach ($workflow->getErrors() as $taskId => $error) {
+                    $workflow->find($taskId);
+                }
                 $this->print("WORKFLOW FAILURE \n");
             })
             ->bind(BindableEventInterface::WORKFLOW_ON_SUCCESS, function (string $eventName) {
@@ -170,6 +173,9 @@ class AllCallbackManager extends ManagerAbstract
                 $this->print("-- GROUP $id START \n");
             },
             BindableEventInterface::GROUP_ON_FAILURE => function (Group $group, string $eventName) use ($id) {
+//                foreach ($group->getErrors() as $taskId => $error) {
+//                    $group->find($taskId) is belong to $error
+//                }
                 $this->print("-- GROUP $id FAILURE \n");
             },
             BindableEventInterface::GROUP_ON_SUCCESS => function (Group $group, string $eventName) use ($id) {
@@ -184,7 +190,7 @@ class AllCallbackManager extends ManagerAbstract
             BindableEventInterface::GROUP_ON_TASKS_SUCCESS => function (Task $task, string $eventName) use ($id) {
                 $this->print("-- GROUP TASKS $id SUCCESS \n");
             },
-            BindableEventInterface::GROUP_ON_TASKS_FAILURE => function (Task $task, string $eventName) use ($id) {
+            BindableEventInterface::GROUP_ON_TASKS_FAILURE => function (Task $task, string $eventName, Error $error) use ($id) {
                 $this->print("-- GROUP TASKS $id FAILURE \n");
             },
         ];
@@ -206,7 +212,7 @@ class AllCallbackManager extends ManagerAbstract
             BindableEventInterface::TASK_ON_PROGRESS => function (Task $task, string $eventName) use ($id) {
                 $this->print("---- TASK $id PROGRESS \n");
             },
-            BindableEventInterface::TASK_ON_FAILURE => function (Task $task, string $eventName) use ($id) {
+            BindableEventInterface::TASK_ON_FAILURE => function (Task $task, string $eventName, Error $error) use ($id) {
                 $this->print("---- TASK $id FAILURE \n");
             },
             BindableEventInterface::TASK_ON_SUCCESS => function (Task $task, string $eventName) use ($id) {
@@ -223,6 +229,6 @@ class AllCallbackManager extends ManagerAbstract
      */
     private function print(string $message)
     {
-        print_r($message);
+//        print_r($message);
     }
 }
