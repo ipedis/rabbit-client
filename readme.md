@@ -52,3 +52,5 @@ Available commande:
 ==
 `composer test` to run unit testing.
 `composer lint` to run `php-cs-fix`.
+`make install` to run `composer install`.
+`make test` to run `pest`.

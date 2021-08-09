@@ -40,11 +40,12 @@
         }
     },
     "scripts": {
-        "test": "phpunit tests",
+        "test": "pest tests",
         "lint": "php-cs-fixer fix ."
     },
     "require-dev": {
         "friendsofphp/php-cs-fixer": "^3.0",
-        "brainmaestro/composer-git-hooks": "^2.8"
+        "brainmaestro/composer-git-hooks": "^2.8",
+        "pestphp/pest": "^1.15"
     }
 }

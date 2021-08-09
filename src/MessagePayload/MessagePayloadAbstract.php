@@ -50,6 +50,7 @@ abstract class MessagePayloadAbstract implements MessagePayloadInterface
         /**
          * Add channel to header
          */
+        $this->setDefaultHeader();
         $this->addHeader(self::HEADER_CHANNEL, $channel);
     }
 
@@ -162,8 +163,6 @@ abstract class MessagePayloadAbstract implements MessagePayloadInterface
 
     public function jsonSerialize()
     {
-        $this->setDefaultHeader();
-
         return [
             'header' => $this->getHeaders(),
             'data' => $this->getData()
