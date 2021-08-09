@@ -40,7 +40,7 @@
         }
     },
     "scripts": {
-        "test": "phpunit tests",
+        "test": "pest tests",
         "lint": "php-cs-fixer fix ."
     },
     "require-dev": {
