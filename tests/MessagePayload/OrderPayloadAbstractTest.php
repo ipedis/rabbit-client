@@ -81,5 +81,3 @@ it('contain sendAt timezone by default', function () use ($channelName) {
     $event = EventMessagePayload::build($channelName);
     $this->assertIsInt($event->getTimestamp());
 });
-
-
