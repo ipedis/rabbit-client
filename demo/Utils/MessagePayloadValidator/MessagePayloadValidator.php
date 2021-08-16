@@ -16,7 +16,7 @@ class MessagePayloadValidator implements ValidatorInterface
     /**
      * @var Validator
      */
-    private $validator;
+    private Validator $validator;
 
     public function __construct()
     {
@@ -41,7 +41,6 @@ class MessagePayloadValidator implements ValidatorInterface
          */
         $data = json_decode($messagePayload->getStringifyData());
 
-        /** @var ValidationResult $result */
         $result = $this->validator->schemaValidation($data, $schema);
 
         if (!$result->isValid()) {
