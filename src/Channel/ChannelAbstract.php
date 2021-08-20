@@ -9,33 +9,40 @@ abstract class ChannelAbstract
     /**
      * <protocol>.<service>.<aggregate>.<action>
      */
-    public const CHANNEL_PATTERN = '#^(?<protocol>v\d+)\.(?<service>[\w-]+)\.(?<aggregate>[\w-]+(?:\.[\w-]+)?)\.(?<action>[\w-]+)$#';
+    public const CHANNEL_PATTERN = '#^(?<protocol>v\d+)\.(?<service>[a-z-]+)\.(?<aggregate>[a-z-]+(?:\.[a-z-]+)?)\.(?<action>[a-z-]+)$#';
 
     /**
      * <aggregate>.<action>
      */
-    public const PARTIAL_CHANNEL_PATTERN = '#^(?<aggregate>[\w-]+(?:\.[\w-]+)?)\.(?<action>[\w-]+)$#';
+    public const PARTIAL_CHANNEL_PATTERN = '#^(?<aggregate>[a-z-]+(?:\.[a-z-]+)?)\.(?<action>[a-z-]+)$#';
 
     /**
      * @var string
      */
-    private $protocol;
+    private string $protocol;
 
     /**
      * @var string
      */
-    private $service;
+    private string $service;
 
     /**
      * @var string
      */
-    private $aggregate;
+    private string $aggregate;
 
     /**
      * @var string
      */
-    private $action;
+    private string $action;
 
+    /**
+     * @param string $protocol
+     * @param string $service
+     * @param string $aggregate
+     * @param string $action
+     * @throws ChannelNamingException
+     */
     protected function __construct(string $protocol, string $service, string $aggregate, string $action)
     {
         $this->assertProtocol($protocol);
@@ -113,6 +120,9 @@ abstract class ChannelAbstract
         return $catched;
     }
 
+    /**
+     * @throws ChannelNamingException
+     */
     public static function getTypeFromChannelName(string $channel): string
     {
         $channelDetails = self::assertChannel($channel);
