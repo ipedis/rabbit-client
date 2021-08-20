@@ -42,7 +42,7 @@ it('should failed when version is in uppercase', function () {
     EventChannel::fromString('V1.foo.bar.test-case');
 });
 
-it('should failed when version contain alphabetical char', function () {
+it('should fail when version is suffixed with alphabet', function () {
     // happy path.
     $this->expectException(ChannelNamingException::class);
     EventChannel::fromString('v1b.foo.bar.test-case');
