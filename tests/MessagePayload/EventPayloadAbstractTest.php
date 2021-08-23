@@ -81,3 +81,9 @@ it('contain sendAt timezone by default', function () use ($channelName) {
     $event = EventMessagePayload::build($channelName);
     $this->assertIsInt($event->getTimestamp());
 });
+
+
+it('should return data encoded in json', function () use ($channelName) {
+    $event = EventMessagePayload::build($channelName, ['some' => 'data']);
+    $this->assertJsonStringEqualsJsonString(json_encode(['some' => 'data']), $event->getStringifyData());
+});

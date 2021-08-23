@@ -2,6 +2,8 @@
 
 namespace Ipedis\Rabbit\MessagePayload;
 
+use Exception;
+
 /**
  * This class is responsible for standardizing the message body
  *
@@ -35,11 +37,17 @@ abstract class MessagePayloadAbstract implements MessagePayloadInterface
     protected string $channel;
 
     /**
+     * @var string
+     */
+    protected string $jsonEncodedData;
+
+    /**
      * PayloadAbstract constructor.
      *
      * @param string $channel
      * @param array $data
      * @param array $headers
+     * @throws Exception
      */
     protected function __construct(string $channel, array $data = [], array $headers = [])
     {
@@ -52,6 +60,7 @@ abstract class MessagePayloadAbstract implements MessagePayloadInterface
          */
         $this->setDefaultHeader();
         $this->addHeader(self::HEADER_CHANNEL, $channel);
+        $this->jsonEncodedData = json_encode($this->getData());
     }
 
     /**
@@ -82,7 +91,7 @@ abstract class MessagePayloadAbstract implements MessagePayloadInterface
      */
     public function getStringifyData(): string
     {
-        return json_encode($this->getData());
+        return $this->jsonEncodedData;
     }
 
     /**
@@ -172,7 +181,7 @@ abstract class MessagePayloadAbstract implements MessagePayloadInterface
     /**
      * Add missing headers before serializing
      *
-     * @throws \Exception
+     * @throws Exception
      */
     private function setDefaultHeader(): void
     {
