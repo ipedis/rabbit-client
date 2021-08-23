@@ -64,10 +64,10 @@ it('must throw exception when only array data key is present', function () use (
 
 it('must build from valid array', function () use ($channelName) {
     $event = EventMessagePayload::fromArray([
-	'data' => [],
-	'header' => [
-		'channel' => 'something'
-	]
+    'data' => [],
+    'header' => [
+        'channel' => 'something'
+    ]
 ]);
     $this->assertInstanceOf(EventMessagePayload::class, $event);
     $this->assertInstanceOf(MessagePayloadAbstract::class, $event);

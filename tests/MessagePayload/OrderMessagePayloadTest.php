@@ -35,7 +35,7 @@ it('must throw exception when only array header key is present', function () use
     ]]);
 });
 
-it('must throw exception when only array data key is present', function ()  {
+it('must throw exception when only array data key is present', function () {
     $this->expectException(MessagePayloadFormatException::class);
     OrderMessagePayload::fromArray(['data' => []]);
 });
