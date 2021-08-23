@@ -4,8 +4,6 @@
 use Ipedis\Rabbit\Channel\Factory\ChannelFactory;
 use Ipedis\Rabbit\Event\EventListener;
 
-
-
 it('Should call makeMessageHandler callback', function () {
     $isCalled = false;
     $makeMessageHandler = function () use (&$isCalled) {
@@ -17,7 +15,7 @@ it('Should call makeMessageHandler callback', function () {
         ->will($this->returnValue($makeMessageHandler))
     ;
 
-    $this->eventListenerMock->main($this->envelopMock,  $this->queueMock);
+    $this->eventListenerMock->main($this->envelopMock, $this->queueMock);
     // if Closure is run, then $isCall will be turned to true.
     $this->assertTrue($isCalled);
 });
@@ -42,7 +40,7 @@ it('Should call makeErrorHandler callback when exception is throw', function () 
         ->will($this->returnValue($makeExceptionHandler))
     ;
 
-    $this->eventListenerMock->main($this->envelopMock,  $this->queueMock);
+    $this->eventListenerMock->main($this->envelopMock, $this->queueMock);
     // if $makeExceptionHandler Closure is run, then $isCall will be turned to true.
     $this->assertTrue($isCalled);
 });
