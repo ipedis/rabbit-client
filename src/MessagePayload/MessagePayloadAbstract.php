@@ -202,7 +202,6 @@ abstract class MessagePayloadAbstract implements MessagePayloadInterface
 
     public function getTimezone(): array
     {
-        var_dump($this->getHeader(self::HEADER_TIMEZONE));
         return $this->getHeader(self::HEADER_TIMEZONE);
     }
 
