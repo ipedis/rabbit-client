@@ -10,7 +10,7 @@ use Ipedis\Rabbit\Lifecyle\Hook\OnAfterMessage;
 use Ipedis\Rabbit\Lifecyle\Hook\OnBeforeMessage;
 use Ipedis\Rabbit\MessagePayload\EventMessagePayload;
 
-class Binding extends WorkerAbstract implements OnBeforeMessage, OnAfterMessage
+class Listener extends WorkerAbstract implements OnBeforeMessage, OnAfterMessage
 {
     use EventListener;
 
@@ -73,6 +73,7 @@ class Binding extends WorkerAbstract implements OnBeforeMessage, OnAfterMessage
     protected function isSubscribed(string $eventName): bool
     {
         return in_array($eventName, [
+            'v1.admin.publication.was-created',
             'v1.admin.publication.was-exported',
             'v1.preview.publication.was-updated',
             'v1.admin.publication.was-deleted',

@@ -16,19 +16,19 @@ class Dispatcher extends ConnectorAbstract
     public const EVENTS_TO_DISPATCH = [
         'v1.admin.publication.was-created',
         'v1.admin.publication.was-exported',
-        'v1.preview.publication.was-updated',
-        'v1.admin.publication.was-deleted'
+//        'v1.preview.publication.was-updated',
+//        'v1.admin.publication.was-deleted'
     ];
 
     /**
      * @var ChannelFactory $channelFactory
      */
-    private $channelFactory;
+    private ChannelFactory $channelFactory;
 
     /**
      * @var ValidatorInterface $messagePayloadValidator
      */
-    private $messagePayloadValidator;
+    private ValidatorInterface $messagePayloadValidator;
 
     public function __construct(
         string $host,
