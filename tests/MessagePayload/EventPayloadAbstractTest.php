@@ -115,6 +115,5 @@ it('should return data encoded in json', function () use ($channelName) {
 
 it('should return valid timezone name', function () use ($channelName) {
     $event = EventMessagePayload::build($channelName, ['some' => 'data']);
-    var_dump($event->getTimezoneName());
     $this->assertEquals($event->getTimezoneName(), 'UTC');
 });
