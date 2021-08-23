@@ -1,9 +1,12 @@
 <?php
 
-
 use Ipedis\Rabbit\Channel\Factory\ChannelFactory;
 use Ipedis\Rabbit\Event\EventListener;
 
+/**
+ * can be a good source of inspiration
+ * https://github.com/php-amqplib/RabbitMqBundle/blob/master/Tests/RabbitMq/ConsumerTest.php
+ */
 it('Should call makeMessageHandler callback', function () {
     $isCalled = false;
     $makeMessageHandler = function () use (&$isCalled) {
