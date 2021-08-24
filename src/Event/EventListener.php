@@ -10,6 +10,7 @@ use Ipedis\Rabbit\Channel\Factory\ChannelFactory;
 use Ipedis\Rabbit\Connector;
 use Ipedis\Rabbit\Exception\Channel\ChannelFactoryException;
 use Ipedis\Rabbit\Exception\MessagePayload\MessagePayloadFormatException;
+use Ipedis\Rabbit\Exception\RabbitClientConnectException;
 use Ipedis\Rabbit\Lifecyle\Hook\OnAfterMessage;
 use Ipedis\Rabbit\Lifecyle\Hook\OnBeforeMessage;
 use Ipedis\Rabbit\MessagePayload\EventMessagePayload;
@@ -21,18 +22,19 @@ trait EventListener
     /**
      * @var string
      */
-    protected $worker_id;
+    protected string $worker_id;
 
     /**
-     * @var AMQPQueue $queue
+     * @var AMQPQueue|null $queue
      */
-    protected $queue = null;
+    protected ?AMQPQueue $queue = null;
 
     /**
      * Instantiate event listener by
      * - Connect to rabbitMQ
      * - Create/declare queue and bind with exchange
      * - Define callback to be used for consuming message
+     * @throws ChannelFactoryException|RabbitClientConnectException
      */
     public function execute()
     {
@@ -131,7 +133,7 @@ trait EventListener
             if ($this instanceof OnAfterMessage) {
                 $this->afterMessageHandled();
             }
-        } catch (\Exception $exception) {
+        } catch (Exception $exception) {
             /**
              * Handle exception from the hooks
              */
@@ -147,46 +149,46 @@ trait EventListener
      * Message will be handled ONLY if
      * listener is subscribed to the event
      *
-     * @param AMQPEnvelope $message
+     * @param AMQPEnvelope $envelope
      * @throws MessagePayloadFormatException
      */
-    private function consumeReceivedMessage(AMQPEnvelope $message)
+    private function consumeReceivedMessage(AMQPEnvelope $envelope)
     {
         /**
          * Ignore if message not proper json
          */
-        if (!$this->isValidMessageFormat($message->getBody())) {
+        if (!$this->isValidMessageFormat($envelope->getBody())) {
             return;
         }
 
-        $messagePayload = EventMessagePayload::fromJson($message->getBody());
+        $message = EventMessagePayload::fromJson($envelope->getBody());
 
         try {
             /**
              * 1. Validate channel naming and return event name
              */
-            if (!$this->isValidChannelName($messagePayload->getChannel())) {
+            if (!$this->isValidChannelName($message->getChannel())) {
                 return;
             }
 
             /**
              * 2. Check if message is to be consumed
              */
-            if ($this->isSubscribed($messagePayload->getChannel())) {
+            if ($this->isSubscribed($message->getChannel())) {
                 /**
                  * 3. Process the message
                  */
-                $this->handleReceivedMessage($messagePayload);
+                $this->handleReceivedMessage($message);
             }
         } catch (Exception $exception) {
-            $this->handleException($exception, $messagePayload);
+            $this->handleException($exception, $message);
         }
     }
 
     /**
      * Check if message is valid json
      *
-     * @param $message
+     * @param string $message
      * @return bool
      */
     private function isValidMessageFormat(string $message): bool
@@ -273,7 +275,7 @@ trait EventListener
     {
         try {
             $this->makeExceptionHandler()($exception, $messagePayload);
-        } catch (\Exception $exception) {
+        } catch (Exception $exception) {
             $this->logException($exception);
         }
     }
@@ -286,7 +288,7 @@ trait EventListener
      *
      * @param Exception $exception
      */
-    protected function logException(\Exception $exception)
+    protected function logException(Exception $exception)
     {
     }
 

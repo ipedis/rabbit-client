@@ -2,7 +2,7 @@
 
 
 use Ipedis\Demo\Rabbit\Utils\MessagePayloadValidator\MessagePayloadValidator;
-use Ipedis\Demo\Rabbit\Worker\Event\Binding;
+use Ipedis\Demo\Rabbit\Worker\Event\Listener;
 use Ipedis\Demo\Rabbit\Worker\Event\Dispatcher;
 use Ipedis\Demo\Rabbit\Worker\Order\Manager as OrderManager;
 use Ipedis\Demo\Rabbit\Worker\Workflow\Manager\GeneratorManager;
@@ -150,8 +150,8 @@ if (!empty($argv[1])) {
                 $messagePayloadValidator
             ))->main();
             break;
-        case 'binding':
-            (new Binding(
+        case 'listener':
+            (new Listener(
                 $configEvent['host'],
                 $configEvent['port'],
                 $configEvent['use'],
@@ -162,7 +162,7 @@ if (!empty($argv[1])) {
             ))->execute();
             break;
 
-        case 'event':
+        case 'dispatcher':
             (new Dispatcher(
                 $configEvent['host'],
                 $configEvent['port'],
@@ -275,8 +275,8 @@ if (!empty($argv[1])) {
     printf('you should provide type parameter, possible value : %s', implode(', ', [
         'manager',
         'worker',
-        'event',
-        'binding',
+        'dispatcher',
+        'listener',
         'workflow-callback',
         'workflow-progress',
         'workflow-failure',
