@@ -14,12 +14,12 @@ final class ReplyMessagePayload extends MessagePayloadAbstract implements ReplyM
     /**
      * @var string $orderId
      */
-    private $orderId;
+    private string $orderId;
 
     /**
      * @var string $status
      */
-    private $status;
+    private string $status;
 
     protected function __construct(
         string $channel,
@@ -79,33 +79,28 @@ final class ReplyMessagePayload extends MessagePayloadAbstract implements ReplyM
     }
 
     /**
-     * Factory method to create message payload from json
-     *
-     * @param string $msg
-     * @return ReplyMessagePayload
+     * @param array $state
+     * @return static
      * @throws MessagePayloadFormatException
      */
-    public static function fromJson(string $msg): self
+    public static function fromArray(array $state): self
     {
-        $msgBody = json_decode($msg, true);
-
         if (
-            json_last_error() !== JSON_ERROR_NONE ||
-            !isset($msgBody['header']) ||
-            !isset($msgBody['header'][self::HEADER_CHANNEL]) ||
-            !isset($msgBody['header'][self::HEADER_CORRELATION_ID]) ||
-            !isset($msgBody['header'][self::HEADER_STATUS]) ||
-            !isset($msgBody['data'])
+            !isset($state['header']) ||
+            !isset($state['header'][self::HEADER_CHANNEL]) ||
+            !isset($state['header'][self::HEADER_CORRELATION_ID]) ||
+            !isset($state['header'][self::HEADER_STATUS]) ||
+            !isset($state['data'])
         ) {
-            throw new MessagePayloadFormatException(sprintf('Order message body format is invalid : {%s}', $msg));
+            throw new MessagePayloadFormatException('Array structure is invalid');
         }
 
         return new self(
-            $msgBody['header'][self::HEADER_CHANNEL],
-            $msgBody['header'][self::HEADER_CORRELATION_ID],
-            $msgBody['header'][self::HEADER_STATUS],
-            $msgBody['data'],
-            $msgBody['header']
+            $state['header'][self::HEADER_CHANNEL],
+            $state['header'][self::HEADER_CORRELATION_ID],
+            $state['header'][self::HEADER_STATUS],
+            $state['data'],
+            $state['header']
         );
     }
 

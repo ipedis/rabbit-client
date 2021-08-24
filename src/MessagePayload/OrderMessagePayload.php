@@ -35,44 +35,26 @@ class OrderMessagePayload extends MessagePayloadAbstract
     }
 
     /**
-     * Factory method
-     *
-     * @param string $channel
-     * @param array $data
-     * @param array $headers
-     * @return OrderMessagePayload
-     */
-    public static function build(string $channel, array $data = [], array $headers = []): self
-    {
-        return new self($channel, $data, $headers);
-    }
-
-    /**
-     * Factory method to create message payload from json
-     *
-     * @param string $msg
-     * @return OrderMessagePayload
+     * @param array $state
+     * @return static
      * @throws MessagePayloadFormatException
      */
-    public static function fromJson(string $msg): self
+    public static function fromArray(array $state): self
     {
-        $msgBody = json_decode($msg, true);
-
         if (
-            json_last_error() !== JSON_ERROR_NONE ||
-            !isset($msgBody['header']) ||
-            !isset($msgBody['header'][self::HEADER_CHANNEL]) ||
-            !isset($msgBody['header'][self::HEADER_REPLY_QUEUE]) ||
-            !isset($msgBody['header'][self::HEADER_CORRELATION_ID]) ||
-            !isset($msgBody['data'])
+            !isset($state['header']) ||
+            !isset($state['header'][self::HEADER_CHANNEL]) ||
+            !isset($state['header'][self::HEADER_REPLY_QUEUE]) ||
+            !isset($state['header'][self::HEADER_CORRELATION_ID]) ||
+            !isset($state['data'])
         ) {
-            throw new MessagePayloadFormatException(sprintf('Order message body format is invalid : {%s}', $msg));
+            throw new MessagePayloadFormatException('Array structure is invalid');
         }
 
         return new self(
-            $msgBody['header'][self::HEADER_CHANNEL],
-            $msgBody['data'],
-            $msgBody['header']
+            $state['header'][self::HEADER_CHANNEL],
+            $state['data'],
+            $state['header']
         );
     }
 
