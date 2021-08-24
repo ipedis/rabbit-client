@@ -2,6 +2,9 @@
 
 namespace Ipedis\Rabbit\MessagePayload;
 
+use Exception;
+use Ipedis\Rabbit\Exception\MessagePayload\MessagePayloadFormatException;
+
 /**
  * This class is responsible for standardizing the message body
  *
@@ -35,11 +38,17 @@ abstract class MessagePayloadAbstract implements MessagePayloadInterface
     protected string $channel;
 
     /**
+     * @var string
+     */
+    protected string $jsonEncodedData;
+
+    /**
      * PayloadAbstract constructor.
      *
      * @param string $channel
      * @param array $data
      * @param array $headers
+     * @throws Exception
      */
     protected function __construct(string $channel, array $data = [], array $headers = [])
     {
@@ -52,7 +61,42 @@ abstract class MessagePayloadAbstract implements MessagePayloadInterface
          */
         $this->setDefaultHeader();
         $this->addHeader(self::HEADER_CHANNEL, $channel);
+        $this->jsonEncodedData = json_encode($this->getData());
     }
+
+    /**
+     * Factory method
+     *
+     * @param string $channel
+     * @param array $data
+     * @param array $headers
+     * @return EventMessagePayload
+     * @throws \Exception
+     */
+    public static function build(string $channel, array $data = [], array $headers = []): self
+    {
+        return new static($channel, $data, $headers);
+    }
+
+    /**
+     * Factory method to create message payload from json
+     *
+     * @param string $msg
+     * @return EventMessagePayload
+     * @throws MessagePayloadFormatException
+     */
+    public static function fromJson(string $msg): self
+    {
+        $state = json_decode($msg, true);
+
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            throw new MessagePayloadFormatException(sprintf('Event message body format is invalid : {%s}', $msg));
+        }
+
+        return static::fromArray($state);
+    }
+
+    abstract public static function fromArray(array $state): self;
 
     /**
      * @param string $key
@@ -82,7 +126,7 @@ abstract class MessagePayloadAbstract implements MessagePayloadInterface
      */
     public function getStringifyData(): string
     {
-        return json_encode($this->getData());
+        return $this->jsonEncodedData;
     }
 
     /**
@@ -161,6 +205,11 @@ abstract class MessagePayloadAbstract implements MessagePayloadInterface
         return $this->getHeader(self::HEADER_TIMEZONE);
     }
 
+    public function getTimezoneName(): string
+    {
+        return $this->getTimezone()['timezone'];
+    }
+
     public function jsonSerialize()
     {
         return [
@@ -172,7 +221,7 @@ abstract class MessagePayloadAbstract implements MessagePayloadInterface
     /**
      * Add missing headers before serializing
      *
-     * @throws \Exception
+     * @throws Exception
      */
     private function setDefaultHeader(): void
     {
@@ -188,7 +237,10 @@ abstract class MessagePayloadAbstract implements MessagePayloadInterface
          */
         if (!$this->hasHeader(self::HEADER_TIMESTAMP)) {
             $this->headers[self::HEADER_TIMESTAMP] = microtime(true);
-            $this->headers[self::HEADER_TIMEZONE] = (new \DateTime())->getTimezone();
+            $timezone = (new \DateTime())->getTimezone();
+            $this->headers[self::HEADER_TIMEZONE] = [
+                'timezone' => $timezone->getName()
+            ];
         }
     }
 

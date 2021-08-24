@@ -8,7 +8,7 @@ $channelName = 'v1.dummy.some.channel';
 
 
 /**
- * Section Factory
+ * Section Factory - from Json
  */
 it('must Build DTO', function () use ($channelName) {
     $event = EventMessagePayload::build($channelName);
@@ -25,12 +25,12 @@ it('must throw exception on empty json', function () use ($channelName) {
     EventMessagePayload::fromJson('{}');
 });
 
-it('must throw exception when only header is present', function () use ($channelName) {
+it('must throw exception when only json header key is present', function () use ($channelName) {
     $this->expectException(MessagePayloadFormatException::class);
     EventMessagePayload::fromJson('{"header": {"channel": "something"}}');
 });
 
-it('must throw exception when only data is present', function () use ($channelName) {
+it('must throw exception when only json data key is present', function () use ($channelName) {
     $this->expectException(MessagePayloadFormatException::class);
     EventMessagePayload::fromJson('{"data": ""}');
 });
@@ -46,6 +46,32 @@ it('must build from valid json', function () use ($channelName) {
     $this->assertInstanceOf(MessagePayloadAbstract::class, $event);
 });
 
+
+it('must throw exception on empty array', function () use ($channelName) {
+    $this->expectException(MessagePayloadFormatException::class);
+    EventMessagePayload::fromArray([]);
+});
+
+it('must throw exception when only array header key is present', function () use ($channelName) {
+    $this->expectException(MessagePayloadFormatException::class);
+    EventMessagePayload::fromArray(['header' => ['channel' => 'something']]);
+});
+
+it('must throw exception when only array data key is present', function () use ($channelName) {
+    $this->expectException(MessagePayloadFormatException::class);
+    EventMessagePayload::fromArray(['data' => []]);
+});
+
+it('must build from valid array', function () use ($channelName) {
+    $event = EventMessagePayload::fromArray([
+    'data' => [],
+    'header' => [
+        'channel' => 'something'
+    ]
+]);
+    $this->assertInstanceOf(EventMessagePayload::class, $event);
+    $this->assertInstanceOf(MessagePayloadAbstract::class, $event);
+});
 
 /**
  * Section header
@@ -80,4 +106,14 @@ it('uuid can be defined on header parameter', function () use ($channelName) {
 it('contain sendAt timezone by default', function () use ($channelName) {
     $event = EventMessagePayload::build($channelName);
     $this->assertIsInt($event->getTimestamp());
+});
+
+it('should return data encoded in json', function () use ($channelName) {
+    $event = EventMessagePayload::build($channelName, ['some' => 'data']);
+    $this->assertJsonStringEqualsJsonString(json_encode(['some' => 'data']), $event->getStringifyData());
+});
+
+it('should return valid timezone name', function () use ($channelName) {
+    $event = EventMessagePayload::build($channelName, ['some' => 'data']);
+    $this->assertEquals($event->getTimezoneName(), 'UTC');
 });
