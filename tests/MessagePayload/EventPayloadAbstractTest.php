@@ -17,7 +17,7 @@ it('must Build DTO', function () use ($channelName) {
 });
 
 
-it ('must throw exception on invalid json', fn($value) => EventMessagePayload::fromJson($value))
+it('must throw exception on invalid json', fn ($value) => EventMessagePayload::fromJson($value))
     ->with([
         'not even a json',
         '{}', // empty json.
@@ -36,7 +36,7 @@ it('must build from valid json', function () use ($channelName) {
     $this->assertInstanceOf(MessagePayloadAbstract::class, $event);
 });
 
-it('must throw exception on empty array', fn($value = []) => EventMessagePayload::fromArray($value))
+it('must throw exception on empty array', fn ($value = []) => EventMessagePayload::fromArray($value))
     ->with([
         [], // empty array
         ['header' => ['channel' => 'something']], // only header json key is present
