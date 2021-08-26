@@ -15,25 +15,15 @@ it('must Build DTO', function () use ($channelName) {
     $this->assertInstanceOf(EventMessagePayload::class, $event);
     $this->assertInstanceOf(MessagePayloadAbstract::class, $event);
 });
-it('must throw exception on not valid json', function () use ($channelName) {
-    $this->expectException(MessagePayloadFormatException::class);
-    EventMessagePayload::fromJson('not even a json');
-});
 
-it('must throw exception on empty json', function () use ($channelName) {
-    $this->expectException(MessagePayloadFormatException::class);
-    EventMessagePayload::fromJson('{}');
-});
 
-it('must throw exception when only json header key is present', function () use ($channelName) {
-    $this->expectException(MessagePayloadFormatException::class);
-    EventMessagePayload::fromJson('{"header": {"channel": "something"}}');
-});
-
-it('must throw exception when only json data key is present', function () use ($channelName) {
-    $this->expectException(MessagePayloadFormatException::class);
-    EventMessagePayload::fromJson('{"data": ""}');
-});
+it ('must throw exception on invalid json', fn($value) => EventMessagePayload::fromJson($value))
+    ->with([
+        'not even a json',
+        '{}', // empty json.
+        '{"header": {"channel": "something"}}', // only header json key is present
+        '{"data": ""}' // only data json key is present.
+    ])->throws(MessagePayloadFormatException::class);
 
 it('must build from valid json', function () use ($channelName) {
     $event = EventMessagePayload::fromJson('{
@@ -46,21 +36,12 @@ it('must build from valid json', function () use ($channelName) {
     $this->assertInstanceOf(MessagePayloadAbstract::class, $event);
 });
 
-
-it('must throw exception on empty array', function () use ($channelName) {
-    $this->expectException(MessagePayloadFormatException::class);
-    EventMessagePayload::fromArray([]);
-});
-
-it('must throw exception when only array header key is present', function () use ($channelName) {
-    $this->expectException(MessagePayloadFormatException::class);
-    EventMessagePayload::fromArray(['header' => ['channel' => 'something']]);
-});
-
-it('must throw exception when only array data key is present', function () use ($channelName) {
-    $this->expectException(MessagePayloadFormatException::class);
-    EventMessagePayload::fromArray(['data' => []]);
-});
+it('must throw exception on empty array', fn($value = []) => EventMessagePayload::fromArray($value))
+    ->with([
+        [], // empty array
+        ['header' => ['channel' => 'something']], // only header json key is present
+        ['data' => []],  // only data json key is present.
+    ])->throws(MessagePayloadFormatException::class);
 
 it('must build from valid array', function () use ($channelName) {
     $event = EventMessagePayload::fromArray([
