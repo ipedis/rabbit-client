@@ -35,10 +35,10 @@ trait Connector
      */
     protected function disconnect()
     {
-        if ($this->channel !== null) {
+        if (!empty($this->channel) && $this->channel instanceof AMQPChannel) {
             $this->channel->close();
         }
-        if ($this->connection !== null) {
+        if (!empty($this->connection) && $this->connection instanceof AMQPConnection) {
             $this->connection->disconnect();
         }
     }

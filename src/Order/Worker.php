@@ -105,7 +105,7 @@ trait Worker
 
     public function __destruct()
     {
-        if ($this->queue) {
+        if (!empty($this->queue) && $this->queue instanceof AMQPQueue) {
             $this->queue->delete();
         }
         $this->disconnect();
