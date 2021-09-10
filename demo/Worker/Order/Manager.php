@@ -18,7 +18,7 @@ class Manager extends ConnectorAbstract
 {
     use ManagerTrait;
 
-    public const IS_VERBOSE = false;
+    public const IS_VERBOSE = true;
 
     /**
      * @var ChannelFactory $channelFactory
@@ -74,7 +74,7 @@ class Manager extends ConnectorAbstract
         /**
          * Example of binding a handler to an event
          */
-        $messageHandler = new ManagerHandler(1);
+        $messageHandler = new ManagerHandler(10);
 
         /**
          * We publish N Tasks on queue "Worker" who should be consume by this Worker.
@@ -92,14 +92,14 @@ class Manager extends ConnectorAbstract
 
             $this->publish($orderMessagePayload)
                 ->bind(MessageHandlerInterface::TYPE_ERROR, function (ReplyMessagePayload $message, Error $error) {
-                    var_dump($error);
+//                    var_dump($error);
                 })
             ;
 
             if (self::IS_VERBOSE) {
                 $this->bind(MessageHandlerInterface::TYPE_PROGRESS, function (ReplyMessagePayload $message) {
                     // pro tips: if you want to find only the reply, you can use $message->getReply().
-                    printf("[[ ----------- PROGRESSION PERCENTAGE %s%% COMPLETED ---------- ]]\n\n", (string) $this->getPercentageProgression());
+                    printf("[[ ----------- PROGRESSION PERCENTAGE %s%% COMPLETED ---------- ]]\n", (string) $this->getPercentageProgression());
                 });
             }
         }

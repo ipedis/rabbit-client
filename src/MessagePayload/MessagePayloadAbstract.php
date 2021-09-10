@@ -70,7 +70,7 @@ abstract class MessagePayloadAbstract implements MessagePayloadInterface
      * @param string $channel
      * @param array $data
      * @param array $headers
-     * @return EventMessagePayload
+     * @return MessagePayloadAbstract
      * @throws \Exception
      */
     public static function build(string $channel, array $data = [], array $headers = []): self

@@ -21,6 +21,7 @@ use Ipedis\Rabbit\Exception\InvalidCallableException;
 use Ipedis\Rabbit\Exception\MessagePayload\MessagePayloadFormatException;
 use Ipedis\Rabbit\Exception\MessagePayload\MessagePayloadInvalidSchemaException;
 use Ipedis\Rabbit\Exception\MessagePayload\MessagePayloadValidatorException;
+use Ipedis\Rabbit\Exception\RabbitClientPublishException;
 use Ipedis\Rabbit\MessagePayload\MessagePayloadInterface;
 use Ipedis\Rabbit\MessagePayload\OrderMessagePayload;
 use Ipedis\Rabbit\MessagePayload\ReplyMessagePayload;
@@ -98,7 +99,7 @@ trait Manager
      * @throws ChannelFactoryException
      * @throws ChannelNamingException
      * @throws InvalidCallableException
-     * @throws MessagePayloadValidatorException|MessagePayloadInvalidSchemaException
+     * @throws MessagePayloadValidatorException|MessagePayloadInvalidSchemaException|RabbitClientPublishException
      */
     public function publish(OrderMessagePayload $messagePayload, $callback = null): self
     {

@@ -50,7 +50,7 @@ class Worker extends WorkerAbstract implements OnBeforeMessage, OnAfterMessage
              *
              * If everything is ok, reply to manager.
              */
-
+            sleep(rand(0, 3));
             printf(
                 "Worker Name : %s (id : %s) as done task with id %s - Fail ? %s \n",
                 self::class,
