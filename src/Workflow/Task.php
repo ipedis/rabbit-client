@@ -298,6 +298,7 @@ final class Task extends Bindable
     {
         switch ($this->getStatus()) {
             case MessageHandlerInterface::TYPE_PLANIFIED:
+            case MessageHandlerInterface::TYPE_STARTING:
                 return Status::buildPending();
             case MessageHandlerInterface::TYPE_SUCCESS:
                 return Status::buildSuccess();
