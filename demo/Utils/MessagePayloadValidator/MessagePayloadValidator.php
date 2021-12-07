@@ -5,8 +5,6 @@ namespace Ipedis\Demo\Rabbit\Utils\MessagePayloadValidator;
 use Ipedis\Rabbit\Exception\MessagePayload\MessagePayloadInvalidSchemaException;
 use Ipedis\Rabbit\MessagePayload\MessagePayloadInterface;
 use Ipedis\Rabbit\MessagePayload\Validator\ValidatorInterface;
-use Opis\JsonSchema\Schema;
-use Opis\JsonSchema\ValidationResult;
 use Opis\JsonSchema\Validator;
 
 class MessagePayloadValidator implements ValidatorInterface
@@ -34,14 +32,14 @@ class MessagePayloadValidator implements ValidatorInterface
          * Load schema
          */
         $schemaAbsolutePath = $this->getSchemaPath($messagePayload);
-        $schema = Schema::fromJsonString(file_get_contents($schemaAbsolutePath));
+        $schema = $this->validator->loader()->loadObjectSchema(json_decode(file_get_contents($schemaAbsolutePath)));
 
         /**
          * Transform data to object
          */
         $data = json_decode($messagePayload->getStringifyData());
 
-        $result = $this->validator->schemaValidation($data, $schema);
+        $result = $this->validator->validate($data, $schema);
 
         if (!$result->isValid()) {
             throw new MessagePayloadInvalidSchemaException(sprintf('Invalid schema found for channel {%s}', $messagePayload->getChannel()));
