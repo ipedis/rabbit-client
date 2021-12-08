@@ -1,6 +1,4 @@
 {
-  "$schema":"http://json-schema.org/draft-07/schema#",
-  "$id":"v1.admin.publication.generate-html",
   "type":"object",
   "properties":{
     "publication":{

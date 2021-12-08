@@ -3,23 +3,23 @@
 use Ipedis\Rabbit\Channel\EventChannel;
 use Ipedis\Rabbit\Exception\Channel\ChannelNamingException;
 
-it('should be able to create DTO from string', function () {
+it('should be able to create EventChannel from string', function (string $eventName) {
+    $this->assertInstanceOf(
+        EventChannel::class,
+        EventChannel::fromString($eventName)
+    );
+})->with([
     // happy path.
-    $event = EventChannel::fromString('v1.foo.bar.test-case');
-    $this->assertInstanceOf(EventChannel::class, $event);
+    'v1.foo.bar.test-case',
     // 1. change version number.
-    $event = EventChannel::fromString('v18.foo.bar.test-case');
-    $this->assertInstanceOf(EventChannel::class, $event);
+    'v18.foo.bar.test-case',
     // 2. complexe service name.
-    $event = EventChannel::fromString('v1.scheduler-recovery.bar.test-case');
-    $this->assertInstanceOf(EventChannel::class, $event);
+    'v1.scheduler-recovery.bar.test-case',
     // 3. complexe aggregate name.
-    $event = EventChannel::fromString('v1.foo.related-publication.test-case');
-    $this->assertInstanceOf(EventChannel::class, $event);
+    'v1.foo.related-publication.test-case',
     // 4. change complexe action naming.
-    $event = EventChannel::fromString('v1.foo.bar.very-long-test-case');
-    $this->assertInstanceOf(EventChannel::class, $event);
-});
+    'v1.foo.bar.very-long-test-case',
+]);
 
 /**
  * Section version assertion.

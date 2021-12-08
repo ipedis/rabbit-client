@@ -8,9 +8,7 @@
 
 namespace Ipedis\Rabbit\Validator;
 
-use Opis\JsonSchema\Schema;
-use Opis\JsonSchema\ValidationError;
-use Opis\JsonSchema\ValidationResult;
+use Opis\JsonSchema\Errors\ValidationError;
 use Opis\JsonSchema\Validator;
 
 class PayloadValidator
@@ -20,11 +18,7 @@ class PayloadValidator
      */
     private JsonValidator $jsonValidator;
 
-    /**
-     * @var ValidationResult|null
-     */
-    private ?ValidationResult $validationResult = null;
-
+    private ?ValidationError $error = null;
     /**
      * @var bool
      */
@@ -35,22 +29,21 @@ class PayloadValidator
         $this->jsonValidator = new JsonValidator();
     }
 
-    public function validate(string $payload, string $schema)
+    public function validate(string $payload, string $schema): bool
     {
         // no need to proceed if json in invalid
         if (!$this->jsonValidator->isValid($payload) ||
             !$this->jsonValidator->isValid($schema)
         ) {
-            return;
+            return false;
         }
 
         $this->inputValid = true;
-        $dataJson = json_decode($payload);
-        $schemaJson = Schema::fromJsonString($schema);
+        $dataJson = json_decode($payload, false);
         $validator = new Validator();
-
-        /** @var ValidationResult $result */
-        $this->validationResult = $validator->schemaValidation($dataJson, $schemaJson);
+        $schemaJson = $validator->loader()->loadObjectSchema(json_decode($schema, false));
+        $this->error = $validator->schemaValidation($dataJson, $schemaJson);
+        return is_null($this->error);
     }
 
     /**
@@ -59,8 +52,7 @@ class PayloadValidator
     public function isValid(): bool
     {
         return $this->isInputValid() &&
-            $this->validationResult &&
-            $this->validationResult->isValid();
+            $this->error === null;
     }
 
     /**
@@ -70,15 +62,6 @@ class PayloadValidator
     {
         return $this->inputValid;
     }
-
-    /**
-     * @return null|ValidationResult
-     */
-    public function getValidationResult(): ?ValidationResult
-    {
-        return $this->validationResult;
-    }
-
     /**
      * @return JsonValidator
      */
@@ -92,17 +75,14 @@ class PayloadValidator
      */
     public function getErrorAsString(): string
     {
-        if (null === $this->validationResult) {
+        if (null === $this->error) {
             return '';
         }
 
-        /** @var ValidationError $error */
-        $error = $this->validationResult->getFirstError();
-
         return sprintf(
             "Error: %s\n%s\n",
-            $error->keyword(),
-            json_encode($error->keywordArgs(), JSON_PRETTY_PRINT)
+            $this->error->keyword(),
+            json_encode($this->error->args(), JSON_PRETTY_PRINT)
         );
     }
 }
