@@ -65,7 +65,7 @@ class TaskProgress implements \JsonSerializable
         return new self($uuid, $type, $status, $timer);
     }
 
-    public function jsonSerialize()
+    public function jsonSerialize(): array
     {
         return [
             'uuid' => $this->getUuid(),

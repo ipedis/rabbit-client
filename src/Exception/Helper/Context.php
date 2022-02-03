@@ -145,7 +145,7 @@ class Context implements ArrayAccess, Countable, IteratorAggregate, JsonSerializ
     /**
      * @return array
      */
-    public function jsonSerialize()
+    public function jsonSerialize(): array
     {
         return $this->items;
     }

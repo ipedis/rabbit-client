@@ -69,7 +69,7 @@ class Error implements JsonSerializable
         return !$this->context->isEmpty();
     }
 
-    public function jsonSerialize()
+    public function jsonSerialize(): array
     {
         return [
             'message' => $this->getMessage(),
