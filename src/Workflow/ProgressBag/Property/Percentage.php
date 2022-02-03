@@ -97,7 +97,7 @@ class Percentage implements \JsonSerializable
         return (100 * $completed) / $total;
     }
 
-    public function jsonSerialize()
+    public function jsonSerialize(): array
     {
         return [
             'completed' => $this->getCompleted(),

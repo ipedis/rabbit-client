@@ -210,7 +210,7 @@ abstract class MessagePayloadAbstract implements MessagePayloadInterface
         return $this->getTimezone()['timezone'];
     }
 
-    public function jsonSerialize()
+    public function jsonSerialize(): array
     {
         return [
             'header' => $this->getHeaders(),

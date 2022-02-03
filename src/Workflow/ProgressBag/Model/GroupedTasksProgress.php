@@ -62,7 +62,7 @@ class GroupedTasksProgress implements \JsonSerializable
     /**
      * @return array[]
      */
-    public function jsonSerialize()
+    public function jsonSerialize(): array
     {
         return [
             'type' => $this->getType(),

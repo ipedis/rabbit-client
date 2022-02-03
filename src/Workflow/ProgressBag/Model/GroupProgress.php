@@ -91,7 +91,7 @@ class GroupProgress implements \JsonSerializable
         return new self($uuid, $status, $timer, $percentage, $tasks);
     }
 
-    public function jsonSerialize()
+    public function jsonSerialize(): array
     {
         return [
             'uuid' => $this->getUuid(),

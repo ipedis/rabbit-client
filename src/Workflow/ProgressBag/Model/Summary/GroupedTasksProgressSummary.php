@@ -84,7 +84,7 @@ class GroupedTasksProgressSummary implements \JsonSerializable
         return new self($status, Summary::build($total, $pending, $dispatched, $completed, $success, $failed), $groupedTasks);
     }
 
-    public function jsonSerialize()
+    public function jsonSerialize(): array
     {
         return [
             'status' => $this->getStatus(),

@@ -87,7 +87,7 @@ class Serializer implements JsonSerializable
     /**
      * @return array
      */
-    public function jsonSerialize()
+    public function jsonSerialize(): array
     {
         return [
            'context' => $this->context,
