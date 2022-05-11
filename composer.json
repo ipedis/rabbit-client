@@ -18,7 +18,6 @@
         "guzzlehttp/guzzle": "~6.0",
         "ipedis/http-signature": "^1.0.0",
         "phpunit/phpunit": "^9.5",
-        "phpspec/prophecy": "^1.15",
         "filp/whoops": "^2.14"
     },
     "autoload": {
