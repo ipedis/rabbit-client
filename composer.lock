@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "c02563cdc65ece2b9a4aabbfdb1269d4",
+    "content-hash": "8b914a7f35c25191f969df694d2efa75",
     "packages": [
         {
             "name": "doctrine/instantiator",
@@ -500,16 +500,16 @@
         },
         {
             "name": "opis/json-schema",
-            "version": "2.2.0",
+            "version": "2.3.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/opis/json-schema.git",
-                "reference": "9ff2919681446bdd1e5ca5aeed9566a53f55bd75"
+                "reference": "c48df6d7089a45f01e1c82432348f2d5976f9bfb"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/opis/json-schema/zipball/9ff2919681446bdd1e5ca5aeed9566a53f55bd75",
-                "reference": "9ff2919681446bdd1e5ca5aeed9566a53f55bd75",
+                "url": "https://api.github.com/repos/opis/json-schema/zipball/c48df6d7089a45f01e1c82432348f2d5976f9bfb",
+                "reference": "c48df6d7089a45f01e1c82432348f2d5976f9bfb",
                 "shasum": ""
             },
             "require": {
@@ -559,9 +559,9 @@
             ],
             "support": {
                 "issues": "https://github.com/opis/json-schema/issues",
-                "source": "https://github.com/opis/json-schema/tree/2.2.0"
+                "source": "https://github.com/opis/json-schema/tree/2.3.0"
             },
-            "time": "2021-10-12T20:47:35+00:00"
+            "time": "2022-01-08T20:38:03+00:00"
         },
         {
             "name": "opis/string",
