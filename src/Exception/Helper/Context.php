@@ -75,8 +75,7 @@ class Context implements ArrayAccess, Countable, IteratorAggregate, JsonSerializ
      * @param mixed $offset
      * @return mixed
      */
-    #[\ReturnTypeWillChange]
-    public function offsetGet($offset)
+    public function offsetGet($offset): mixed
     {
         return $this->items[$offset];
     }
@@ -122,8 +121,7 @@ class Context implements ArrayAccess, Countable, IteratorAggregate, JsonSerializ
      * @param $offset
      * @return mixed|null
      */
-    #[\ReturnTypeWillChange]
-    public function get($offset)
+    public function get($offset): mixed
     {
         return ($this->offsetExists($offset)) ? $this->offsetGet($offset) : null;
     }
