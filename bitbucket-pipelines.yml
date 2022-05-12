@@ -3,7 +3,7 @@ pipelines:
     '**':
       - step:
           name: "Unit test"
-          image: yanisipedis/php7.4-amqp:0.2
+          image: yanisipedis/php8.1-amqp:0.1
           script:
             - sed -i 's/bitbucket:ipedis/git@bitbucket.org:ipedis/g' composer.json
             - sed -i 's/bitbucket:ipedis/git@bitbucket.org:ipedis/g' composer.lock

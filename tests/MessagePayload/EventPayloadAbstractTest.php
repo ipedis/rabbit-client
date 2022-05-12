@@ -86,7 +86,7 @@ it('uuid can be defined on header parameter', function () use ($channelName) {
 
 it('contain sendAt timezone by default', function () use ($channelName) {
     $event = EventMessagePayload::build($channelName);
-    $this->assertIsInt($event->getTimestamp());
+    $this->assertIsNumeric($event->getTimestamp());
 });
 
 it('should return data encoded in json', function () use ($channelName) {

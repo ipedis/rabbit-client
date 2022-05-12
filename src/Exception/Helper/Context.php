@@ -48,7 +48,8 @@ class Context implements ArrayAccess, Countable, IteratorAggregate, JsonSerializ
             }
         } elseif (is_object($data) && !($data instanceof JsonSerializable)) {
             throw new LogicException(
-                sprintf('object with type "%s" can\'t be serialize as it is not implementing JsonSerializable', get_class($data))
+                sprintf('object with type "%s" can\'t be serialize as it is not implementing JsonSerializable',
+                    get_class($data))
             );
         }
     }
@@ -56,7 +57,7 @@ class Context implements ArrayAccess, Countable, IteratorAggregate, JsonSerializ
     /**
      * @return ArrayIterator
      */
-    public function getIterator()
+    public function getIterator(): ArrayIterator
     {
         return new ArrayIterator($this->items);
     }
@@ -65,7 +66,7 @@ class Context implements ArrayAccess, Countable, IteratorAggregate, JsonSerializ
      * @param mixed $offset
      * @return bool
      */
-    public function offsetExists($offset)
+    public function offsetExists($offset): bool
     {
         return array_key_exists($offset, $this->items);
     }
@@ -74,7 +75,7 @@ class Context implements ArrayAccess, Countable, IteratorAggregate, JsonSerializ
      * @param mixed $offset
      * @return mixed
      */
-    public function offsetGet($offset)
+    public function offsetGet($offset): mixed
     {
         return $this->items[$offset];
     }
@@ -83,7 +84,7 @@ class Context implements ArrayAccess, Countable, IteratorAggregate, JsonSerializ
      * @param mixed $offset
      * @param mixed $value
      */
-    public function offsetSet($offset, $value)
+    public function offsetSet($offset, $value): void
     {
         self::assertContext($value);
         $this->items[$offset] = $value;
@@ -92,7 +93,7 @@ class Context implements ArrayAccess, Countable, IteratorAggregate, JsonSerializ
     /**
      * @param mixed $offset
      */
-    public function offsetUnset($offset)
+    public function offsetUnset($offset): void
     {
         unset($this->items[$offset]);
     }
@@ -100,7 +101,7 @@ class Context implements ArrayAccess, Countable, IteratorAggregate, JsonSerializ
     /**
      * @return int
      */
-    public function count()
+    public function count(): int
     {
         return count($this->items);
     }
@@ -120,7 +121,7 @@ class Context implements ArrayAccess, Countable, IteratorAggregate, JsonSerializ
      * @param $offset
      * @return mixed|null
      */
-    public function get($offset)
+    public function get($offset): mixed
     {
         return ($this->offsetExists($offset)) ? $this->offsetGet($offset) : null;
     }

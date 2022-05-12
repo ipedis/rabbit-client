@@ -195,7 +195,7 @@ abstract class MessagePayloadAbstract implements MessagePayloadInterface
         return $this->channel;
     }
 
-    public function getTimestamp(): int
+    public function getTimestamp(): mixed
     {
         return $this->getHeader(self::HEADER_TIMESTAMP);
     }

@@ -97,7 +97,7 @@ class SerializerTest extends TestCase
                 return '';
             }
 
-            public function jsonSerialize()
+            public function jsonSerialize(): mixed
             {
                 return '';
             }
