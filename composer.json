@@ -10,13 +10,13 @@
     ],
     "minimum-stability": "stable",
     "require": {
-        "php": ">=8.0",
+        "php": ">=8.2",
         "ext-json": "*",
         "symfony/polyfill-uuid": "^1.14",
         "opis/json-schema": "^2.3",
-        "ext-amqp": "^1.9",
+        "ext-amqp": "*",
         "guzzlehttp/guzzle": "~6.0",
-        "ipedis/http-signature": "^1.0.0",
+        "ipedis/http-signature": "dev-update_symfony-6.4",
         "phpunit/phpunit": "^9.5",
         "filp/whoops": "^2.14"
     },
