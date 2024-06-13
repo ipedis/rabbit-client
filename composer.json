@@ -16,7 +16,7 @@
         "opis/json-schema": "^2.3",
         "ext-amqp": "*",
         "guzzlehttp/guzzle": "~6.0",
-        "ipedis/http-signature": "dev-update_symfony-6.4",
+        "ipedis/http-signature": "^1.0",
         "phpunit/phpunit": "^9.5",
         "filp/whoops": "^2.14"
     },

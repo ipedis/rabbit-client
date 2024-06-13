@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "615072189599f8a89175ff51d00c98a7",
+    "content-hash": "cf07d722115ecbe5f3210702482be455",
     "packages": [
         {
             "name": "doctrine/instantiator",
@@ -448,16 +448,16 @@
         },
         {
             "name": "ipedis/http-signature",
-            "version": "dev-update_symfony-6.4",
+            "version": "1.0.3",
             "source": {
                 "type": "git",
                 "url": "bitbucket:ipedis/http-signature.git",
-                "reference": "9e0c7d20bce907c460c88e5c70f0b4a7293a3761"
+                "reference": "ce9471419d90d05844b78094374fc6468e835f29"
             },
             "require": {
                 "guzzlehttp/guzzle": "~6.0",
                 "nyholm/psr7": "^1.3",
-                "php": ">8.2.0",
+                "php": ">=8.2.0",
                 "symfony/http-foundation": "^5.0|^6.0|6.4",
                 "symfony/psr-http-message-bridge": "^2.0|^2.1"
             },
@@ -475,7 +475,7 @@
                 }
             ],
             "description": "Library to generate http signature",
-            "time": "2024-06-13T10:35:48+00:00"
+            "time": "2024-06-13T11:34:28+00:00"
         },
         {
             "name": "myclabs/deep-copy",
@@ -5964,9 +5964,7 @@
     ],
     "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": {
-        "ipedis/http-signature": 20
-    },
+    "stability-flags": [],
     "prefer-stable": false,
     "prefer-lowest": false,
     "platform": {
