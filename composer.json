@@ -14,7 +14,7 @@
         "ext-json": "*",
         "symfony/polyfill-uuid": "^1.14",
         "opis/json-schema": "^2.3",
-        "ext-amqp": "^1.9",
+        "ext-amqp": "*",
         "guzzlehttp/guzzle": "~6.0",
         "ipedis/http-signature": "^1.0.0",
         "phpunit/phpunit": "^9.5",
