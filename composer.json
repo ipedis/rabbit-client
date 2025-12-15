@@ -30,7 +30,7 @@
     "repositories": [
         {
             "type": "vcs",
-            "url": "bitbucket:ipedis/http-signature.git"
+            "url": "https://github.com/ipedis/http-signature.git"
         }
     ],
     "extra": {

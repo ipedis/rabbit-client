@@ -1,0 +1,32 @@
+name: Tests
+
+on:
+  pull_request:
+    branches: ['*']
+  push:
+    branches: ['main', 'master', 'develop']
+
+jobs:
+  test:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    container:
+      image: yanisdocaxess/php-amqp:8.2
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v3
+        with:
+          path: vendor
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-progress --no-interaction
+
+      - name: Run tests
+        run: php vendor/bin/pest tests
