@@ -35,7 +35,7 @@ jobs:
       - name: Install dependencies
         run: composer install --prefer-dist --no-progress --no-interaction
         env:
-          CI_WORKFLOW_AUTH: '{"github-oauth":{"github.com":"${{ secrets.CI_WORKFLOW_AUTH }}"}}'
+          COMPOSER_AUTH: '{"github-oauth":{"github.com":"${{ secrets.COMPOSER_GITHUB_TOKEN }}"}}'
 
       - name: Run tests
         run: php vendor/bin/pest tests
