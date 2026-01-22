@@ -10,12 +10,19 @@ jobs:
   test:
     name: Unit Tests
     runs-on: ubuntu-latest
-    container:
-      image: yanisdocaxess/php-amqp:8.2
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: 8.5
+          extensions: dom, curl, libxml, mbstring, zip, pcntl, amqp, json
+          ini-values: error_reporting=E_ALL
+          tools: composer:v2
+          coverage: none
 
       - name: Cache Composer dependencies
         uses: actions/cache@v3
