@@ -15,12 +15,12 @@ class ChannelFactory
     /**
      * @var string
      */
-    private $protocolVersion;
+    private string $protocolVersion;
 
     /**
      * @var string
      */
-    private $serviceName;
+    private string $serviceName;
 
     public function __construct(
         string $protocolVersion,
@@ -36,7 +36,7 @@ class ChannelFactory
      * @return EventChannel
      * @throws ChannelNamingException
      */
-    public function getEvent(string $partialChannel, string $protocolVersion = null): EventChannel
+    public function getEvent(string $partialChannel, ?string $protocolVersion = null): EventChannel
     {
         preg_match(EventChannel::PARTIAL_CHANNEL_PATTERN, $partialChannel, $matched);
 
@@ -59,7 +59,7 @@ class ChannelFactory
         string $type,
         string $aggregate,
         string $action,
-        string $protocolVersion = null
+        ?string $protocolVersion = null
     ): ChannelAbstract {
         switch ($type) {
             case self::TYPE_EVENT:
@@ -68,6 +68,8 @@ class ChannelFactory
             case self::TYPE_ORDER:
                 return OrderChannel::build($protocolVersion ?? $this->protocolVersion, $this->serviceName, $aggregate, $action);
                 break;
+            default:
+                throw new \InvalidArgumentException('Unknown channel type: ' . $type);
         }
     }
 
@@ -77,7 +79,7 @@ class ChannelFactory
      * @return OrderChannel
      * @throws ChannelNamingException
      */
-    public function getOrder(string $partialChannel, string $protocolVersion = null): OrderChannel
+    public function getOrder(string $partialChannel, ?string $protocolVersion = null): OrderChannel
     {
         preg_match(OrderChannel::PARTIAL_CHANNEL_PATTERN, $partialChannel, $matched);
 

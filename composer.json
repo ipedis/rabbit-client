@@ -10,15 +10,15 @@
     ],
     "minimum-stability": "stable",
     "require": {
-        "php": ">=8.0",
+        "php": ">=8.4",
         "ext-json": "*",
         "symfony/polyfill-uuid": "^1.14",
-        "opis/json-schema": "^2.3",
+        "opis/json-schema": "^2.6",
         "ext-amqp": "*",
-        "guzzlehttp/guzzle": "~6.0",
-        "ipedis/http-signature": "^1.0.0",
-        "phpunit/phpunit": "^9.5",
-        "filp/whoops": "^2.14"
+        "guzzlehttp/guzzle": "~7.0",
+        "ipedis/http-signature": "^3.0.0",
+        "phpunit/phpunit": "^12.5",
+        "filp/whoops": "^2.18"
     },
     "autoload": {
         "psr-4": {
@@ -46,8 +46,9 @@
     },
     "require-dev": {
         "friendsofphp/php-cs-fixer": "^3.0",
-        "brainmaestro/composer-git-hooks": "^2.8",
-        "pestphp/pest": "^1.15"
+        "brainmaestro/composer-git-hooks": "^3.0",
+        "pestphp/pest": "^4.3",
+        "rector/rector": "^2.3"
     },
     "config": {
         "allow-plugins": {

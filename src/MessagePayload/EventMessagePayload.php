@@ -7,7 +7,7 @@ use Ipedis\Rabbit\Exception\MessagePayload\MessagePayloadFormatException;
 class EventMessagePayload extends MessagePayloadAbstract
 {
     /**
-     * @param array
+     * @param array $state
      * @return static
      * @throws MessagePayloadFormatException
      */

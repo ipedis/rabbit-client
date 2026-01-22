@@ -57,7 +57,7 @@ class SerializerTest extends TestCase
         $this->assertContains($context3, $serializer->getContext());
 
         $this->expectException(LogicException::class);
-        $serializer->addContext('deep', ['deep' => ['tree' => new self()]]);
+        $serializer->addContext('deep', ['deep' => ['tree' => new self('test')]]);
     }
 
     public function testJsonSerialize()

@@ -70,7 +70,7 @@ class ErrorTest extends TestCase
     protected function makeNotSerializableError(): Error
     {
         return Error::fromArray([
-            'context' => [['deep' => ['tree' => new self()]]]
+            'context' => [['deep' => ['tree' => new self('test')]]]
         ]);
     }
 }

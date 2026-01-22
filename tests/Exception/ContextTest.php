@@ -11,10 +11,10 @@ class ContextTest extends TestCase
     public function testAssertContext()
     {
         $this->expectException(LogicException::class);
-        Context::assertContext(new self());
+        Context::assertContext(new self('test'));
 
         $this->expectException(LogicException::class);
-        Context::assertContext(['very' => ['deep' => ['information' => new self()]]]);
+        Context::assertContext(['very' => ['deep' => ['information' => new self('test')]]]);
 
         $this->assertNull(Context::assertContext(['very' => ['deep' => ['information' => new self()]]]));
     }

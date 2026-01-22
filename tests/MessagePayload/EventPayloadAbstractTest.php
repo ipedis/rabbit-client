@@ -36,11 +36,13 @@ it('must build from valid json', function () use ($channelName) {
     $this->assertInstanceOf(MessagePayloadAbstract::class, $event);
 });
 
-it('must throw exception on empty array', fn ($value = []) => EventMessagePayload::fromArray($value))
+it('must throw exception on empty array', function (array $payload) {
+    EventMessagePayload::fromArray($payload);
+})
     ->with([
-        [], // empty array
-        ['header' => ['channel' => 'something']], // only header json key is present
-        ['data' => []],  // only data json key is present.
+        'empty payload' => [[]],
+        'only header' => [['header' => []]],
+        'only data' => [['data' => []]],
     ])->throws(MessagePayloadFormatException::class);
 
 it('must build from valid array', function () use ($channelName) {

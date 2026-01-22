@@ -21,7 +21,7 @@ class Listener extends WorkerAbstract implements OnBeforeMessage, OnAfterMessage
      *
      * @return Closure
      */
-    protected function makeMessageHandler(): Closure
+    public function makeMessageHandler(): Closure
     {
         return function (EventMessagePayload $messagePayload) {
             printf("%s - %s \n\n", 'makeMessageHandler', $messagePayload->getChannel());
@@ -45,7 +45,7 @@ class Listener extends WorkerAbstract implements OnBeforeMessage, OnAfterMessage
      *
      * @return Closure
      */
-    protected function makeExceptionHandler(): Closure
+    public function makeExceptionHandler(): Closure
     {
         return function (Exception $exception, ?EventMessagePayload $messagePayload) {
             printf($exception->getMessage()."\n\n");
@@ -58,7 +58,7 @@ class Listener extends WorkerAbstract implements OnBeforeMessage, OnAfterMessage
      * - Array of string
      * - RouteKeyResolverInterface
      */
-    protected function getBindingKey()
+    public function getBindingKey()
     {
 
 //        return 'v1.preview.admin.publication.was-updated';
