@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Ipedis\Rabbit\Workflow\ProgressBag\Model\Collection;
 
 use Ipedis\Rabbit\Workflow\ProgressBag\Contract\CollectionInterface;
@@ -7,14 +9,8 @@ use Traversable;
 
 abstract class CollectionAbstract implements CollectionInterface
 {
-    /**
-     * @var array
-     */
-    protected array $items;
-
-    public function __construct(array $items)
+    public function __construct(protected array $items)
     {
-        $this->items = $items;
     }
 
     /**
@@ -27,7 +23,6 @@ abstract class CollectionAbstract implements CollectionInterface
 
     /**
      * @param mixed $offset
-     * @return bool
      */
     public function offsetExists($offset): bool
     {
@@ -47,7 +42,7 @@ abstract class CollectionAbstract implements CollectionInterface
      * @param mixed $offset
      * @param mixed $value
      */
-    public function offsetSet($offset, $value)
+    public function offsetSet($offset, $value): void
     {
         $this->items[$offset] = $value;
     }
@@ -55,40 +50,29 @@ abstract class CollectionAbstract implements CollectionInterface
     /**
      * @param mixed $offset
      */
-    public function offsetUnset($offset)
+    public function offsetUnset($offset): void
     {
         if (isset($this->items[$offset])) {
             unset($this->items[$offset]);
         }
     }
 
-    /**
-     * @return int
-     */
     public function count(): int
     {
         return count($this->items);
     }
 
-    /**
-     * @return array
-     */
     public function toArray(): array
     {
         return $this->items;
     }
 
-    /**
-     * @param \Closure $closure
-     * @return CollectionInterface
-     */
     public function filter(\Closure $closure): CollectionInterface
     {
         return $this->build(array_filter($this->items, $closure, ARRAY_FILTER_USE_BOTH));
     }
 
     /**
-     * @param array $items
      * @return $this
      */
     protected function build(array $items)
@@ -96,10 +80,6 @@ abstract class CollectionAbstract implements CollectionInterface
         return new static($items);
     }
 
-    /**
-     * @param \Closure $closure
-     * @return CollectionInterface
-     */
     public function map(\Closure $closure): CollectionInterface
     {
         return $this->build(array_map($closure, $this->items));

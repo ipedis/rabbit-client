@@ -1,9 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Ipedis\Demo\Rabbit\Worker\Workflow\Manager;
 
 use Closure;
-use Ipedis\Rabbit\DTO\Type\Group\GroupedTaskType;
 use Ipedis\Rabbit\Exception\Group\InvalidGroupArgumentException;
 use Ipedis\Rabbit\Exception\Workflow\InvalidWorkflowArgumentException;
 use Ipedis\Rabbit\MessagePayload\OrderMessagePayload;
@@ -16,7 +17,7 @@ class RecursiveGeneratorManager extends ManagerAbstract
 {
     public const COUNT_PAGE = 3;
 
-    public function main()
+    public function main(): void
     {
         $generation = (new Workflow($this->craftFirstGroup()))
             ->then($this->craftSecondGroup())
@@ -25,7 +26,7 @@ class RecursiveGeneratorManager extends ManagerAbstract
         /**
          * Callback
          */
-        $generation->bind(BindableEventInterface::WORKFLOW_ON_TASKS_FINISH, function () use ($generation) {
+        $generation->bind(BindableEventInterface::WORKFLOW_ON_TASKS_FINISH, function () use ($generation): void {
             printf(
                 "Generation PoC: Each table is one tick of generation - %.2f%% done\n----\n\n",
                 $generation->getProgressPercentage()
@@ -46,18 +47,16 @@ class RecursiveGeneratorManager extends ManagerAbstract
                     $pourcentageDone
                 );
             }
+
             printf("\n\n");
         });
 
         $this->run($generation);
     }
 
-    /**
-     * @return Closure
-     */
     private function craftFirstGroup(): Closure
     {
-        return function (Group $group) {
+        return function (Group $group): void {
             $group->planifyOrder(
                 OrderMessagePayload::build(
                     'v1.admin.publication.generate-html',
@@ -70,13 +69,12 @@ class RecursiveGeneratorManager extends ManagerAbstract
     }
 
     /**
-     * @return Closure
      * @throws InvalidGroupArgumentException
      * @throws InvalidWorkflowArgumentException
      */
     private function craftSecondGroup(): Closure
     {
-        $imageWorkflow = (new Workflow(function (Group $group) {
+        $imageWorkflow = (new Workflow(function (Group $group): void {
             $group->planifyOrder(
                 OrderMessagePayload::build(
                     'v1.admin.publication.generate-image',
@@ -86,7 +84,7 @@ class RecursiveGeneratorManager extends ManagerAbstract
                 )
             );
         }))
-        ->then(function (Group $group) {
+        ->then(function (Group $group): void {
             foreach ([1, self::COUNT_PAGE] as $page) {
                 $group->planifyOrder(
                     OrderMessagePayload::build(
@@ -132,7 +130,7 @@ class RecursiveGeneratorManager extends ManagerAbstract
             }
         });
 
-        return function (Group $group) use ($imageWorkflow) {
+        return function (Group $group) use ($imageWorkflow): void {
             $group->planifyWorkflow($imageWorkflow);
         };
     }

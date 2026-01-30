@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Ipedis\Demo\Rabbit\Worker\Workflow\Worker;
 
 use AMQPEnvelope;
@@ -19,7 +21,7 @@ class Failure extends WorkerAbstract implements OnBeforeMessage, OnAfterMessage
 
     protected function makeMessageHandler(): Closure
     {
-        return function (AMQPEnvelope $message, OrderMessagePayload $messagePayload) {
+        return function (AMQPEnvelope $message, OrderMessagePayload $messagePayload): void {
             $params = $messagePayload->getData();
             $this->notifyTo(
                 $message,
@@ -31,35 +33,30 @@ class Failure extends WorkerAbstract implements OnBeforeMessage, OnAfterMessage
             );
 
             throw new Exception('Lets fail :)');
-
-
-            return ["step" => "step2 finished"];
         };
     }
 
     protected function makeExceptionHandler(): Closure
     {
-        return function (Exception $exception, OrderMessagePayload $payload) {
+        return function (Exception $exception, OrderMessagePayload $payload): void {
             printf('In Exception Handler');
         };
     }
 
     /**
      * Can be string or array of keys
-     *
-     * @return mixed
      */
-    protected function getQueueName()
+    protected function getQueueName(): string
     {
         return 'v1.admin.publication.failure';
     }
 
-    public function afterMessageHandled()
+    public function afterMessageHandled(): void
     {
         // Hook after message was handled
     }
 
-    public function beforeMessageHandled()
+    public function beforeMessageHandled(): void
     {
         // Hook before message was handled
     }

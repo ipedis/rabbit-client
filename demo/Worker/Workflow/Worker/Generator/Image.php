@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Ipedis\Demo\Rabbit\Worker\Workflow\Worker\Generator;
 
 use AMQPEnvelope;
@@ -15,10 +17,10 @@ class Image extends WorkerAbstract
 
     protected function makeMessageHandler(): Closure
     {
-        return function (AMQPEnvelope $message, OrderMessagePayload $messagePayload) {
+        return function (AMQPEnvelope $message, OrderMessagePayload $messagePayload): array {
             $params = $messagePayload->getData();
             var_dump('message received');
-            sleep(rand(1, 3));
+            sleep(random_int(1, 3));
 
             return ["step" => "image finished"];
         };
@@ -26,16 +28,14 @@ class Image extends WorkerAbstract
 
     protected function makeExceptionHandler(): Closure
     {
-        return function (Exception $exception, OrderMessagePayload $payload) {
+        return function (Exception $exception, OrderMessagePayload $payload): void {
         };
     }
 
     /**
      * Can be string or array of keys
-     *
-     * @return mixed
      */
-    protected function getQueueName()
+    protected function getQueueName(): string
     {
         return 'v1.admin.publication.generate-image';
     }

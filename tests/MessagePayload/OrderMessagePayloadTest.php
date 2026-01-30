@@ -7,7 +7,7 @@ use Ipedis\Rabbit\MessagePayload\OrderMessagePayload;
 $replyQueue = 'amq.gen-j-pzpTUoJdVrj_MU2__SWw';
 $channelName = 'v1.service.aggregate.some-fact';
 
-it('must build from valid json', function () use ($channelName, $replyQueue) {
+it('must build from valid json', function () use ($channelName, $replyQueue): void {
     $event = OrderMessagePayload::fromJson('{
 	"data": [],
 	"header": {
@@ -21,12 +21,12 @@ it('must build from valid json', function () use ($channelName, $replyQueue) {
 });
 
 
-it('must throw exception on empty array', function () {
+it('must throw exception on empty array', function (): void {
     $this->expectException(MessagePayloadFormatException::class);
     OrderMessagePayload::fromArray([]);
 });
 
-it('must throw exception when only array header key is present', function () use ($channelName, $replyQueue) {
+it('must throw exception when only array header key is present', function () use ($channelName): void {
     $this->expectException(MessagePayloadFormatException::class);
     OrderMessagePayload::fromArray(['header' => [
         'channel' => $channelName,
@@ -35,13 +35,13 @@ it('must throw exception when only array header key is present', function () use
     ]]);
 });
 
-it('must throw exception when only array data key is present', function () {
+it('must throw exception when only array data key is present', function (): void {
     $this->expectException(MessagePayloadFormatException::class);
     OrderMessagePayload::fromArray(['data' => []]);
 });
 
 
-it('must build from valid array', function () use ($channelName, $replyQueue) {
+it('must build from valid array', function () use ($channelName): void {
     $event = OrderMessagePayload::fromArray([
         'data' => [],
         'header' => [

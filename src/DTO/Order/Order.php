@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Ipedis\Rabbit\DTO\Order;
 
 /**
@@ -11,35 +13,21 @@ namespace Ipedis\Rabbit\DTO\Order;
  */
 final class Order
 {
-    /**
-     * @var string $orderId
-     */
-    private $orderId;
-
-    /**
-     * @var string $status
-     */
-    private $status;
-
-    /**
-     * @var $handler
-     */
-    private $handler;
-
-    public function __construct(string $orderId, string $status, $handler)
+    public function __construct(
+        private readonly string $orderId,
+        private string $status,
+        /**
+         * @var $handler
+         */
+        private $handler
+    )
     {
-        $this->orderId = $orderId;
-        $this->status = $status;
-        $this->handler = $handler;
     }
 
     /**
      * Factory method
      *
-     * @param string $orderId
-     * @param string $status
      * @param callable $handler
-     * @return Order
      */
     public static function build(string $orderId, string $status, $handler): self
     {
@@ -48,7 +36,6 @@ final class Order
 
     /**
      * @param $newStatus
-     * @return Order
      */
     public function transitionTo($newStatus): self
     {
@@ -57,17 +44,11 @@ final class Order
         return $this;
     }
 
-    /**
-     * @return string
-     */
     public function getOrderId(): string
     {
         return $this->orderId;
     }
 
-    /**
-     * @return string
-     */
     public function getStatus(): string
     {
         return $this->status;

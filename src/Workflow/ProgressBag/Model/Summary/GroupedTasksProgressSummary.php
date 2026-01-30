@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Ipedis\Rabbit\Workflow\ProgressBag\Model\Summary;
 
 use Ipedis\Rabbit\Exception\Progress\InvalidProgressValueException;
@@ -12,34 +14,13 @@ use Ipedis\Rabbit\Workflow\ProgressBag\WorkflowProgressBag;
 class GroupedTasksProgressSummary implements \JsonSerializable
 {
     /**
-     * @var Status
-     */
-    private Status $status;
-    /**
-     * @var Summary
-     */
-    private Summary $summary;
-    /**
-     * @var GroupedTasksProgressCollection
-     */
-    private GroupedTasksProgressCollection $groupedTasksCollection;
-
-    /**
      * GroupedTasksProgressSummary constructor.
-     * @param Status $status
-     * @param Summary $summary
-     * @param GroupedTasksProgressCollection $groupedTasksCollection
      */
-    public function __construct(Status $status, Summary $summary, GroupedTasksProgressCollection $groupedTasksCollection)
+    public function __construct(private readonly Status $status, private readonly Summary $summary, private readonly GroupedTasksProgressCollection $groupedTasksCollection)
     {
-        $this->status = $status;
-        $this->summary = $summary;
-        $this->groupedTasksCollection = $groupedTasksCollection;
     }
 
     /**
-     * @param WorkflowProgressBag $workflowProgressBag
-     * @return GroupedTasksProgressSummary
      * @throws InvalidProgressValueException
      */
     public static function fromWorkflow(WorkflowProgressBag $workflowProgressBag): self
@@ -93,25 +74,16 @@ class GroupedTasksProgressSummary implements \JsonSerializable
         ];
     }
 
-    /**
-     * @return Status
-     */
     public function getStatus(): Status
     {
         return $this->status;
     }
 
-    /**
-     * @return Summary
-     */
     public function getSummary(): Summary
     {
         return $this->summary;
     }
 
-    /**
-     * @return GroupedTasksProgressCollection
-     */
     public function getGroupedTasksCollection(): GroupedTasksProgressCollection
     {
         return $this->groupedTasksCollection;

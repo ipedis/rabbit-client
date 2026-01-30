@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Ipedis\Rabbit\Event;
 
 use AMQPEnvelope;
@@ -19,14 +21,8 @@ trait EventListener
 {
     use Connector;
 
-    /**
-     * @var string
-     */
     protected string $worker_id;
 
-    /**
-     * @var AMQPQueue|null $queue
-     */
     protected ?AMQPQueue $queue = null;
 
     /**
@@ -36,7 +32,7 @@ trait EventListener
      * - Define callback to be used for consuming message
      * @throws ChannelFactoryException|RabbitClientConnectException
      */
-    public function execute()
+    public function execute(): void
     {
         /**
          * Before stating worker
@@ -74,7 +70,7 @@ trait EventListener
      * @throws \AMQPChannelException
      * @throws \AMQPConnectionException
      */
-    private function resolveRoutingKeys()
+    private function resolveRoutingKeys(): void
     {
         $routingKey = $this->getBindingKey();
 
@@ -109,13 +105,10 @@ trait EventListener
     }
 
     /**
-     * @param AMQPEnvelope $message
-     * @param AMQPQueue $q
-     *
      * @throws \AMQPChannelException
      * @throws \AMQPConnectionException
      */
-    public function main(AMQPEnvelope $message, AMQPQueue $q)
+    public function main(AMQPEnvelope $message, AMQPQueue $q): void
     {
         try {
             /**
@@ -149,10 +142,9 @@ trait EventListener
      * Message will be handled ONLY if
      * listener is subscribed to the event
      *
-     * @param AMQPEnvelope $envelope
      * @throws MessagePayloadFormatException
      */
-    private function consumeReceivedMessage(AMQPEnvelope $envelope)
+    private function consumeReceivedMessage(AMQPEnvelope $envelope): void
     {
         /**
          * Ignore if message not proper json
@@ -187,9 +179,6 @@ trait EventListener
 
     /**
      * Check if message is valid json
-     *
-     * @param string $message
-     * @return bool
      */
     private function isValidMessageFormat(string $message): bool
     {
@@ -198,9 +187,6 @@ trait EventListener
 
     /**
      * Check if channel name follows proper naming
-     *
-     * @param string $channelName
-     * @return bool
      */
     private function isValidChannelName(string $channelName): bool
     {
@@ -209,8 +195,6 @@ trait EventListener
 
     /**
      * If you want to limit the call of callback for each message, you can filter by white list here.
-     * @param string $eventName
-     * @return bool
      */
     protected function isSubscribed(string $eventName): bool
     {
@@ -220,10 +204,8 @@ trait EventListener
     /**
      * Handle the message by calling dedicated callback handler
      * or the general callback handler
-     *
-     * @param EventMessagePayload $message
      */
-    private function handleReceivedMessage(EventMessagePayload $message)
+    private function handleReceivedMessage(EventMessagePayload $message): void
     {
         $wasCalled = false;
         foreach ($this->getHandledMessages() as $channelName => $handledMessage) {
@@ -252,11 +234,8 @@ trait EventListener
 
     /**
      * Helper to execute proper callback
-     *
-     * @param array $handler
-     * @param EventMessagePayload $message
      */
-    private function callHandler(array $handler, EventMessagePayload $message)
+    private function callHandler(array $handler, EventMessagePayload $message): void
     {
         $result = $this->{$handler['method']}($message);
         if (is_callable($result)) {
@@ -269,9 +248,8 @@ trait EventListener
      * client exception callback
      *
      * @param $exception
-     * @param EventMessagePayload|null $messagePayload
      */
-    private function handleException($exception, ?EventMessagePayload $messagePayload = null)
+    private function handleException($exception, ?EventMessagePayload $messagePayload = null): void
     {
         try {
             $this->makeExceptionHandler()($exception, $messagePayload);
@@ -285,8 +263,6 @@ trait EventListener
     /**
      * Prototype method
      * Child can overide this function to log exceptions
-     *
-     * @param Exception $exception
      */
     protected function logException(Exception $exception)
     {

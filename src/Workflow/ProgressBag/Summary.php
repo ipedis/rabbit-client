@@ -1,44 +1,27 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Ipedis\Rabbit\Workflow\ProgressBag;
 
 use Ipedis\Rabbit\Exception\Progress\InvalidProgressValueException;
 
 class Summary implements \JsonSerializable
 {
-    /**
-     * @var int
-     */
-    private int $total;
-    /**
-     * @var int
-     */
-    private int $pending;
-    /**
-     * @var int
-     */
-    private int $dispatched;
-    /**
-     * @var int
-     */
-    private int $completed;
-    /**
-     * @var int
-     */
-    private int $successful;
-    /**
-     * @var int
-     */
-    private int $failed;
+    private readonly int $total;
+
+    private readonly int $pending;
+
+    private readonly int $dispatched;
+
+    private readonly int $completed;
+
+    private readonly int $successful;
+
+    private readonly int $failed;
 
     /**
      * Summary constructor.
-     * @param int $total
-     * @param int $pending
-     * @param int $dispatched
-     * @param int $completed
-     * @param int $successful
-     * @param int $failed
      * @throws InvalidProgressValueException
      */
     private function __construct(int $total, int $pending, int $dispatched, int $completed, int $successful, int $failed)
@@ -53,15 +36,9 @@ class Summary implements \JsonSerializable
     }
 
     /**
-     * @param int $total
-     * @param int $pending
-     * @param int $dispatched
-     * @param int $completed
-     * @param int $successful
-     * @param int $failed
      * @throws InvalidProgressValueException
      */
-    private function validateInputs(int $total, int $pending, int $dispatched, int $completed, int $successful, int $failed)
+    private function validateInputs(int $total, int $pending, int $dispatched, int $completed, int $successful, int $failed): void
     {
         $arguments = func_get_args();
         foreach ($arguments as $argument) {
@@ -80,13 +57,6 @@ class Summary implements \JsonSerializable
     }
 
     /**
-     * @param int $total
-     * @param int $pending
-     * @param int $dispatched
-     * @param int $completed
-     * @param int $successful
-     * @param int $failed
-     * @return Summary
      * @throws InvalidProgressValueException
      */
     public static function build(int $total, int $pending, int $dispatched, int $completed, int $successful, int $failed): self
@@ -94,9 +64,6 @@ class Summary implements \JsonSerializable
         return new self($total, $pending, $dispatched, $completed, $successful, $failed);
     }
 
-    /**
-     * @return array
-     */
     public function jsonSerialize(): array
     {
         return [
@@ -109,49 +76,31 @@ class Summary implements \JsonSerializable
         ];
     }
 
-    /**
-     * @return int
-     */
     public function getTotal(): int
     {
         return $this->total;
     }
 
-    /**
-     * @return int
-     */
     public function getPending(): int
     {
         return $this->pending;
     }
 
-    /**
-     * @return int
-     */
     public function getDispatched(): int
     {
         return $this->dispatched;
     }
 
-    /**
-     * @return int
-     */
     public function getCompleted(): int
     {
         return $this->completed;
     }
 
-    /**
-     * @return int
-     */
     public function getSuccessful(): int
     {
         return $this->successful;
     }
 
-    /**
-     * @return int
-     */
     public function getFailed(): int
     {
         return $this->failed;

@@ -1,25 +1,18 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Ipedis\Rabbit\Channel\Config;
 
 use Ipedis\Rabbit\Channel\ChannelAbstract;
 
-final class ChannelConfig
+final readonly class ChannelConfig
 {
-    /**
-     * @var string
-     */
-    private $channelName;
+    private string $channelName;
 
-    /**
-     * @var int
-     */
-    private $maxWorkers;
-
-    public function __construct(string $channelName, int $maxWorkers)
+    public function __construct(string $channelName, private int $maxWorkers)
     {
         $this->channelName = ChannelAbstract::getTypeFromChannelName($channelName);
-        $this->maxWorkers = $maxWorkers;
     }
 
     public static function build(string $channelName, int $maxWorkers): self
@@ -27,17 +20,11 @@ final class ChannelConfig
         return new self($channelName, $maxWorkers);
     }
 
-    /**
-     * @return string
-     */
     public function getChannelName(): string
     {
         return $this->channelName;
     }
 
-    /**
-     * @return int
-     */
     public function getMaxWorkers(): int
     {
         return $this->maxWorkers;

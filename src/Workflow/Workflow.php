@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Ipedis\Rabbit\Workflow;
 
 use Exception;
@@ -22,12 +24,10 @@ class Workflow extends Bindable
     /**
      * @var Group[] $groups
      */
-    protected $groups;
-
     /**
-     * @var WorkflowConfig
+     * Initialise collections
      */
-    protected $config;
+    protected $groups = [];
 
     protected $workflowId;
 
@@ -35,22 +35,9 @@ class Workflow extends Bindable
      * Workflow constructor.
      *
      * @param Group|callable $firstStep
-     * @param array $groupCallbacks
-     * @param WorkflowConfig|null $config
-     * @param string|null $workflowId
      */
-    public function __construct($firstStep = null, array $groupCallbacks = [], ?WorkflowConfig $config = null, ?string $workflowId = null)
+    public function __construct($firstStep = null, array $groupCallbacks = [], protected ?WorkflowConfig $config = new WorkflowConfig(), ?string $workflowId = null)
     {
-        /**
-         * define config
-         */
-        $this->config = $config ?? new WorkflowConfig();
-
-        /**
-         * Initialise collections
-         */
-        $this->groups = [];
-
         /**
          * $fistStep should be either a Group or a callable :
          * - Group : add group to collection
@@ -59,6 +46,7 @@ class Workflow extends Bindable
         if ($workflowId) {
             $this->assertUuid($workflowId);
         }
+
         $this->workflowId = $workflowId ?? uuid_create();
         if (!is_null($firstStep)) {
             $this->schedule($firstStep, $groupCallbacks);
@@ -66,7 +54,6 @@ class Workflow extends Bindable
     }
 
     /**
-     * @param string $uuid
      * @throws InvalidUuidException
      */
     protected function assertUuid(string $uuid)
@@ -81,11 +68,10 @@ class Workflow extends Bindable
      *   (which can add tasks to the group)
      *
      * @param $step
-     * @param array $callbacks
      * @throws InvalidWorkflowArgumentException
      * @throws InvalidGroupArgumentException
      */
-    private function schedule($step, array $callbacks = [])
+    private function schedule($step, array $callbacks = []): void
     {
         $this->assertGroup($step);
 
@@ -96,6 +82,7 @@ class Workflow extends Bindable
             foreach ($callbacks as $eventType => $callback) {
                 $step->bind($eventType, $callback);
             }
+
             /**
              * Add group to collection
              */
@@ -123,7 +110,7 @@ class Workflow extends Bindable
      * @param $step
      * @throws InvalidWorkflowArgumentException
      */
-    private function assertGroup($step)
+    private function assertGroup($step): void
     {
         if (
             !$step instanceof Group &&
@@ -137,8 +124,6 @@ class Workflow extends Bindable
      * Schedule next group of orders
      *
      * @param $nextStep
-     * @param array $callbacks
-     * @return Workflow
      * @throws InvalidWorkflowArgumentException
      * @throws InvalidGroupArgumentException
      */
@@ -153,8 +138,6 @@ class Workflow extends Bindable
      * On task reply,
      * When we receive ReplyMessage from worker.
      *
-     * @param ReplyMessagePayload $message
-     * @return array
      * @throws InvalidStatusException
      */
     public function taskReply(ReplyMessagePayload $message): array
@@ -172,8 +155,6 @@ class Workflow extends Bindable
     }
 
     /**
-     * @param ReplyMessagePayload $message
-     * @return array
      * @throws InvalidStatusException
      */
     public function retryGroupTask(ReplyMessagePayload $message): array
@@ -193,24 +174,19 @@ class Workflow extends Bindable
     /**
      * Find group
      *
-     * @param string $groupId
-     * @return Group
      * @throws Exception
      */
     public function findGroup(string $groupId): Group
     {
-        $group = array_filter($this->getGroups(), fn (Group $group) => $group->getGroupId() === $groupId);
+        $group = array_filter($this->getGroups(), fn (Group $group): bool => $group->getGroupId() === $groupId);
 
-        if (count($group) === 0) {
+        if ($group === []) {
             throw new Exception('Group not found');
         }
 
         return reset($group);
     }
 
-    /**
-     * @return Task
-     */
     public function find(string $orderId): Task
     {
         $task = null;
@@ -220,9 +196,11 @@ class Workflow extends Bindable
                 break;
             }
         }
+
         if (is_null($task)) {
             throw new Exception('Task not found');
         }
+
         return $task;
     }
 
@@ -233,6 +211,7 @@ class Workflow extends Bindable
     {
         return $this->groups;
     }
+
     /**
      * @return Error[]
      */
@@ -242,18 +221,15 @@ class Workflow extends Bindable
         foreach ($this->groups as $group) {
             $errors = array_merge(
                 $errors,
-                array_map(fn (Task $task) => Serializer::fromMessage($task->getLastReplyMessage()), $group->getFailedOrders())
+                array_map(fn (Task $task): \Ipedis\Rabbit\Exception\Helper\Error => Serializer::fromMessage($task->getLastReplyMessage()), $group->getFailedOrders())
             );
         }
+
         return $errors;
     }
 
     /**
      * Check if retry is allowed for task
-     *
-     * @param Task $task
-     * @param Group $group
-     * @return bool
      */
     public function canRetryTask(Task $task, Group $group): bool
     {
@@ -263,18 +239,11 @@ class Workflow extends Bindable
             $task->getRetryCount() < $this->getConfig()->getMaxRetry();
     }
 
-    /**
-     * @return WorkflowConfig
-     */
     public function getConfig(): WorkflowConfig
     {
         return $this->config;
     }
 
-    /**
-     * @param WorkflowConfig $config
-     * @return Workflow
-     */
     public function setConfig(WorkflowConfig $config): self
     {
         $this->config = $config;
@@ -284,7 +253,6 @@ class Workflow extends Bindable
 
     /**
      * get current workflow progress percentage
-     * @return float
      * @throws InvalidProgressValueException
      */
     public function getProgressPercentage(): float
@@ -292,25 +260,16 @@ class Workflow extends Bindable
         return $this->getProgressBag()->getPercentage()->getCompleted();
     }
 
-    /**
-     * @return WorkflowProgressBag
-     */
     public function getProgressBag(): WorkflowProgressBag
     {
         return new WorkflowProgressBag($this->getGroups(), $this->workflowId);
     }
 
-    /**
-     * @return string|null
-     */
     public function getWorkflowId(): ?string
     {
         return $this->workflowId;
     }
 
-    /**
-     * @return array
-     */
     protected function getAllowedBindableTypes(): array
     {
         return BindableEventInterface::WORKFLOW_ALLOW_TYPES;

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Ipedis\Demo\Rabbit\Worker\Workflow\Worker\Generator\Image;
 
 use AMQPEnvelope;
@@ -15,26 +17,25 @@ class ThumbnailDoublePage extends WorkerAbstract
 
     protected function makeMessageHandler(): Closure
     {
-        return function (AMQPEnvelope $message, OrderMessagePayload $messagePayload) {
+        return function (AMQPEnvelope $message, OrderMessagePayload $messagePayload): array {
             $params = $messagePayload->getData();
 
-            sleep(rand(1, 3));
+            sleep(random_int(1, 3));
 
             return ["step" => "dbl-thumb image finished"];
         };
     }
+
     protected function makeExceptionHandler(): Closure
     {
-        return function (Exception $exception, OrderMessagePayload $payload) {
+        return function (Exception $exception, OrderMessagePayload $payload): void {
         };
     }
 
     /**
      * Can be string or array of keys
-     *
-     * @return mixed
      */
-    protected function getQueueName()
+    protected function getQueueName(): string
     {
         return 'v1.admin.publication.generate-image-dbl-thumb';
     }

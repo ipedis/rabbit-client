@@ -1,34 +1,35 @@
 <?php
+
+declare(strict_types=1);
+
 /**
  * Created by PhpStorm.
  * User: digital14
  * Date: 7/2/20
  * Time: 10:36 AM
  */
-
 namespace Ipedis\Rabbit\Workflow\ProgressBag\Property;
 
 use Ipedis\Rabbit\Exception\Progress\InvalidStatusException;
 
-class Status implements \JsonSerializable
+class Status implements \JsonSerializable, \Stringable
 {
     public const STATUS_PENDING = 'pending';
+
     public const STATUS_RUNNING = 'running';
+
     public const STATUS_FAILED = 'failed';
+
     public const STATUS_SUCCESS = 'success';
 
     public const AVAILABLE_STATUS = [
         self::STATUS_PENDING, self::STATUS_RUNNING, self::STATUS_FAILED, self::STATUS_SUCCESS
     ];
 
-    /**
-     * @var string
-     */
-    private string $status;
+    private readonly string $status;
 
     /**
      * Status constructor.
-     * @param string $status
      * @throws InvalidStatusException
      */
     private function __construct(string $status)
@@ -41,7 +42,6 @@ class Status implements \JsonSerializable
     /**
      * Validate the provided value for status.
      *
-     * @param string $status
      * @throws InvalidStatusException
      */
     private function assertStatus(string $status): void
@@ -53,9 +53,6 @@ class Status implements \JsonSerializable
 
     /**
      * Checks if the given value is a valid status.
-     *
-     * @param string $status
-     * @return bool
      */
     private function isStatusValid(string $status): bool
     {
@@ -66,7 +63,6 @@ class Status implements \JsonSerializable
      * Build status object.
      *
      * @param string $status - current status value to set. Allowed values are (pending, running, failed, success).
-     * @return Status
      * @throws InvalidStatusException
      */
     public static function build(string $status): self
@@ -74,9 +70,6 @@ class Status implements \JsonSerializable
         return new self($status);
     }
 
-    /**
-     * @return Status
-     */
     public static function buildPending(): self
     {
         return new self(self::STATUS_PENDING);
@@ -106,57 +99,36 @@ class Status implements \JsonSerializable
         return new self(self::STATUS_FAILED);
     }
 
-    /**
-     * @return bool
-     */
     public function isRunning(): bool
     {
         return $this->status === self::STATUS_RUNNING;
     }
 
-    /**
-     * @return bool
-     */
     public function isSuccess(): bool
     {
         return $this->status === self::STATUS_SUCCESS;
     }
 
-    /**
-     * @return bool
-     */
     public function isFailed(): bool
     {
         return $this->status === self::STATUS_FAILED;
     }
 
-    /**
-     * @return bool
-     */
     public function isPending(): bool
     {
         return $this->status === self::STATUS_PENDING;
     }
 
-    /**
-     * @return string
-     */
     public function __toString(): string
     {
         return $this->getStatus();
     }
 
-    /**
-     * @return string
-     */
     public function getStatus(): string
     {
         return $this->status;
     }
 
-    /**
-     * @return array
-     */
     public function jsonSerialize(): array
     {
         return [

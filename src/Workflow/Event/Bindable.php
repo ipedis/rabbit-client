@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Ipedis\Rabbit\Workflow\Event;
 
 use Ipedis\Rabbit\Exception\Helper\Serializer;
@@ -12,8 +14,6 @@ abstract class Bindable
     protected array $callbacks = [];
 
     /**
-     * @param string $eventType
-     * @param callable $callback
      * @return static
      */
     public function bind(string $eventType, callable $callback): self
@@ -41,8 +41,6 @@ abstract class Bindable
     abstract protected function getAllowedBindableTypes(): array;
 
     /**
-     * @param string $eventType
-     * @param null $payload
      * @return static
      */
     public function call(string $eventType, $payload = null): self
@@ -51,6 +49,7 @@ abstract class Bindable
         if (empty($this->callbacks[$eventType])) {
             return $this;
         }
+
         // If is not array but pure callable, cast it to array.
         if (is_callable($this->callbacks[$eventType])) {
             $this->callbacks[$eventType] = [$this->callbacks[$eventType]];
@@ -81,10 +80,6 @@ abstract class Bindable
         return $this;
     }
 
-    /**
-     * @param array $callbacks
-     * @return array
-     */
     protected function assertCallbacks(array $callbacks): array
     {
         foreach ($callbacks as $eventType => $callback) {
@@ -105,6 +100,7 @@ abstract class Bindable
                 }
             }
         }
+
         return $callbacks;
     }
 }

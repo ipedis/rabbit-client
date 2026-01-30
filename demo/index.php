@@ -38,239 +38,190 @@ $configEvent = array_merge($configOrder, [
 $channelFactory = new ChannelFactory('v1', 'rabbitclient');
 $messagePayloadValidator = new MessagePayloadValidator();
 
-if (!empty($argv[1])) {
-    switch ($argv[1]) {
-        case 'worker':
-            (new WorkerProcess(
-                $configOrder['host'],
-                $configOrder['port'],
-                $configOrder['use'],
-                $configOrder['password'],
-                $configOrder['exchange'],
-                $configOrder['type'],
-                $channelFactory
-            ))->execute();
-        break;
-
-        case 'manager':
-            (new OrderManager(
-                $configOrder['host'],
-                $configOrder['port'],
-                $configOrder['use'],
-                $configOrder['password'],
-                $configOrder['exchange'],
-                $configOrder['type'],
-                $channelFactory,
-                $messagePayloadValidator
-            ))->main();
-            break;
-
-
-        case 'success':
-            (new Success(
-                $configOrder['host'],
-                $configOrder['port'],
-                $configOrder['use'],
-                $configOrder['password'],
-                $configOrder['exchange'],
-                $configOrder['type'],
-                $channelFactory
-            ))->execute();
-            break;
-
-        case 'failure':
-            (new Failure(
-                $configOrder['host'],
-                $configOrder['port'],
-                $configOrder['use'],
-                $configOrder['password'],
-                $configOrder['exchange'],
-                $configOrder['type'],
-                $channelFactory
-            ))->execute();
-            break;
-
-        case 'waiter':
-            (new Waiter(
-                $configOrder['host'],
-                $configOrder['port'],
-                $configOrder['use'],
-                $configOrder['password'],
-                $configOrder['exchange'],
-                $configOrder['type'],
-                $channelFactory
-            ))->execute();
-            break;
-
-        case 'workflow-callback':
-            (new AllCallbackManager(
-                $configOrder['host'],
-                $configOrder['port'],
-                $configOrder['use'],
-                $configOrder['password'],
-                $configOrder['exchange'],
-                $configOrder['type'],
-                $channelFactory,
-                $messagePayloadValidator
-            ))->main();
-            break;
-        case 'workflow-failure':
-            (new NoFailureManager(
-                $configOrder['host'],
-                $configOrder['port'],
-                $configOrder['use'],
-                $configOrder['password'],
-                $configOrder['exchange'],
-                $configOrder['type'],
-                $channelFactory,
-                $messagePayloadValidator
-            ))->main();
-            break;
-        case 'workflow-retry-on-failure':
-            (new RetryOnFailureManager(
-                $configOrder['host'],
-                $configOrder['port'],
-                $configOrder['use'],
-                $configOrder['password'],
-                $configOrder['exchange'],
-                $configOrder['type'],
-                $channelFactory,
-                $messagePayloadValidator
-            ))->main();
-            break;
-        case 'workflow-progress':
-            (new ProgressManager(
-                $configOrder['host'],
-                $configOrder['port'],
-                $configOrder['use'],
-                $configOrder['password'],
-                $configOrder['exchange'],
-                $configOrder['type'],
-                $channelFactory,
-                $messagePayloadValidator
-            ))->main();
-            break;
-        case 'listener':
-            (new Listener(
-                $configEvent['host'],
-                $configEvent['port'],
-                $configEvent['use'],
-                $configEvent['password'],
-                $configEvent['exchange'],
-                $configEvent['type'],
-                $channelFactory
-            ))->execute();
-            break;
-
-        case 'dispatcher':
-            (new Dispatcher(
-                $configEvent['host'],
-                $configEvent['port'],
-                $configEvent['use'],
-                $configEvent['password'],
-                $configEvent['exchange'],
-                $configEvent['type'],
-                $channelFactory,
-                $messagePayloadValidator
-            ))->main();
-            break;
-        case 'generator':
-            (new GeneratorManager(
-                $configOrder['host'],
-                $configOrder['port'],
-                $configOrder['use'],
-                $configOrder['password'],
-                $configOrder['exchange'],
-                $configOrder['type'],
-                $channelFactory,
-                $messagePayloadValidator
-            ))->main();
-            break;
-        case 'generator-recursive':
-            (new RecursiveGeneratorManager(
-                $configOrder['host'],
-                $configOrder['port'],
-                $configOrder['use'],
-                $configOrder['password'],
-                $configOrder['exchange'],
-                $configOrder['type'],
-                $channelFactory,
-                $messagePayloadValidator
-            ))->main();
-            break;
-        case 'concurrency-manager':
-            (new ConcurrencyManager(
-                $configOrder['host'],
-                $configOrder['port'],
-                $configOrder['use'],
-                $configOrder['password'],
-                $configOrder['exchange'],
-                $configOrder['type'],
-                $channelFactory,
-                $messagePayloadValidator
-            ))->main();
-            break;
-        case 'generator.html':
-            (new Html(
-                $configOrder['host'],
-                $configOrder['port'],
-                $configOrder['use'],
-                $configOrder['password'],
-                $configOrder['exchange'],
-                $configOrder['type'],
-                $channelFactory
-            ))->execute();
-        break;
-        case 'generator.image':
-            (new Image(
-                $configOrder['host'],
-                $configOrder['port'],
-                $configOrder['use'],
-                $configOrder['password'],
-                $configOrder['exchange'],
-                $configOrder['type'],
-                $channelFactory
-            ))->execute();
-        break;
-        case 'generator.image-page':
-            (new Image\SimplePage(
-                $configOrder['host'],
-                $configOrder['port'],
-                $configOrder['use'],
-                $configOrder['password'],
-                $configOrder['exchange'],
-                $configOrder['type'],
-                $channelFactory
-            ))->execute();
-        break;
-
-        case 'generator.double-thumb':
-            (new Image\ThumbnailDoublePage(
-                $configOrder['host'],
-                $configOrder['port'],
-                $configOrder['use'],
-                $configOrder['password'],
-                $configOrder['exchange'],
-                $configOrder['type'],
-                $channelFactory
-            ))->execute();
-            break;
-        case 'generator.double-zoomable':
-            (new Image\ZoomableDoublePage(
-                $configOrder['host'],
-                $configOrder['port'],
-                $configOrder['use'],
-                $configOrder['password'],
-                $configOrder['exchange'],
-                $configOrder['type'],
-                $channelFactory
-            ))->execute();
-            break;
-
-        default:
-            printf("no match found \n");
-
-    }
+if (isset($argv[1]) && ($argv[1] !== '' && $argv[1] !== '0')) {
+    match ($argv[1]) {
+        'worker' => (new WorkerProcess(
+            $configOrder['host'],
+            $configOrder['port'],
+            $configOrder['use'],
+            $configOrder['password'],
+            $configOrder['exchange'],
+            $configOrder['type'],
+            $channelFactory
+        ))->execute(),
+        'manager' => (new OrderManager(
+            $configOrder['host'],
+            $configOrder['port'],
+            $configOrder['use'],
+            $configOrder['password'],
+            $configOrder['exchange'],
+            $configOrder['type'],
+            $channelFactory,
+            $messagePayloadValidator
+        ))->main(),
+        'success' => (new Success(
+            $configOrder['host'],
+            $configOrder['port'],
+            $configOrder['use'],
+            $configOrder['password'],
+            $configOrder['exchange'],
+            $configOrder['type'],
+            $channelFactory
+        ))->execute(),
+        'failure' => (new Failure(
+            $configOrder['host'],
+            $configOrder['port'],
+            $configOrder['use'],
+            $configOrder['password'],
+            $configOrder['exchange'],
+            $configOrder['type'],
+            $channelFactory
+        ))->execute(),
+        'waiter' => (new Waiter(
+            $configOrder['host'],
+            $configOrder['port'],
+            $configOrder['use'],
+            $configOrder['password'],
+            $configOrder['exchange'],
+            $configOrder['type'],
+            $channelFactory
+        ))->execute(),
+        'workflow-callback' => (new AllCallbackManager(
+            $configOrder['host'],
+            $configOrder['port'],
+            $configOrder['use'],
+            $configOrder['password'],
+            $configOrder['exchange'],
+            $configOrder['type'],
+            $channelFactory,
+            $messagePayloadValidator
+        ))->main(),
+        'workflow-failure' => (new NoFailureManager(
+            $configOrder['host'],
+            $configOrder['port'],
+            $configOrder['use'],
+            $configOrder['password'],
+            $configOrder['exchange'],
+            $configOrder['type'],
+            $channelFactory,
+            $messagePayloadValidator
+        ))->main(),
+        'workflow-retry-on-failure' => (new RetryOnFailureManager(
+            $configOrder['host'],
+            $configOrder['port'],
+            $configOrder['use'],
+            $configOrder['password'],
+            $configOrder['exchange'],
+            $configOrder['type'],
+            $channelFactory,
+            $messagePayloadValidator
+        ))->main(),
+        'workflow-progress' => (new ProgressManager(
+            $configOrder['host'],
+            $configOrder['port'],
+            $configOrder['use'],
+            $configOrder['password'],
+            $configOrder['exchange'],
+            $configOrder['type'],
+            $channelFactory,
+            $messagePayloadValidator
+        ))->main(),
+        'listener' => (new Listener(
+            $configEvent['host'],
+            $configEvent['port'],
+            $configEvent['use'],
+            $configEvent['password'],
+            $configEvent['exchange'],
+            $configEvent['type'],
+            $channelFactory
+        ))->execute(),
+        'dispatcher' => (new Dispatcher(
+            $configEvent['host'],
+            $configEvent['port'],
+            $configEvent['use'],
+            $configEvent['password'],
+            $configEvent['exchange'],
+            $configEvent['type'],
+            $channelFactory,
+            $messagePayloadValidator
+        ))->main(),
+        'generator' => (new GeneratorManager(
+            $configOrder['host'],
+            $configOrder['port'],
+            $configOrder['use'],
+            $configOrder['password'],
+            $configOrder['exchange'],
+            $configOrder['type'],
+            $channelFactory,
+            $messagePayloadValidator
+        ))->main(),
+        'generator-recursive' => (new RecursiveGeneratorManager(
+            $configOrder['host'],
+            $configOrder['port'],
+            $configOrder['use'],
+            $configOrder['password'],
+            $configOrder['exchange'],
+            $configOrder['type'],
+            $channelFactory,
+            $messagePayloadValidator
+        ))->main(),
+        'concurrency-manager' => (new ConcurrencyManager(
+            $configOrder['host'],
+            $configOrder['port'],
+            $configOrder['use'],
+            $configOrder['password'],
+            $configOrder['exchange'],
+            $configOrder['type'],
+            $channelFactory,
+            $messagePayloadValidator
+        ))->main(),
+        'generator.html' => (new Html(
+            $configOrder['host'],
+            $configOrder['port'],
+            $configOrder['use'],
+            $configOrder['password'],
+            $configOrder['exchange'],
+            $configOrder['type'],
+            $channelFactory
+        ))->execute(),
+        'generator.image' => (new Image(
+            $configOrder['host'],
+            $configOrder['port'],
+            $configOrder['use'],
+            $configOrder['password'],
+            $configOrder['exchange'],
+            $configOrder['type'],
+            $channelFactory
+        ))->execute(),
+        'generator.image-page' => (new Image\SimplePage(
+            $configOrder['host'],
+            $configOrder['port'],
+            $configOrder['use'],
+            $configOrder['password'],
+            $configOrder['exchange'],
+            $configOrder['type'],
+            $channelFactory
+        ))->execute(),
+        'generator.double-thumb' => (new Image\ThumbnailDoublePage(
+            $configOrder['host'],
+            $configOrder['port'],
+            $configOrder['use'],
+            $configOrder['password'],
+            $configOrder['exchange'],
+            $configOrder['type'],
+            $channelFactory
+        ))->execute(),
+        'generator.double-zoomable' => (new Image\ZoomableDoublePage(
+            $configOrder['host'],
+            $configOrder['port'],
+            $configOrder['use'],
+            $configOrder['password'],
+            $configOrder['exchange'],
+            $configOrder['type'],
+            $channelFactory
+        ))->execute(),
+        default => printf("no match found \n"),
+    };
 } else {
     printf('you should provide type parameter, possible value : %s', implode(', ', [
         'manager',

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Ipedis\Rabbit\Event;
 
 use Ipedis\HttpSignature\HttpClient\HttpClient;
@@ -33,13 +35,12 @@ trait EventDispatcher
     /**
      * Publish event on exchange
      *
-     * @param EventMessagePayload $messagePayload
      *
      * @throws ChannelFactoryException
      * @throws ChannelNamingException
      * @throws MessagePayloadValidatorException
      */
-    public function dispatch(EventMessagePayload $messagePayload)
+    public function dispatch(EventMessagePayload $messagePayload): void
     {
         try {
             if ($this->channel === null) {
@@ -73,7 +74,7 @@ trait EventDispatcher
              * Publish message on exchange
              */
             $this->publishToExchange(json_encode($messagePayload), $eventName);
-        } catch (RabbitClientConnectException | RabbitClientPublishException $exception) {
+        } catch (RabbitClientConnectException | RabbitClientPublishException) {
             /**
              * Error occured while connecting to RabbitMQ OR
              * publishing to exchange : event is stored on recovery
@@ -87,7 +88,6 @@ trait EventDispatcher
      * Event name is used as routing key when publishing message
      *
      * @param $event
-     * @return string
      * @throws ChannelNamingException
      */
     private function getEventName($event): string
@@ -103,6 +103,7 @@ trait EventDispatcher
 
             return (string)$eventObj;
         }
+
         // if it is an instance, get channel full name
         if ($event instanceof EventChannel) {
             return (string)$event;
@@ -114,9 +115,6 @@ trait EventDispatcher
 
     /**
      * prepare data of message payload
-     *
-     * @param EventMessagePayload $payload
-     * @return EventMessagePayload
      */
     private function preparePayloadData(EventMessagePayload $payload): EventMessagePayload
     {
@@ -125,7 +123,7 @@ trait EventDispatcher
         $data = json_decode($data, true);
 
         //ensure that all string in payload are encoded to utf-8
-        array_walk_recursive($data, function (&$value) {
+        array_walk_recursive($data, function (&$value): void {
             if (is_string($value)) {
                 $value = mb_convert_encoding($value, 'UTF-8', 'UTF-8');
             }
@@ -137,10 +135,8 @@ trait EventDispatcher
 
     /**
      * Store event on recovery
-     *
-     * @param EventMessagePayload $payload
      */
-    private function storeEventOnRecovery(EventMessagePayload $payload)
+    private function storeEventOnRecovery(EventMessagePayload $payload): void
     {
         $this->getClient()
             ->post($this->getRecoveryEventStoreEndpoint(), [

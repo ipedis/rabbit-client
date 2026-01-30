@@ -1,16 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Ipedis\Demo\Rabbit\Utils;
 
 use Ipedis\Rabbit\Channel\Factory\ChannelFactory;
 
 abstract class WorkerAbstract extends ConnectorAbstract
 {
-    /**
-     * @var ChannelFactory $channelFactory
-     */
-    private ChannelFactory $channelFactory;
-
     public function __construct(
         string $host,
         int $port,
@@ -18,23 +15,16 @@ abstract class WorkerAbstract extends ConnectorAbstract
         string $password,
         string $exchange,
         string $type,
-        ChannelFactory $channelFactory
+        private readonly ChannelFactory $channelFactory
     ) {
         parent::__construct($host, $port, $user, $password, $exchange, $type);
-        $this->channelFactory = $channelFactory;
     }
 
-    /**
-     * @return ChannelFactory
-     */
     protected function getChannelFactory(): ChannelFactory
     {
         return $this->channelFactory;
     }
 
-    /**
-     * @return string
-     */
     public function getQueuePrefix(): string
     {
         return 'demo.workflow';

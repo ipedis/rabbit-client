@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Ipedis\Rabbit\MessagePayload\Validator;
 
 use Ipedis\Rabbit\Exception\MessagePayload\MessagePayloadInvalidSchemaException;
@@ -10,7 +12,6 @@ interface ValidatorInterface
     /**
      * Validate message data property
      *
-     * @param MessagePayloadInterface $messagePayload
      * @return mixed
      * @throws MessagePayloadInvalidSchemaException
      */

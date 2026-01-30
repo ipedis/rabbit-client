@@ -1,21 +1,18 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Ipedis\Rabbit\Workflow\ProgressBag\Property;
 
 use Ipedis\Rabbit\Exception\Progress\InvalidProgressValueException;
 
 class Percentage implements \JsonSerializable
 {
-    /**
-     * @var float
-     */
-    private float $completed;
+    private readonly float $completed;
 
-    /**
-     * @var float
-     */
-    private float $success;
-    private float $failed;
+    private readonly float $success;
+
+    private readonly float $failed;
 
     /**
      * Progress constructor.
@@ -33,43 +30,26 @@ class Percentage implements \JsonSerializable
     }
 
     /**
-     * @param float $completed
-     * @param float $success
-     * @param float $failed
      * @throws InvalidProgressValueException
      */
-    private function assertProgress(float $completed, float $success, float $failed)
+    private function assertProgress(float $completed, float $success, float $failed): void
     {
         if (!$this->isCompletedValid($completed, $success, $failed) || !$this->isPercentageValid($success) || !$this->isPercentageValid($failed)) {
             throw new InvalidProgressValueException('Invalid progress value provided.');
         }
     }
 
-    /**
-     * @param float $completed
-     * @param float $success
-     * @param float $failed
-     * @return bool
-     */
     private function isCompletedValid(float $completed, float $success, float $failed): bool
     {
         return $this->isPercentageValid($completed) && ($completed === $success + $failed);
     }
 
-    /**
-     * @param float $percentage
-     * @return bool
-     */
     private function isPercentageValid(float $percentage): bool
     {
         return $percentage >= 0 && $percentage <= 100;
     }
 
     /**
-     * @param float $completed
-     * @param float $success
-     * @param float $failed
-     * @return Percentage
      * @throws InvalidProgressValueException
      */
     public static function build(float $completed, float $success, float $failed): self
@@ -79,7 +59,6 @@ class Percentage implements \JsonSerializable
 
     /**
      * Initialize progress object.
-     * @return Percentage
      * @throws InvalidProgressValueException
      */
     public static function init(): self
@@ -87,11 +66,6 @@ class Percentage implements \JsonSerializable
         return new self(0, 0, 0);
     }
 
-    /**
-     * @param int $completed
-     * @param int $total
-     * @return float
-     */
     public static function calculate(int $completed, int $total): float
     {
         return (100 * $completed) / $total;
@@ -106,25 +80,16 @@ class Percentage implements \JsonSerializable
         ];
     }
 
-    /**
-     * @return float
-     */
     public function getCompleted(): float
     {
         return $this->completed;
     }
 
-    /**
-     * @return float
-     */
     public function getSuccess(): float
     {
         return $this->success;
     }
 
-    /**
-     * @return float
-     */
     public function getFailed(): float
     {
         return $this->failed;

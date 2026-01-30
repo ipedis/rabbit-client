@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Ipedis\Rabbit\Workflow\ProgressBag\Model;
 
 use Ipedis\Rabbit\Exception\InvalidUuidException;
@@ -9,55 +11,27 @@ use Ipedis\Rabbit\Workflow\ProgressBag\Property\Timer;
 
 class TaskProgress implements \JsonSerializable
 {
-    /**
-     * @var string
-     */
-    private string $uuid;
-    /**
-     * @var string
-     */
-    private string $type;
-    /**
-     * @var Status
-     */
-    private Status $status;
-    /**
-     * @var Timer
-     */
-    private Timer $timer;
+    private readonly string $uuid;
 
     /**
      * Task constructor.
-     * @param string $uuid
-     * @param string $type
-     * @param Status $status
-     * @param Timer $timer
      * @throws InvalidUuidException
      */
-    private function __construct(string $uuid, string $type, Status $status, Timer $timer)
+    private function __construct(string $uuid, private readonly string $type, private readonly Status $status, private readonly Timer $timer)
     {
         $this->assertUuid($uuid);
         $this->uuid = $uuid;
-        $this->type = $type;
-        $this->status = $status;
-        $this->timer = $timer;
     }
 
     /**
-     * @param string $uuid
      * @throws InvalidUuidException
      */
-    private function assertUuid(string $uuid)
+    private function assertUuid(string $uuid): void
     {
         (new UuidValidator())->validate($uuid);
     }
 
     /**
-     * @param string $uuid
-     * @param string $type
-     * @param Status $status
-     * @param Timer $timer
-     * @return TaskProgress
      * @throws InvalidUuidException
      */
     public static function build(string $uuid, string $type, Status $status, Timer $timer): self
@@ -75,33 +49,21 @@ class TaskProgress implements \JsonSerializable
         ];
     }
 
-    /**
-     * @return string
-     */
     public function getUuid(): string
     {
         return $this->uuid;
     }
 
-    /**
-     * @return string
-     */
     public function getType(): string
     {
         return $this->type;
     }
 
-    /**
-     * @return Status
-     */
     public function getStatus(): Status
     {
         return $this->status;
     }
 
-    /**
-     * @return Timer
-     */
     public function getTimer(): Timer
     {
         return $this->timer;

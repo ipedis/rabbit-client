@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Ipedis\Rabbit\MessagePayload;
 
 use Exception;
@@ -12,65 +14,42 @@ use Ipedis\Rabbit\Exception\MessagePayload\MessagePayloadFormatException;
 abstract class MessagePayloadAbstract implements MessagePayloadInterface
 {
     public const HEADER_UUID = 'uuid';
+
     public const HEADER_TIMESTAMP = 'sendAt';
+
     public const HEADER_TIMEZONE = 'timezone';
+
     public const HEADER_CHANNEL = 'channel';
 
-    /**
-     * data storage
-     *
-     * @var array
-     */
-    protected array $data;
-
-    /**
-     * header storage
-     *
-     * @var array
-     */
-    protected array $headers;
-
-    /**
-     * Channel for the message
-     *
-     * @var string
-     */
-    protected string $channel;
-
-    /**
-     * @var string
-     */
     protected string $jsonEncodedData;
 
     /**
      * PayloadAbstract constructor.
      *
-     * @param string $channel
-     * @param array $data
-     * @param array $headers
      * @throws Exception
      */
-    protected function __construct(string $channel, array $data = [], array $headers = [])
-    {
-        $this->data = $data;
-        $this->headers = $headers;
-        $this->channel = $channel;
-
+    protected function __construct(/**
+         * Channel for the message
+         */
+        protected string $channel, /**
+         * data storage
+         */
+        protected array $data = [], /**
+         * header storage
+         */
+        protected array $headers = []
+    ) {
         /**
          * Add channel to header
          */
         $this->setDefaultHeader();
-        $this->addHeader(self::HEADER_CHANNEL, $channel);
+        $this->addHeader(self::HEADER_CHANNEL, $this->channel);
         $this->jsonEncodedData = json_encode($this->getData());
     }
 
     /**
      * Factory method
      *
-     * @param string $channel
-     * @param array $data
-     * @param array $headers
-     * @return MessagePayloadAbstract
      * @throws \Exception
      */
     public static function build(string $channel, array $data = [], array $headers = []): self
@@ -81,7 +60,6 @@ abstract class MessagePayloadAbstract implements MessagePayloadInterface
     /**
      * Factory method to create message payload from json
      *
-     * @param string $msg
      * @return EventMessagePayload
      * @throws MessagePayloadFormatException
      */
@@ -99,9 +77,7 @@ abstract class MessagePayloadAbstract implements MessagePayloadInterface
     abstract public static function fromArray(array $state): self;
 
     /**
-     * @param string $key
      * @param $value
-     * @return MessagePayloadAbstract
      */
     protected function addHeader(string $key, $value): self
     {
@@ -110,10 +86,6 @@ abstract class MessagePayloadAbstract implements MessagePayloadInterface
         return $this;
     }
 
-    /**
-     * @param string $key
-     * @return bool
-     */
     public function hasData(string $key): bool
     {
         return isset($this->data[$key]);
@@ -121,17 +93,12 @@ abstract class MessagePayloadAbstract implements MessagePayloadInterface
 
     /**
      * json version of data
-     *
-     * @return string
      */
     public function getStringifyData(): string
     {
         return $this->jsonEncodedData;
     }
 
-    /**
-     * @return array
-     */
     public function getData(): array
     {
         return $this->data;
@@ -139,7 +106,6 @@ abstract class MessagePayloadAbstract implements MessagePayloadInterface
 
     /**
      * @alias
-     * @return array
      */
     public function toArray(): array
     {
@@ -148,8 +114,6 @@ abstract class MessagePayloadAbstract implements MessagePayloadInterface
 
     /**
      * Get context of event without actual payload.
-     *
-     * @return array
      */
     public function getContext(): array
     {
@@ -167,8 +131,6 @@ abstract class MessagePayloadAbstract implements MessagePayloadInterface
     }
 
     /**
-     * @param string $key
-     * @param null $default
      * @return mixed|null
      */
     public function getHeader(string $key, $default = null)
@@ -178,18 +140,11 @@ abstract class MessagePayloadAbstract implements MessagePayloadInterface
             $default;
     }
 
-    /**
-     * @param string $key
-     * @return bool
-     */
     public function hasHeader(string $key): bool
     {
         return isset($this->headers[$key]);
     }
 
-    /**
-     * @return string
-     */
     public function getChannel(): string
     {
         return $this->channel;
@@ -244,9 +199,6 @@ abstract class MessagePayloadAbstract implements MessagePayloadInterface
         }
     }
 
-    /**
-     * @return array
-     */
     public function getHeaders(): array
     {
         return $this->headers;

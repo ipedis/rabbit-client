@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Ipedis\Rabbit\Workflow\ProgressBag;
 
 use Ipedis\Rabbit\Exception\InvalidUuidException;
@@ -18,30 +20,18 @@ use Ipedis\Rabbit\Workflow\Workflow;
 class GroupProgressBag implements ProgressBagInterface
 {
     /**
-     * Group orders
-     *
-     * @var array
-     */
-    private array $orders = [];
-    /**
-     * @var string
-     */
-    private string $groupId;
-
-    /**
      * GroupProgressBag constructor.
-     * @param array $orders
-     * @param string $groupId
      */
-    public function __construct(array $orders, string $groupId)
+    public function __construct(
+        /**
+         * Group orders
+         */
+        private readonly array $orders,
+        private readonly string $groupId
+    )
     {
-        $this->orders = $orders;
-        $this->groupId = $groupId;
     }
 
-    /**
-     * @return bool
-     */
     public function hasPendingTasks(): bool
     {
         return $this->countPlanifiedTasks() > 0;
@@ -49,8 +39,6 @@ class GroupProgressBag implements ProgressBagInterface
 
     /**
      * Count of planified tasks
-     *
-     * @return int
      */
     public function countPlanifiedTasks(): int
     {
@@ -60,25 +48,18 @@ class GroupProgressBag implements ProgressBagInterface
     /**
      * Get collection of planified tasks
      * waiting to be dispatched
-     *
-     * @return array
      */
     public function getPlanifiedTasks(): array
     {
-        return array_filter($this->getTasksInGroup(), function (Task $task) {
-            return $task->isPlanified();
-        });
+        return array_filter($this->getTasksInGroup(), fn(Task $task) => $task->isPlanified());
     }
 
     /**
      * Get Tasks inside group recursively
-     *
-     * @param array|null $orders
-     * @return array
      */
     public function getTasksInGroup(?array $orders = null): array
     {
-        $orders = $orders ?? $this->orders;
+        $orders ??= $this->orders;
 
         return array_reduce($orders, function ($groupTasks, $order) {
             if ($order instanceof Workflow) {
@@ -95,8 +76,6 @@ class GroupProgressBag implements ProgressBagInterface
 
     /**
      * Count of in progress tasks
-     *
-     * @return int
      */
     public function countInProgressTasks(): int
     {
@@ -105,18 +84,13 @@ class GroupProgressBag implements ProgressBagInterface
 
     /**
      * Get collection of in progress tasks
-     *
-     * @return array
      */
     public function getInProgressTasks(): array
     {
-        return array_filter($this->getTasksInGroup(), function (Task $task) {
-            return $task->isInProgress();
-        });
+        return array_filter($this->getTasksInGroup(), fn(Task $task) => $task->isInProgress());
     }
 
     /**
-     * @return GroupProgress
      * @throws InvalidSpentTimeException
      * @throws InvalidTimeException
      * @throws InvalidUuidException
@@ -129,15 +103,10 @@ class GroupProgressBag implements ProgressBagInterface
             $this->getStatus(),
             $this->getTimer(),
             $this->getPercentage(),
-            new TaskProgressCollection(array_map(function (Task $task) {
-                return $task->getTaskProgress();
-            }, $this->getTasksInGroup()))
+            new TaskProgressCollection(array_map(fn(Task $task) => $task->getTaskProgress(), $this->getTasksInGroup()))
         );
     }
 
-    /**
-     * @return string
-     */
     public function getGroupId(): string
     {
         return $this->groupId;
@@ -149,8 +118,6 @@ class GroupProgressBag implements ProgressBagInterface
      * - PENDING : no tasks yet dispatched
      * - RUNNING : at least one task has been dispatched
      * - FINISHED : all tasks in group have completed
-     *
-     * @return Status
      */
     public function getStatus(): Status
     {
@@ -158,19 +125,18 @@ class GroupProgressBag implements ProgressBagInterface
             if ($this->hasFailure()) {
                 return Status::buildFailed();
             }
-
             return Status::buildSuccess();
-        } elseif ($this->isPending()) {
+        }
+        if ($this->isPending()) {
             return Status::buildPending();
-        } elseif ($this->isRunning()) {
+        }
+        if ($this->isRunning()) {
             return Status::buildRunning();
         }
     }
 
     /**
      * Has all tasks in group completed
-     *
-     * @return bool
      */
     public function isCompleted(): bool
     {
@@ -179,8 +145,6 @@ class GroupProgressBag implements ProgressBagInterface
 
     /**
      * Count of orders in group
-     *
-     * @return int
      */
     public function countTasksInGroup(): int
     {
@@ -189,8 +153,6 @@ class GroupProgressBag implements ProgressBagInterface
 
     /**
      * Count of completed tasks
-     *
-     * @return int
      */
     public function countCompletedTasks(): int
     {
@@ -199,20 +161,14 @@ class GroupProgressBag implements ProgressBagInterface
 
     /**
      * Get collection of completed tasks
-     *
-     * @return array
      */
     public function getCompletedTasks(): array
     {
-        return array_filter($this->getTasksInGroup(), function (Task $task) {
-            return $task->isCompleted();
-        });
+        return array_filter($this->getTasksInGroup(), fn(Task $task) => $task->isCompleted());
     }
 
     /**
      * At least a task has failed
-     *
-     * @return bool
      */
     public function hasFailure(): bool
     {
@@ -221,8 +177,6 @@ class GroupProgressBag implements ProgressBagInterface
 
     /**
      * Count of failed tasks
-     *
-     * @return int
      */
     public function countFailedTasks(): int
     {
@@ -231,20 +185,14 @@ class GroupProgressBag implements ProgressBagInterface
 
     /**
      * Get collection of completed tasks which have failed
-     *
-     * @return array
      */
     public function getFailedTasks(): array
     {
-        return array_filter($this->getTasksInGroup(), function (Task $task) {
-            return $task->isOnFailure();
-        });
+        return array_filter($this->getTasksInGroup(), fn(Task $task) => $task->isOnFailure());
     }
 
     /**
      * No task yet dispatched
-     *
-     * @return bool
      */
     public function isPending(): bool
     {
@@ -253,7 +201,6 @@ class GroupProgressBag implements ProgressBagInterface
 
     /**
      * Count of dispatched tasks
-     * @return int
      */
     public function countDispatchedTasks(?string $taskType = null): int
     {
@@ -262,12 +209,10 @@ class GroupProgressBag implements ProgressBagInterface
 
     /**
      * Get Collection of dispatched tasks
-     * @param string|null $taskType
-     * @return array
      */
     public function getDispatchedTasks(?string $taskType = null): array
     {
-        return array_filter($this->getTasksInGroup(), function (Task $task) use ($taskType) {
+        return array_filter($this->getTasksInGroup(), function (Task $task) use ($taskType): bool {
             if (!is_null($taskType)) {
                 return $task->isDispatched() && $task->getType() === $taskType;
             }
@@ -278,8 +223,6 @@ class GroupProgressBag implements ProgressBagInterface
 
     /**
      * At least a task has been dispatched
-     *
-     * @return bool
      */
     public function isRunning(): bool
     {
@@ -287,7 +230,6 @@ class GroupProgressBag implements ProgressBagInterface
     }
 
     /**
-     * @return Timer
      * @throws InvalidSpentTimeException
      * @throws InvalidTimeException
      */
@@ -302,8 +244,6 @@ class GroupProgressBag implements ProgressBagInterface
 
     /**
      * Get Group execution time
-     *
-     * @return float
      */
     public function getExecutionTime(): float
     {
@@ -326,8 +266,6 @@ class GroupProgressBag implements ProgressBagInterface
     /**
      * Iterate through tasks and find
      * first started task
-     *
-     * @return \DateTime|null
      */
     public function getStartedAt(): ?\DateTime
     {
@@ -347,13 +285,15 @@ class GroupProgressBag implements ProgressBagInterface
             /**
              * Ignore task not yet started
              */
-            if ($task->isPlanified() ||
-                $task->isDispatched() ||
-                is_null($task->getStartTime())
-            ) {
+            if ($task->isPlanified()) {
                 continue;
             }
-
+            if ($task->isDispatched()) {
+                continue;
+            }
+            if (is_null($task->getStartTime())) {
+                continue;
+            }
             if (is_null($startTime)) {
                 $startTime = $task->getStartTime();
             } elseif ($task->getStartTime() < $startTime) {
@@ -367,8 +307,6 @@ class GroupProgressBag implements ProgressBagInterface
     /**
      * Iterate through tasks and find
      * last completed task
-     *
-     * @return \DateTime|null
      */
     public function getFinishedAt(): ?\DateTime
     {
@@ -405,7 +343,6 @@ class GroupProgressBag implements ProgressBagInterface
     /**
      * Get percentage progression of group
      *
-     * @return Percentage
      * @throws InvalidProgressValueException
      */
     public function getPercentage(): Percentage
@@ -421,8 +358,6 @@ class GroupProgressBag implements ProgressBagInterface
 
     /**
      * Count of successful tasks
-     *
-     * @return int
      */
     public function countSuccessfulTasks(): int
     {
@@ -431,13 +366,9 @@ class GroupProgressBag implements ProgressBagInterface
 
     /**
      * Get collection of successfully completed tasks
-     *
-     * @return array
      */
     public function getSuccessfulTasks(): array
     {
-        return array_filter($this->getTasksInGroup(), function (Task $task) {
-            return $task->isSuccess();
-        });
+        return array_filter($this->getTasksInGroup(), fn(Task $task) => $task->isSuccess());
     }
 }

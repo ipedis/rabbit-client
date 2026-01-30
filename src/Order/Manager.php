@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Ipedis\Rabbit\Order;
 
 use AMQPChannel;
@@ -37,15 +39,11 @@ trait Manager
 {
     /**
      * The anonymous reply queue
-     *
-     * @var AMQPQueue $replyQueue
      */
     private AMQPQueue $replyQueue;
 
     /**
      * Collection of orders
-     *
-     * @var array $order
      */
     private array $orders;
 
@@ -54,12 +52,10 @@ trait Manager
      * executed on defined events
      *
      * Only one handler is allowed for each event type
-     *
-     * @var array $handlers
      */
     private array $eventHandlers;
 
-    public function resetOrdersQueue()
+    public function resetOrdersQueue(): void
     {
         if ($this->channel === null) {
             $this->connect();
@@ -73,28 +69,24 @@ trait Manager
     /**
      * Create anonymous queue
      *
-     * @param AMQPChannel $channel
-     * @return AMQPQueue
      * @throws AMQPChannelException
      * @throws AMQPConnectionException
      * @throws AMQPQueueException
      */
     private function createAnonymousQueue(AMQPChannel $channel): AMQPQueue
     {
-        $queue = new AMQPQueue($channel);
-        $queue->setFlags(AMQP_EXCLUSIVE);
-        $queue->declareQueue();
+        $amqpQueue = new AMQPQueue($channel);
+        $amqpQueue->setFlags(AMQP_EXCLUSIVE);
+        $amqpQueue->declareQueue();
 
-        return $queue;
+        return $amqpQueue;
     }
 
     /**
      * Publish an order
      *
-     * @param OrderMessagePayload $messagePayload
      * @param $callback
      *
-     * @return self
      *
      * @throws ChannelFactoryException
      * @throws ChannelNamingException
@@ -120,9 +112,10 @@ trait Manager
          *
          */
         if (is_null($callback)) {
-            $callback = function () {
+            $callback = function (): void {
             };
         }
+
         $this->assertCallback($messagePayload, $callback);
 
         /**
@@ -183,7 +176,6 @@ trait Manager
     }
 
     /**
-     * @param OrderMessagePayload $messagePayload
      * @param $callback
      * @throws InvalidCallableException
      */
@@ -199,7 +191,6 @@ trait Manager
 
     /**
      * @param $queueName
-     * @return string
      * @throws ChannelNamingException
      */
     private function getChannelName($queueName): string
@@ -215,6 +206,7 @@ trait Manager
 
             return (string)$eventObj;
         }
+
         // if it is an instance, get channel full name
         if ($queueName instanceof OrderChannel) {
             return (string)$queueName;
@@ -227,10 +219,9 @@ trait Manager
     /**
      * Append new order to collection
      *
-     * @param string $orderId
      * @param callable $callback
      */
-    private function addOrderToDispatchedList(string $orderId, $callback)
+    private function addOrderToDispatchedList(string $orderId, $callback): void
     {
         $this->orders[$orderId] = Order::build(
             $orderId,
@@ -246,7 +237,7 @@ trait Manager
      * @throws AMQPConnectionException
      * @throws AMQPEnvelopeException
      */
-    public function run()
+    public function run(): void
     {
         $this->replyQueue->consume([$this, 'onReply']);
     }
@@ -254,14 +245,11 @@ trait Manager
     /**
      * On reply callback from worker
      *
-     * @param AMQPEnvelope $message
-     * @param AMQPQueue $q
-     * @return bool|void
      * @throws AMQPChannelException
      * @throws AMQPConnectionException
      * @throws MessagePayloadFormatException
      */
-    public function onReply(AMQPEnvelope $message, AMQPQueue $q)
+    public function onReply(AMQPEnvelope $message, AMQPQueue $q): ?bool
     {
         /**
          * Re-construct message payload from request body
@@ -272,7 +260,7 @@ trait Manager
          */
         $order = $this->getOrderFromDispatchedList($messagePayload->getOrderId());
         if (is_null($order)) {
-            return;
+            return null;
         }
 
         /**
@@ -307,29 +295,19 @@ trait Manager
         if ($this->isCompleted()) {
             return false;
         }
-    }
-
-    /**
-     * Get order from collection
-     *
-     * @param string $orderId
-     * @return Order|null
-     */
-    private function getOrderFromDispatchedList(string $orderId): ?Order
-    {
-        if (isset($this->orders[$orderId])) {
-            return $this->orders[$orderId];
-        }
-
         return null;
     }
 
     /**
+     * Get order from collection
+     */
+    private function getOrderFromDispatchedList(string $orderId): ?Order
+    {
+        return $this->orders[$orderId] ?? null;
+    }
+
+    /**
      * Update order status in collection
-     *
-     * @param Order $order
-     * @param string $status
-     * @return Order
      */
     private function updateOrderStatusInDispatchedList(Order $order, string $status): Order
     {
@@ -342,29 +320,20 @@ trait Manager
 
     /**
      * Helper function to execute handlers for event
-     *
-     * @param string $status
-     * @param MessagePayloadInterface $message
      */
-    private function executeEventHandler(string $status, MessagePayloadInterface $message)
+    private function executeEventHandler(string $status, MessagePayloadInterface $message): void
     {
         if (isset($this->eventHandlers[$status])) {
             $handler = $this->eventHandlers[$status];
-            switch ($status) {
-                case MessageHandlerInterface::TYPE_ERROR:
-                    $handler($message, Serializer::fromMessage($message));
-                    break;
-                default:
-                    $handler($message);
-                break;
-            }
+            match ($status) {
+                MessageHandlerInterface::TYPE_ERROR => $handler($message, Serializer::fromMessage($message)),
+                default => $handler($message),
+            };
         }
     }
 
     /**
      * Check if all orders have replied back
-     *
-     * @return bool
      */
     private function isCompleted(): bool
     {
@@ -373,22 +342,14 @@ trait Manager
 
     /**
      * Get collection of in progress orders
-     *
-     * @return array
      */
     public function getInProgressOrders(): array
     {
-        return array_filter($this->orders, function (Order $order) {
-            return in_array($order->getStatus(), [MessageHandlerInterface::TYPE_PROGRESS, MessageHandlerInterface::TYPE_STARTING]);
-        });
+        return array_filter($this->orders, fn(Order $order) => in_array($order->getStatus(), [MessageHandlerInterface::TYPE_PROGRESS, MessageHandlerInterface::TYPE_STARTING]));
     }
 
     /**
      * Bind handler to allowed event
-     *
-     * @param string $event
-     * @param Closure $handler
-     * @return self
      */
     public function bind(string $event, Closure $handler): self
     {
@@ -401,32 +362,22 @@ trait Manager
 
     /**
      * Get collection of successfully completed orders
-     *
-     * @return array
      */
     public function getSuccessfulOrders(): array
     {
-        return array_filter($this->orders, function (Order $order) {
-            return $order->getStatus() === MessageHandlerInterface::TYPE_SUCCESS;
-        });
+        return array_filter($this->orders, fn(Order $order) => $order->getStatus() === MessageHandlerInterface::TYPE_SUCCESS);
     }
 
     /**
      * Get collection of completed orders which have failed
-     *
-     * @return array
      */
     public function getFailedOrders(): array
     {
-        return array_filter($this->orders, function (Order $order) {
-            return $order->getStatus() === MessageHandlerInterface::TYPE_ERROR;
-        });
+        return array_filter($this->orders, fn(Order $order) => $order->getStatus() === MessageHandlerInterface::TYPE_ERROR);
     }
 
     /**
      * Get percentage progression of orders
-     *
-     * @return float
      */
     public function getPercentageProgression(): float
     {
@@ -437,29 +388,20 @@ trait Manager
 
     /**
      * Get collection of completed tasks
-     *
-     * @return array
      */
     public function getCompletedOrders(): array
     {
-        return array_filter($this->orders, function (Order $order) {
-            return $order->getStatus() === MessageHandlerInterface::TYPE_SUCCESS ||
-                $order->getStatus() === MessageHandlerInterface::TYPE_ERROR;
-        });
+        return array_filter($this->orders, fn(Order $order) => $order->getStatus() === MessageHandlerInterface::TYPE_SUCCESS ||
+            $order->getStatus() === MessageHandlerInterface::TYPE_ERROR);
     }
 
     /**
      * Get collection of dispatched orders
-     *
-     * @return array
      */
     public function getDispatchedOrders(): array
     {
         return $this->orders;
     }
 
-    /**
-     * @return string
-     */
     abstract protected function getExchangeName(): string;
 }

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Ipedis\Demo\Rabbit\Worker\Event;
 
 use Closure;
@@ -18,12 +20,10 @@ class Listener extends WorkerAbstract implements OnBeforeMessage, OnAfterMessage
 
     /**
      * Process messages coming from queue
-     *
-     * @return Closure
      */
     public function makeMessageHandler(): Closure
     {
-        return function (EventMessagePayload $messagePayload) {
+        return function (EventMessagePayload $messagePayload): void {
             printf("%s - %s \n\n", 'makeMessageHandler', $messagePayload->getChannel());
         };
     }
@@ -35,19 +35,17 @@ class Listener extends WorkerAbstract implements OnBeforeMessage, OnAfterMessage
 
     protected function onUpdatedPublication(): Closure
     {
-        return function (EventMessagePayload $messagePayload) {
+        return function (EventMessagePayload $messagePayload): void {
             printf("%s - %s \n\n", 'onUpdatedPublication specific handler with Closure', $messagePayload->getChannel());
         };
     }
 
     /**
      * Handle errors during processing of message
-     *
-     * @return Closure
      */
     public function makeExceptionHandler(): Closure
     {
-        return function (Exception $exception, ?EventMessagePayload $messagePayload) {
+        return function (Exception $exception, ?EventMessagePayload $messagePayload): void {
             printf($exception->getMessage()."\n\n");
         };
     }
@@ -58,7 +56,7 @@ class Listener extends WorkerAbstract implements OnBeforeMessage, OnAfterMessage
      * - Array of string
      * - RouteKeyResolverInterface
      */
-    public function getBindingKey()
+    public function getBindingKey(): array
     {
 
 //        return 'v1.preview.admin.publication.was-updated';
@@ -67,8 +65,6 @@ class Listener extends WorkerAbstract implements OnBeforeMessage, OnAfterMessage
 
     /**
      * Optional method to have more filtering on what it will be handle by MakeMessageHandler closure.
-     * @param string $eventName
-     * @return bool
      */
     protected function isSubscribed(string $eventName): bool
     {
@@ -89,21 +85,17 @@ class Listener extends WorkerAbstract implements OnBeforeMessage, OnAfterMessage
     /**
      * Hook to run before worker handles message
      */
-    public function beforeMessageHandled()
+    public function beforeMessageHandled(): void
     {
-        if (self::ENABLE_LIFE_CYCLE_PRINTING) {
-            printf("Worker lifecycle hook : before handling message..."."\n\n");
-        }
+        printf("Worker lifecycle hook : before handling message..."."\n\n");
     }
 
     /**
      * Hook to run after worker handles message
      */
-    public function afterMessageHandled()
+    public function afterMessageHandled(): void
     {
-        if (self::ENABLE_LIFE_CYCLE_PRINTING) {
-            printf("Worker lifecycle hook : after handling message..."."\n\n");
-        }
+        printf("Worker lifecycle hook : after handling message..."."\n\n");
     }
 
     public function getQueuePrefix(): string

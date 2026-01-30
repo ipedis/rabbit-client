@@ -8,9 +8,9 @@ use Ipedis\Rabbit\Event\EventListener;
  * can be a good source of inspiration
  * https://github.com/php-amqplib/RabbitMqBundle/blob/master/Tests/RabbitMq/ConsumerTest.php
  */
-it('Should call makeMessageHandler callback', function () {
+it('Should call makeMessageHandler callback', function (): void {
     $isCalled = false;
-    $makeMessageHandler = function ($payload) use (&$isCalled) {
+    $makeMessageHandler = function ($payload) use (&$isCalled): void {
         $isCalled = true;
     };
     // when method makeMessageHandler is call, we return $makeMessageHandler closure.
@@ -25,12 +25,12 @@ it('Should call makeMessageHandler callback', function () {
 });
 
 
-it('Should call makeErrorHandler callback when exception is throw', function () {
+it('Should call makeErrorHandler callback when exception is throw', function (): void {
     $isCalled = false;
-    $makeMessageHandler = function () {
+    $makeMessageHandler = function (): void {
         throw new LogicException('error');
     };
-    $makeExceptionHandler = function () use (&$isCalled) {
+    $makeExceptionHandler = function () use (&$isCalled): void {
         $isCalled = true;
     };
     // when method makeMessageHandler is call, we return $makeMessageHandler closure.
@@ -53,10 +53,8 @@ it('Should call makeErrorHandler callback when exception is throw', function () 
  * - SECTION  SETUP -
  * we Mock AMQPEnvelope, goal is to at least have getBody which return valid stringify json.
  */
-beforeEach(function () {
-    $this->envelopMock = $this->getMockBuilder(AMQPEnvelope::class)
-        ->disableOriginalConstructor()
-        ->getMock();
+beforeEach(function (): void {
+    $this->envelopMock = $this->createMock(AMQPEnvelope::class);
 
     $this->envelopMock->method('getBody')
         ->willReturn('{
@@ -68,9 +66,7 @@ beforeEach(function () {
     /**
      * we Mock AMQPQueue
      */
-    $this->queueMock = $this->getMockBuilder(AMQPQueue::class)
-        ->disableOriginalConstructor()
-        ->getMock();
+    $this->queueMock = $this->createMock(AMQPQueue::class);
 
     /**
      * we Mock trait EventListener

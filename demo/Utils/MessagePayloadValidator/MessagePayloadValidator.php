@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Ipedis\Demo\Rabbit\Utils\MessagePayloadValidator;
 
 use Ipedis\Rabbit\Exception\MessagePayload\MessagePayloadInvalidSchemaException;
@@ -11,10 +13,7 @@ class MessagePayloadValidator implements ValidatorInterface
 {
     public const CHANNEL_NAME_SEPARATOR = '.';
 
-    /**
-     * @var Validator
-     */
-    private Validator $validator;
+    private readonly Validator $validator;
 
     public function __construct()
     {
@@ -22,11 +21,9 @@ class MessagePayloadValidator implements ValidatorInterface
     }
 
     /**
-     * @param MessagePayloadInterface $messagePayload
-     * @return mixed|void
      * @throws MessagePayloadInvalidSchemaException
      */
-    public function validate(MessagePayloadInterface $messagePayload)
+    public function validate(MessagePayloadInterface $messagePayload): void
     {
         /**
          * Load schema
@@ -47,8 +44,6 @@ class MessagePayloadValidator implements ValidatorInterface
     }
 
     /**
-     * @param MessagePayloadInterface $messagePayload
-     * @return string
      * @throws MessagePayloadInvalidSchemaException
      */
     private function getSchemaPath(MessagePayloadInterface $messagePayload): string

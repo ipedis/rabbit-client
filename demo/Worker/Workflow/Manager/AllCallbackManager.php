@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Ipedis\Demo\Rabbit\Worker\Workflow\Manager;
 
 use Closure;
@@ -21,7 +23,7 @@ class AllCallbackManager extends ManagerAbstract
      * @throws InvalidGroupArgumentException
      * @throws InvalidWorkflowArgumentException
      */
-    public function main()
+    public function main(): void
     {
         $workflow = (
             new Workflow($this->craftFirstStep()))
@@ -37,19 +39,16 @@ class AllCallbackManager extends ManagerAbstract
         print_r(sprintf("Summary : %s", json_encode($workflow->getProgressBag()->getWorkflowProgress(), JSON_PRETTY_PRINT)));
     }
 
-    /**
-     * @return Closure
-     */
     private function craftFirstStep(): Closure
     {
-        return function (Group $group) {
+        return function (Group $group): void {
             $group
                 ->planifyOrder(
-                    OrderMessagePayload::build(OrderChannel::fromString('v1.admin.publication.failure')),
+                    OrderMessagePayload::build((string)OrderChannel::fromString('v1.admin.publication.failure')),
                     $this->getTaskEvents('1.1')
                 )
                 ->planifyOrder(
-                    OrderMessagePayload::build(OrderChannel::fromString('v1.admin.publication.failure')),
+                    OrderMessagePayload::build((string)OrderChannel::fromString('v1.admin.publication.failure')),
                     $this->getTaskEvents('1.2')
                 );
             /**
@@ -66,16 +65,15 @@ class AllCallbackManager extends ManagerAbstract
      *  - your tailor made Group::class.
      *  - your tailor made Task::class.
      *  - combine bulk of task on construct and planify or planifyOrder helper method.
-     * @return Closure
      */
     private function craftSecondStep(): Closure
     {
-        return function (Group $group) {
+        return function (Group $group): \Ipedis\Rabbit\Workflow\Group {
             /**
              * You can create your own task from scratch, bind manually your callback.
              * It is useful for conditional and programmatic creation.
              */
-            $task1 = (Task::build(OrderMessagePayload::build(OrderChannel::fromString('v1.admin.publication.waiter'))));
+            $task1 = (Task::build(OrderMessagePayload::build((string)OrderChannel::fromString('v1.admin.publication.waiter'))));
             foreach ($this->getTaskEvents('2.1') as $eventType => $closure) {
                 $task1->bind($eventType, $closure);
             }
@@ -89,17 +87,16 @@ class AllCallbackManager extends ManagerAbstract
                 ],
                 $this->getGroupEvents('2')
             ));
-
             /**
              * you can easilly bind, and planify some task base on your own logic.
              */
-            if (true) {
-                $task2 = (Task::build(OrderMessagePayload::build(OrderChannel::fromString('v1.admin.publication.success'))));
-                foreach ($this->getTaskEvents('2.2') as $eventType => $closure) {
-                    $task2->bind($eventType, $closure);
-                }
-                $craftedGroup->planify($task2);
+            $task2 = (Task::build(OrderMessagePayload::build((string)OrderChannel::fromString('v1.admin.publication.success'))));
+            foreach ($this->getTaskEvents('2.2') as $eventType => $closure) {
+                $task2->bind($eventType, $closure);
             }
+
+            $craftedGroup->planify($task2);
+
             /**
              * if you return specific group, it will replace what you have received as params of current Closure.
              */
@@ -107,51 +104,47 @@ class AllCallbackManager extends ManagerAbstract
         };
     }
 
-    /**
-     * @param Workflow $workflow
-     * @return Workflow
-     */
     protected function bindWorkflowEvents(Workflow $workflow): Workflow
     {
         $workflow
             /**
              * Once on workflow. you will receive as parameter the event name.
              */
-            ->bind(BindableEventInterface::WORKFLOW_ON_START, function (string $eventName) {
+            ->bind(BindableEventInterface::WORKFLOW_ON_START, function (string $eventName): void {
                 $this->print("WORKFLOW START \n");
             })
-            ->bind(BindableEventInterface::WORKFLOW_ON_FINISH, function (string $eventName) {
+            ->bind(BindableEventInterface::WORKFLOW_ON_FINISH, function (string $eventName): void {
                 $this->print("WORKFLOW FINISH \n");
             })
-            ->bind(BindableEventInterface::WORKFLOW_ON_FAILURE, function (string $eventName) use ($workflow) {
+            ->bind(BindableEventInterface::WORKFLOW_ON_FAILURE, function (string $eventName) use ($workflow): void {
                 $this->print("WORKFLOW FAILURE \n");
                 foreach ($workflow->getErrors() as $taskId => $error) {
                     $task = $workflow->find($taskId);
                     $this->print(sprintf("-- %s was failed with message - %s \n", $task->getType(), $error->getMessage()));
                 }
             })
-            ->bind(BindableEventInterface::WORKFLOW_ON_SUCCESS, function (string $eventName) {
+            ->bind(BindableEventInterface::WORKFLOW_ON_SUCCESS, function (string $eventName): void {
                 $this->print("WORKFLOW SUCCESS \n");
             })
             /**
              * On each groups failure or success. you will receive as parameter the actual group and event name.
              */
-            ->bind(BindableEventInterface::WORKFLOW_ON_GROUPS_SUCCESS, function (Group $group, string $eventName) {
+            ->bind(BindableEventInterface::WORKFLOW_ON_GROUPS_SUCCESS, function (Group $group, string $eventName): void {
                 $this->print("WORKFLOW GROUPS SUCCESS \n");
             })
-            ->bind(BindableEventInterface::WORKFLOW_ON_GROUPS_FAILURE, function (Group $group, string $eventName) {
+            ->bind(BindableEventInterface::WORKFLOW_ON_GROUPS_FAILURE, function (Group $group, string $eventName): void {
                 $this->print("WORKFLOW GROUPS FAILURE \n");
             })
             /**
              * On each tasks failure or success. you will receive as parameter the actual task and the eventName.
              */
-            ->bind(BindableEventInterface::WORKFLOW_ON_TASKS_FAILURE, function (Task $task, string $eventName) {
+            ->bind(BindableEventInterface::WORKFLOW_ON_TASKS_FAILURE, function (Task $task, string $eventName): void {
                 $this->print("WORKFLOW TASKS FAILURE \n");
             })
-            ->bind(BindableEventInterface::WORKFLOW_ON_TASKS_SUCCESS, function (Task $task, string $eventName) {
+            ->bind(BindableEventInterface::WORKFLOW_ON_TASKS_SUCCESS, function (Task $task, string $eventName): void {
                 $this->print("WORKFLOW TASKS SUCCESS \n");
             })
-            ->bind(BindableEventInterface::WORKFLOW_ON_TASKS_FINISH, function (Task $task, string $eventName) {
+            ->bind(BindableEventInterface::WORKFLOW_ON_TASKS_FINISH, function (Task $task, string $eventName): void {
                 $this->print("WORKFLOW TASKS FINISH \n");
             });
 
@@ -163,79 +156,66 @@ class AllCallbackManager extends ManagerAbstract
         return 'demo.workflow';
     }
 
-    /**
-     * @param string $id
-     * @return array
-     */
     private function getGroupEvents(string $id): array
     {
         return [
             /**
              * once, on group layer, you will receive as parameter the actual group and event name.
              */
-            BindableEventInterface::GROUP_ON_START => function (Group $group, string $eventName) use ($id) {
-                $this->print("-- GROUP $id START \n");
+            BindableEventInterface::GROUP_ON_START => function (Group $group, string $eventName) use ($id): void {
+                $this->print("-- GROUP {$id} START \n");
             },
-            BindableEventInterface::GROUP_ON_FAILURE => function (Group $group, string $eventName) use ($id) {
-                $this->print("-- GROUP $id FAILURE \n");
+            BindableEventInterface::GROUP_ON_FAILURE => function (Group $group, string $eventName) use ($id): void {
+                $this->print("-- GROUP {$id} FAILURE \n");
                 foreach ($group->getErrors() as $taskId => $error) {
                     $task = $group->find($taskId);
                     $this->print(sprintf("---- %s was failed with message - %s \n", $task->getType(), $error->getMessage()));
                 }
             },
-            BindableEventInterface::GROUP_ON_SUCCESS => function (Group $group, string $eventName) use ($id) {
-                $this->print("-- GROUP $id SUCCESS \n");
+            BindableEventInterface::GROUP_ON_SUCCESS => function (Group $group, string $eventName) use ($id): void {
+                $this->print("-- GROUP {$id} SUCCESS \n");
             },
-            BindableEventInterface::GROUP_ON_FINISH => function (Group $group, string $eventName) use ($id) {
-                $this->print("-- GROUP $id FINISH \n");
+            BindableEventInterface::GROUP_ON_FINISH => function (Group $group, string $eventName) use ($id): void {
+                $this->print("-- GROUP {$id} FINISH \n");
             },
             /**
              * On each tasks failure or success, you will receive as parameter the actual task and the eventName.
              */
-            BindableEventInterface::GROUP_ON_TASKS_SUCCESS => function (Task $task, string $eventName) use ($id) {
-                $this->print("-- GROUP TASKS $id SUCCESS \n");
+            BindableEventInterface::GROUP_ON_TASKS_SUCCESS => function (Task $task, string $eventName) use ($id): void {
+                $this->print("-- GROUP TASKS {$id} SUCCESS \n");
             },
-            BindableEventInterface::GROUP_ON_TASKS_FAILURE => function (Task $task, string $eventName, Error $error) use ($id) {
-                $this->print("-- GROUP TASKS $id FAILURE \n");
+            BindableEventInterface::GROUP_ON_TASKS_FAILURE => function (Task $task, string $eventName, Error $error) use ($id): void {
+                $this->print("-- GROUP TASKS {$id} FAILURE \n");
             },
         ];
     }
 
-    /**
-     * @param string $id
-     * @return array
-     */
     private function getTaskEvents(string $id): array
     {
         /**
          * On task layer, you will receive as parameter the actual task and the eventName.
          */
         return [
-            BindableEventInterface::TASK_ON_START => function (Task $task, string $eventName) use ($id) {
-                $this->print("---- TASK $id START \n");
+            BindableEventInterface::TASK_ON_START => function (Task $task, string $eventName) use ($id): void {
+                $this->print("---- TASK {$id} START \n");
             },
-            BindableEventInterface::TASK_ON_PROGRESS => function (Task $task, string $eventName) use ($id) {
-                $this->print("---- TASK $id PROGRESS \n");
+            BindableEventInterface::TASK_ON_PROGRESS => function (Task $task, string $eventName) use ($id): void {
+                $this->print("---- TASK {$id} PROGRESS \n");
             },
-            BindableEventInterface::TASK_ON_FAILURE => function (Task $task, string $eventName, Error $error) use ($id) {
-                $this->print("---- TASK $id FAILURE \n");
+            BindableEventInterface::TASK_ON_FAILURE => function (Task $task, string $eventName, Error $error) use ($id): void {
+                $this->print("---- TASK {$id} FAILURE \n");
             },
-            BindableEventInterface::TASK_ON_SUCCESS => function (Task $task, string $eventName) use ($id) {
-                $this->print("---- TASK $id SUCCESS \n");
+            BindableEventInterface::TASK_ON_SUCCESS => function (Task $task, string $eventName) use ($id): void {
+                $this->print("---- TASK {$id} SUCCESS \n");
             },
-            BindableEventInterface::TASK_ON_FINISH => function (Task $task, string $eventName) use ($id) {
-                $this->print("---- TASK $id FINISH \n");
+            BindableEventInterface::TASK_ON_FINISH => function (Task $task, string $eventName) use ($id): void {
+                $this->print("---- TASK {$id} FINISH \n");
             },
         ];
     }
 
-    /**
-     * @param string $message
-     */
-    private function print(string $message)
+    private function print(string $message): void
     {
-        if (self::ENABLE_GLOBAL_PRINTING) {
-            print_r($message);
-        }
+        print_r($message);
     }
 }

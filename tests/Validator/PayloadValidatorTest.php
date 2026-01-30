@@ -17,7 +17,7 @@ $schema = '{
 }';
 
 
-it('should detect valid payload structure string payload with string schema', function (string $schema, string $payload) {
+it('should detect valid payload structure string payload with string schema', function (string $schema, string $payload): void {
     expect((new PayloadValidator())->validate($payload, $schema))->toBeTrue();
 })->with([
     [$schema, '{ "hasToFail": true, "name": "foo" }'],
@@ -25,7 +25,7 @@ it('should detect valid payload structure string payload with string schema', fu
     [$schema, '{ "name": "foo", "hasToFail": true }'],
 ]);
 
-it('should detect invalid payload structure string payload with string schema', function (string $schema, string $payload) {
+it('should detect invalid payload structure string payload with string schema', function (string $schema, string $payload): void {
     expect((new PayloadValidator())->validate($payload, $schema))->toBeFalse();
 })->with([
     [$schema, '{ "hasToFail": -1, "name": "foo" }'],
@@ -34,9 +34,10 @@ it('should detect invalid payload structure string payload with string schema', 
     [$schema, '{"name": "foo","extra": "ff", "hasToFail": true }'],
 ]);
 
-it('should detect return readable message when error is detected', function (string $schema, string $payload, string $message) {
+it('should detect return readable message when error is detected', function (string $schema, string $payload, string $message): void {
     $validatior = new PayloadValidator();
     $validatior->validate($payload, $schema);
+
     $error = $validatior->getErrorAsString();
     expect($error)->toContain($message);
 })->with([

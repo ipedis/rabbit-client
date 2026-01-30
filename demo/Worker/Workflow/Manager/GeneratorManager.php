@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Ipedis\Demo\Rabbit\Worker\Workflow\Manager;
 
 use Closure;
@@ -15,14 +17,14 @@ class GeneratorManager extends ManagerAbstract
 {
     public const COUNT_PAGE = 10;
 
-    public function main()
+    public function main(): void
     {
         $generation = (new Workflow($this->craftFirstGroup()))
             ->then($this->craftSecondGroup())
             ->then($this->crafThirdGroup())
         ;
 
-        $generation->bind(BindableEventInterface::WORKFLOW_ON_TASKS_FINISH, function () use ($generation) {
+        $generation->bind(BindableEventInterface::WORKFLOW_ON_TASKS_FINISH, function () use ($generation): void {
             printf(
                 "Generation PoC: Each table is one tick of generation - %.2f%% done\n----\n\n",
                 $generation->getProgressPercentage()
@@ -42,12 +44,13 @@ class GeneratorManager extends ManagerAbstract
                     $pourcentageDone
                 );
             }
+
             printf("\n\n");
         });
 
-        $generation->bind(BindableEventInterface::WORKFLOW_ON_FINISH, function () use ($generation) {
+        $generation->bind(BindableEventInterface::WORKFLOW_ON_FINISH, function () use ($generation): void {
             print_r(sprintf("Summary : %s", json_encode($generation->getProgressBag()->getWorkflowProgress(), JSON_PRETTY_PRINT)));
-        })->bind(BindableEventInterface::WORKFLOW_ON_GROUPS_FINISH, function () use ($generation) {
+        })->bind(BindableEventInterface::WORKFLOW_ON_GROUPS_FINISH, function () use ($generation): void {
             print_r(sprintf("Summary : %s", json_encode($generation->getProgressBag()->getWorkflowProgress()->getGroupProgressSummary(), JSON_PRETTY_PRINT)));
         })
         ;
@@ -62,11 +65,10 @@ class GeneratorManager extends ManagerAbstract
 
     /**
      * In concurrency we can have html and image
-     * @return Closure
      */
     private function craftFirstGroup(): Closure
     {
-        return function (Group $group) {
+        return function (Group $group): void {
             $group->planifyOrder(
                 OrderMessagePayload::build(
                     'v1.admin.publication.generate-html',
@@ -89,8 +91,8 @@ class GeneratorManager extends ManagerAbstract
 
     private function craftSecondGroup(): Closure
     {
-        return function (Group $group) {
-            for ($page = 1; $page <= self::COUNT_PAGE; $page++) {
+        return function (Group $group): void {
+            for ($page = 1; $page <= self::COUNT_PAGE; ++$page) {
                 $group->planifyOrder(
                     OrderMessagePayload::build(
                         'v1.admin.publication.generate-image-page',
@@ -106,7 +108,7 @@ class GeneratorManager extends ManagerAbstract
 
     private function crafThirdGroup(): Closure
     {
-        return function (Group $group) {
+        return function (Group $group): void {
             foreach ([1, self::COUNT_PAGE] as $page) {
                 $group->planifyOrder(
                     OrderMessagePayload::build(

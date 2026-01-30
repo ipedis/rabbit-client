@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Ipedis\Rabbit;
 
 use AMQPChannel;
@@ -14,17 +16,18 @@ trait Connector
     /**
      * @var AMQPConnection $connection
      */
-    protected $connection = null;
+    protected $connection;
 
     /**
      * @var AMQPChannel $channel
      */
-    protected $channel = null;
+    protected $channel;
 
     /**
      * @var AMQPExchange $exchange
      */
-    protected $exchange = null;
+    protected $exchange;
+
     /**
      * @var AMQPQueue[] Cached queue declaration indexed by queue name
      */
@@ -38,6 +41,7 @@ trait Connector
         if (!empty($this->channel) && $this->channel instanceof AMQPChannel) {
             $this->channel->close();
         }
+
         if (!empty($this->connection) && $this->connection instanceof AMQPConnection) {
             $this->connection->disconnect();
         }
@@ -48,7 +52,6 @@ trait Connector
      *
      * @param $message
      * @param $channel
-     * @param array $messageProperties
      * @param bool $persistQueue
      * @throws RabbitClientPublishException
      */
@@ -59,17 +62,14 @@ trait Connector
             if ($persistQueue) {
                 $this->declareQueueBindingIfNecessary($routingKey);
             }
+
             $this->exchange->publish($message, $routingKey, AMQP_NOPARAM, $messageProperties);
         } catch (\Exception $exception) {
             throw new RabbitClientPublishException(sprintf('IPEDIS RABBIT CLIENT - Publishing message on exchange failed with error { %s }', $exception->getMessage()));
         }
     }
 
-    /**
-     * @param string $routingKey
-     * @return string
-     */
-    protected function getRoutingKeyWithPrefix(string $routingKey)
+    protected function getRoutingKeyWithPrefix(string $routingKey): string
     {
         if (empty($this->getQueuePrefix())) {
             return $routingKey;
@@ -81,7 +81,6 @@ trait Connector
     /**
      * Optional prefix to attach to queue name.
      * In case system has multiple environments using same rabbitmq server.
-     * @return string
      */
     public function getQueuePrefix(): string
     {
@@ -93,14 +92,15 @@ trait Connector
         if ($this->exchange === null) {
             $this->connect();
         }
+
         if (!empty($this->declaredQueues[$queueName])) {
-            $queue = new AMQPQueue(new AMQPChannel($this->connection));
-            $queue->setFlags(AMQP_DURABLE);
-            $queue->setName($queueName);
-            $queue->declareQueue();
-            $queue->bind($this->getExchangeName(), $queueName);
+            $amqpQueue = new AMQPQueue(new AMQPChannel($this->connection));
+            $amqpQueue->setFlags(AMQP_DURABLE);
+            $amqpQueue->setName($queueName);
+            $amqpQueue->declareQueue();
+            $amqpQueue->bind($this->getExchangeName(), $queueName);
             // wW index queue declaration to easily find it back. also we keep reference of the object to be sure than queue are not destroyed
-            $this->declaredQueues[$queueName] = $queue;
+            $this->declaredQueues[$queueName] = $amqpQueue;
         }
     }
 
@@ -134,16 +134,16 @@ trait Connector
      */
     private function getAMQPConnection(): AMQPConnection
     {
-        $connection = new AMQPConnection([
+        $amqpConnection = new AMQPConnection([
             'host' => $this->getHost(),
             'port' => $this->getPort(),
             'login' => $this->getUser(),
             'password' => $this->getPassword()
         ]);
 
-        $connection->connect();
+        $amqpConnection->connect();
 
-        return $connection;
+        return $amqpConnection;
     }
 
     abstract public function getHost(): string;
@@ -159,7 +159,7 @@ trait Connector
      *
      * @throws \AMQPConnectionException
      */
-    private function setChannel()
+    private function setChannel(): void
     {
         $this->channel = new AMQPChannel($this->connection);
         $this->channel->setPrefetchCount(1);
@@ -173,7 +173,7 @@ trait Connector
      * @throws \AMQPConnectionException
      * @throws \AMQPExchangeException
      */
-    private function setExchange()
+    private function setExchange(): void
     {
         $this->exchange = new AMQPExchange($this->channel);
         $this->exchange->setType($this->getExchangeType());

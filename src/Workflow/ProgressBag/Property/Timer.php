@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Ipedis\Rabbit\Workflow\ProgressBag\Property;
 
 use DateTime;
@@ -8,18 +10,11 @@ use Ipedis\Rabbit\Exception\Timer\InvalidTimeException;
 
 class Timer implements \JsonSerializable
 {
-    /**
-     * @var float
-     */
-    private float $spent;
-    /**
-     * @var DateTime|null
-     */
-    private ?DateTime $startedAt;
-    /**
-     * @var DateTime|null
-     */
-    private ?DateTime $finishedAt;
+    private readonly float $spent;
+
+    private readonly ?DateTime $startedAt;
+
+    private readonly ?DateTime $finishedAt;
 
     /**
      * Timer constructor.
@@ -38,13 +33,10 @@ class Timer implements \JsonSerializable
     }
 
     /**
-     * @param float $spent
-     * @param DateTime|null $startedAt
-     * @param DateTime|null $finishedAt
      * @throws InvalidSpentTimeException
      * @throws InvalidTimeException
      */
-    private function validateInputs(float $spent, ?DateTime $startedAt = null, ?DateTime $finishedAt = null)
+    private function validateInputs(float $spent, ?DateTime $startedAt = null, ?DateTime $finishedAt = null): void
     {
         // validate duration
         $this->assertSpentTime($spent);
@@ -54,27 +46,22 @@ class Timer implements \JsonSerializable
     }
 
     /**
-     * @param float $spent
      * @throws InvalidSpentTimeException
      */
-    private function assertSpentTime(float $spent)
+    private function assertSpentTime(float $spent): void
     {
         if ($spent < 0) {
-            throw new InvalidSpentTimeException("{$spent} is not a valid value for duration.");
+            throw new InvalidSpentTimeException($spent . ' is not a valid value for duration.');
         }
     }
 
     /**
-     * @param DateTime|null $startedAt
-     * @param DateTime|null $finishedAt
      * @throws InvalidTimeException
      */
-    private function assertTime(?DateTime $startedAt = null, ?DateTime $finishedAt = null)
+    private function assertTime(?DateTime $startedAt = null, ?DateTime $finishedAt = null): void
     {
-        if ($startedAt !== null && $finishedAt !== null) {
-            if ($startedAt->getTimestamp() > $finishedAt->getTimestamp()) {
-                throw new InvalidTimeException('Start time is greater than end time. Unless you have "time stone" with you, its not possible.');
-            }
+        if ($startedAt instanceof \DateTime && $finishedAt instanceof \DateTime && $startedAt->getTimestamp() > $finishedAt->getTimestamp()) {
+            throw new InvalidTimeException('Start time is greater than end time. Unless you have "time stone" with you, its not possible.');
         }
     }
 
@@ -82,7 +69,6 @@ class Timer implements \JsonSerializable
      * @param float $spent - Duration in milliseconds
      * @param DateTime|null $startedAt - Timestamp for start time with microseconds
      * @param DateTime|null $finishedAt - Timestamp for end time with microseconds
-     * @return Timer
      * @throws InvalidSpentTimeException
      * @throws InvalidTimeException
      */
@@ -91,38 +77,26 @@ class Timer implements \JsonSerializable
         return new self($spent, $startedAt, $finishedAt);
     }
 
-    /**
-     * @return array
-     */
     public function jsonSerialize(): array
     {
         return [
             'spent' => $this->getSpent(),
             'spentTime' => sprintf('%s ms', $this->getSpent() * 1000),
-            'startedAt' => (null !== $this->getStartedAt()) ? $this->getStartedAt()->format('U.u') : null,
-            'finishedAt' => (null !== $this->getFinishedAt()) ? $this->getFinishedAt()->format('U.u') : null
+            'startedAt' => ($this->getStartedAt() instanceof \DateTime) ? $this->getStartedAt()->format('U.u') : null,
+            'finishedAt' => ($this->getFinishedAt() instanceof \DateTime) ? $this->getFinishedAt()->format('U.u') : null
         ];
     }
 
-    /**
-     * @return float
-     */
     public function getSpent(): float
     {
         return $this->spent;
     }
 
-    /**
-     * @return DateTime|null
-     */
     public function getStartedAt(): ?DateTime
     {
         return $this->startedAt;
     }
 
-    /**
-     * @return DateTime|null
-     */
     public function getFinishedAt(): ?DateTime
     {
         return $this->finishedAt;

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Ipedis\Demo\Rabbit\Worker\Order;
 
 use Ipedis\Demo\Rabbit\Utils\ConnectorAbstract;
@@ -21,25 +23,7 @@ class Manager extends ConnectorAbstract
     public const IS_VERBOSE = true;
 
     /**
-     * @var ChannelFactory $channelFactory
-     */
-    private ChannelFactory $channelFactory;
-
-    /**
-     * @var ValidatorInterface
-     */
-    private ValidatorInterface $messagePayloadValidator;
-
-    /**
      * Manager constructor.
-     * @param string $host
-     * @param int $port
-     * @param string $user
-     * @param string $password
-     * @param string $exchange
-     * @param string $type
-     * @param ChannelFactory $channelFactory
-     * @param ValidatorInterface $messagePayloadValidator
      * @throws RabbitClientConnectException
      */
     public function __construct(
@@ -49,13 +33,10 @@ class Manager extends ConnectorAbstract
         string $password,
         string $exchange,
         string $type,
-        ChannelFactory $channelFactory,
-        ValidatorInterface $messagePayloadValidator
+        private ChannelFactory $channelFactory,
+        private ValidatorInterface $messagePayloadValidator
     ) {
         parent::__construct($host, $port, $user, $password, $exchange, $type);
-
-        $this->channelFactory = $channelFactory;
-        $this->messagePayloadValidator = $messagePayloadValidator;
         $this->connect();
 
         /**
@@ -69,68 +50,56 @@ class Manager extends ConnectorAbstract
         $this->disconnect();
     }
 
-    public function main()
+    public function main(): void
     {
         /**
          * Example of binding a handler to an event
          */
-        $messageHandler = new ManagerHandler(10);
+        $managerHandler = new ManagerHandler(10);
 
         /**
          * We publish N Tasks on queue "Worker" who should be consume by this Worker.
          * We give also Anonymous callback Queue to have feedback from worker.
          */
-        for ($i = 0; $i < $messageHandler->getNumberTask(); $i++) {
+        for ($i = 0; $i < $managerHandler->getNumberTask(); ++$i) {
 
             /**
              * Create Order payload
              */
-            $orderMessagePayload = OrderMessagePayload::build(OrderChannel::fromString('v1.admin.publication.generate'), [
+            $orderMessagePayload = OrderMessagePayload::build((string)OrderChannel::fromString('v1.admin.publication.generate'), [
                 "hasToFail" => $i % 2 === 0, // Simulate failure on each pair message.
-                "name"      => "task {$i}"
+                "name"      => 'task ' . $i
             ]);
 
             $this->publish($orderMessagePayload)
-                ->bind(MessageHandlerInterface::TYPE_ERROR, function (ReplyMessagePayload $message, Error $error) {
+                ->bind(MessageHandlerInterface::TYPE_ERROR, function (ReplyMessagePayload $message, Error $error): void {
 //                    var_dump($error);
                 })
             ;
 
-            if (self::IS_VERBOSE) {
-                $this->bind(MessageHandlerInterface::TYPE_PROGRESS, function (ReplyMessagePayload $message) {
-                    // pro tips: if you want to find only the reply, you can use $message->getReply().
-                    printf("[[ ----------- PROGRESSION PERCENTAGE %s%% COMPLETED ---------- ]]\n", (string) $this->getPercentageProgression());
-                });
-            }
+            $this->bind(MessageHandlerInterface::TYPE_PROGRESS, function (ReplyMessagePayload $message): void {
+                // pro tips: if you want to find only the reply, you can use $message->getReply().
+                printf("[[ ----------- PROGRESSION PERCENTAGE %s%% COMPLETED ---------- ]]\n", (string) $this->getPercentageProgression());
+            });
         }
 
-        if (self::IS_VERBOSE) {
-            printf("%s messages are published on queue\n\n", count($this->getDispatchedOrders()));
-        }
+        printf("%s messages are published on queue\n\n", count($this->getDispatchedOrders()));
 
         $this->run();
 
-        if (self::IS_VERBOSE) {
-            printf(
-                "All orders(%s in total) executed with %s orders as success and %s orders as error :). \n",
-                count($this->getCompletedOrders()),
-                count($this->getSuccessfulOrders()),
-                count($this->getFailedOrders())
-            );
-        }
+        printf(
+            "All orders(%s in total) executed with %s orders as success and %s orders as error :). \n",
+            count($this->getCompletedOrders()),
+            count($this->getSuccessfulOrders()),
+            count($this->getFailedOrders())
+        );
     }
 
-    /**
-     * @return ChannelFactory
-     */
     protected function getChannelFactory(): ChannelFactory
     {
         return $this->channelFactory;
     }
 
-    /**
-     * @return ValidatorInterface
-     */
     protected function getMessagePayloadValidator(): ValidatorInterface
     {
         return $this->messagePayloadValidator;

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Ipedis\Demo\Rabbit\Worker\Workflow\Manager;
 
 use Closure;
@@ -13,7 +15,7 @@ use Ipedis\Rabbit\Workflow\Workflow;
 
 class ConcurrencyManager extends ManagerAbstract
 {
-    public function main()
+    public function main(): void
     {
         $workflowConfig = new WorkflowConfig(
             false,
@@ -25,16 +27,16 @@ class ConcurrencyManager extends ManagerAbstract
             ]
         );
 
-        $generation = (new Workflow($this->craftFirstGroup(), [], $workflowConfig));
+        $workflow = (new Workflow($this->craftFirstGroup(), [], $workflowConfig));
 
-        $generation->bind(BindableEventInterface::WORKFLOW_ON_TASKS_FINISH, function () use ($generation) {
+        $workflow->bind(BindableEventInterface::WORKFLOW_ON_TASKS_FINISH, function () use ($workflow): void {
             printf(
                 "Generation PoC: Each table is one tick of generation - %.2f%% done\n----\n\n",
-                $generation->getProgressPercentage()
+                $workflow->getProgressPercentage()
             );
 
             printf("| name | status | pourcentage of done |\n|---|---|---|\n");
-            $types = $generation->getProgressBag()->getWorkflowProgress()->getGroupedTasksSummary()->getGroupedTasksCollection();
+            $types = $workflow->getProgressBag()->getWorkflowProgress()->getGroupedTasksSummary()->getGroupedTasksCollection();
             /**
              * @var GroupedTasksProgress $type
              */
@@ -47,19 +49,17 @@ class ConcurrencyManager extends ManagerAbstract
                     $pourcentageDone
                 );
             }
+
             printf("\n\n");
         });
 
-        $this->run($generation);
+        $this->run($workflow);
     }
 
-    /**
-     * @return Closure
-     */
     private function craftFirstGroup(): Closure
     {
-        return function (Group $group) {
-            for ($i=0;$i<10;$i++) {
+        return function (Group $group): void {
+            for ($i=0;$i<10;++$i) {
                 $group->planifyOrder(
                     OrderMessagePayload::build(
                         'v1.admin.publication.generate-html',

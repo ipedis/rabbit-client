@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Ipedis\Demo\Rabbit\Worker\Order;
 
 use AMQPEnvelope;
@@ -18,14 +20,14 @@ class Worker extends WorkerAbstract implements OnBeforeMessage, OnAfterMessage
 
     public const ENABLE_LIFE_CYCLE_PRINTING = true;
 
-    protected function getQueueName()
+    protected function getQueueName(): string
     {
         return 'v1.admin.publication.generate';
     }
 
     protected function makeMessageHandler(): Closure
     {
-        return function (AMQPEnvelope $message, OrderMessagePayload $messagePayload) {
+        return function (AMQPEnvelope $message, OrderMessagePayload $messagePayload): array {
             $params = $messagePayload->getData();
             $this->context->add('some', 'information');
             /**
@@ -50,7 +52,7 @@ class Worker extends WorkerAbstract implements OnBeforeMessage, OnAfterMessage
              *
              * If everything is ok, reply to manager.
              */
-            sleep(rand(0, 3));
+            sleep(random_int(0, 3));
             printf(
                 "Worker Name : %s (id : %s) as done task with id %s - Fail ? %s \n",
                 self::class,
@@ -69,12 +71,10 @@ class Worker extends WorkerAbstract implements OnBeforeMessage, OnAfterMessage
 
     /**
      * Handle errors during processing of message
-     *
-     * @return Closure
      */
     protected function makeExceptionHandler(): Closure
     {
-        return function (\Exception $exception, ?OrderMessagePayload $messagePayload) {
+        return function (\Exception $exception, ?OrderMessagePayload $messagePayload): array {
             printf($exception->getMessage()."\n\n");
             // we can return extra context for better manager context handling.
             // you can also return a Context object if you prefer.
@@ -85,21 +85,17 @@ class Worker extends WorkerAbstract implements OnBeforeMessage, OnAfterMessage
     /**
      * Hook to call before worker handle message
      */
-    public function beforeMessageHandled()
+    public function beforeMessageHandled(): void
     {
-        if (self::ENABLE_LIFE_CYCLE_PRINTING) {
-            printf("Worker lifecycle hook : before handling message..."."\n\n");
-        }
+        printf("Worker lifecycle hook : before handling message..."."\n\n");
     }
 
     /**
      * Hook to call after worker handle message
      */
-    public function afterMessageHandled()
+    public function afterMessageHandled(): void
     {
-        if (self::ENABLE_LIFE_CYCLE_PRINTING) {
-            printf("Worker lifecycle hook : after handling message..."."\n\n");
-        }
+        printf("Worker lifecycle hook : after handling message..."."\n\n");
     }
 
     public function getQueuePrefix(): string

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Ipedis\Rabbit\Workflow\ProgressBag\Model;
 
 use Ipedis\Rabbit\Validator\UuidValidator;
@@ -8,52 +10,26 @@ use Ipedis\Rabbit\Workflow\ProgressBag\Summary;
 
 class GroupedTasksProgress implements \JsonSerializable
 {
-    /**
-     * @var string
-     */
-    private string $type;
-    /**
-     * @var Status
-     */
-    private Status $status;
-    /**
-     * @var Summary
-     */
-    private Summary $summary;
-    /**
-     * @var array
-     */
-    private array $taskUuids;
+    private readonly array $taskUuids;
 
-    private function __construct(string $type, Status $status, Summary $summary, array $taskUuids)
+    private function __construct(private readonly string $type, private readonly Status $status, private readonly Summary $summary, array $taskUuids)
     {
         $this->validateInputs($taskUuids);
-        $this->type = $type;
-        $this->status = $status;
-        $this->summary = $summary;
         $this->taskUuids = $taskUuids;
     }
 
     /**
-     * @param array $taskUuids
      * @throws \Ipedis\Rabbit\Exception\InvalidUuidException
      */
-    private function validateInputs(array $taskUuids)
+    private function validateInputs(array $taskUuids): void
     {
-        $validator = new UuidValidator();
+        $uuidValidator = new UuidValidator();
 
         foreach ($taskUuids as $taskUuid) {
-            $validator->validate($taskUuid);
+            $uuidValidator->validate($taskUuid);
         }
     }
 
-    /**
-     * @param string $type
-     * @param Status $status
-     * @param Summary $summary
-     * @param array $taskUuids
-     * @return GroupedTasksProgress
-     */
     public static function build(string $type, Status $status, Summary $summary, array $taskUuids): self
     {
         return new self($type, $status, $summary, $taskUuids);
@@ -72,33 +48,21 @@ class GroupedTasksProgress implements \JsonSerializable
         ];
     }
 
-    /**
-     * @return string
-     */
     public function getType(): string
     {
         return $this->type;
     }
 
-    /**
-     * @return Status
-     */
     public function getStatus(): Status
     {
         return $this->status;
     }
 
-    /**
-     * @return Summary
-     */
     public function getSummary(): Summary
     {
         return $this->summary;
     }
 
-    /**
-     * @return array
-     */
     public function getTaskUuids(): array
     {
         return $this->taskUuids;

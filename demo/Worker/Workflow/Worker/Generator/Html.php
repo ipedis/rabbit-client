@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Ipedis\Demo\Rabbit\Worker\Workflow\Worker\Generator;
 
 use AMQPEnvelope;
@@ -15,10 +17,10 @@ class Html extends WorkerAbstract
 
     protected function makeMessageHandler(): Closure
     {
-        return function (AMQPEnvelope $message, OrderMessagePayload $messagePayload) {
+        return function (AMQPEnvelope $message, OrderMessagePayload $messagePayload): array {
             $this->printStatus($messagePayload, 'START');
             $params = $messagePayload->getData();
-            sleep(rand(1, 5));
+            sleep(random_int(1, 5));
             $this->printStatus($messagePayload, 'FINISH');
             return ["step" => "html finished"];
         };
@@ -26,22 +28,20 @@ class Html extends WorkerAbstract
 
     protected function makeExceptionHandler(): Closure
     {
-        return function (Exception $exception, OrderMessagePayload $payload) {
+        return function (Exception $exception, OrderMessagePayload $payload): void {
             printf("ERROR : %s", $exception->getMessage());
         };
     }
 
     /**
      * Can be string or array of keys
-     *
-     * @return mixed
      */
-    protected function getQueueName()
+    protected function getQueueName(): string
     {
         return 'v1.admin.publication.generate-html';
     }
 
-    private function printStatus(OrderMessagePayload $message, string $status)
+    private function printStatus(OrderMessagePayload $message, string $status): void
     {
         file_put_contents('flow.log', sprintf("%s - %s \n", $message->getUuid(), $status), FILE_APPEND);
     }

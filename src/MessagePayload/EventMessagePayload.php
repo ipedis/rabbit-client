@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Ipedis\Rabbit\MessagePayload;
 
 use Ipedis\Rabbit\Exception\MessagePayload\MessagePayloadFormatException;
@@ -7,7 +9,6 @@ use Ipedis\Rabbit\Exception\MessagePayload\MessagePayloadFormatException;
 class EventMessagePayload extends MessagePayloadAbstract
 {
     /**
-     * @param array $state
      * @return static
      * @throws MessagePayloadFormatException
      */

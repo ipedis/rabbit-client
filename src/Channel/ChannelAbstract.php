@@ -1,10 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Ipedis\Rabbit\Channel;
 
 use Ipedis\Rabbit\Exception\Channel\ChannelNamingException;
 
-abstract class ChannelAbstract
+abstract class ChannelAbstract implements \Stringable
 {
     /**
      * <protocol>.<service>.<aggregate>.<action>
@@ -16,31 +18,15 @@ abstract class ChannelAbstract
      */
     public const PARTIAL_CHANNEL_PATTERN = '#^(?<aggregate>[a-z-]+(?:\.[a-z-]+)?)\.(?<action>[a-z-]+)$#';
 
-    /**
-     * @var string
-     */
-    private string $protocol;
+    private readonly string $protocol;
+
+    private readonly string $service;
+
+    private readonly string $aggregate;
+
+    private readonly string $action;
 
     /**
-     * @var string
-     */
-    private string $service;
-
-    /**
-     * @var string
-     */
-    private string $aggregate;
-
-    /**
-     * @var string
-     */
-    private string $action;
-
-    /**
-     * @param string $protocol
-     * @param string $service
-     * @param string $aggregate
-     * @param string $action
      * @throws ChannelNamingException
      */
     protected function __construct(string $protocol, string $service, string $aggregate, string $action)
@@ -56,28 +42,28 @@ abstract class ChannelAbstract
         $this->action = $action;
     }
 
-    private function assertProtocol(string $protocol)
+    private function assertProtocol(string $protocol): void
     {
         if (!preg_match('#^v\d+$#', $protocol)) {
             throw new ChannelNamingException(sprintf('"%s" is not valid protocol.', $protocol));
         }
     }
 
-    private function assertService(string $service)
+    private function assertService(string $service): void
     {
         if (!preg_match('#^[\w-]+$#', $service)) {
             throw new ChannelNamingException(sprintf('"%s" is not valid service.', $service));
         }
     }
 
-    private function assertAggregate(string $aggregate)
+    private function assertAggregate(string $aggregate): void
     {
         if (!preg_match('#^[\w-]+(?:\.[\w-]+)?$#', $aggregate)) {
             throw new ChannelNamingException(sprintf('"%s" is not valid aggregate.', $aggregate));
         }
     }
 
-    private function assertAction(string $action)
+    private function assertAction(string $action): void
     {
         if (!preg_match('#^[\w-]+$#', $action)) {
             throw new ChannelNamingException(sprintf('"%s" is not valid action.', $action));
@@ -85,7 +71,6 @@ abstract class ChannelAbstract
     }
 
     /**
-     * @param string $channel
      * @return static
      * @throws ChannelNamingException
      */
@@ -102,8 +87,6 @@ abstract class ChannelAbstract
     }
 
     /**
-     * @param string $channel
-     * @return array
      * @throws ChannelNamingException
      */
     private static function assertChannel(string $channel): array
@@ -115,8 +98,9 @@ abstract class ChannelAbstract
             empty($catched['aggregate']) ||
             empty($catched['action'])
         ) {
-            throw new ChannelNamingException('Channel can\'t be parsed.');
+            throw new ChannelNamingException("Channel can't be parsed.");
         }
+
         return $catched;
     }
 
@@ -131,10 +115,6 @@ abstract class ChannelAbstract
     }
 
     /**
-     * @param string $protocol
-     * @param string $service
-     * @param string $aggregate
-     * @param string $action
      * @return static
      */
     public static function build(string $protocol, string $service, string $aggregate, string $action): self
@@ -147,38 +127,26 @@ abstract class ChannelAbstract
         );
     }
 
-    public function __toString()
+    public function __toString(): string
     {
-        return "{$this->getProtocol()}.{$this->getService()}.{$this->getAggregate()}.{$this->getAction()}";
+        return sprintf('%s.%s.%s.%s', $this->getProtocol(), $this->getService(), $this->getAggregate(), $this->getAction());
     }
 
-    /**
-     * @return string
-     */
     public function getProtocol(): string
     {
         return $this->protocol;
     }
 
-    /**
-     * @return string
-     */
     public function getService(): string
     {
         return $this->service;
     }
 
-    /**
-     * @return string
-     */
     public function getAggregate(): string
     {
         return $this->aggregate;
     }
 
-    /**
-     * @return string
-     */
     public function getAction(): string
     {
         return $this->action;

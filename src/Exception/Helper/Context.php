@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Ipedis\Rabbit\Exception\Helper;
 
 use ArrayAccess;
@@ -11,14 +13,8 @@ use LogicException;
 
 class Context implements ArrayAccess, Countable, IteratorAggregate, JsonSerializable
 {
-    /**
-     * @var array
-     */
     protected array $items;
 
-    /**
-     * @param array $items
-     */
     public function __construct(array $items = [])
     {
         self::assertContext($items);
@@ -26,7 +22,6 @@ class Context implements ArrayAccess, Countable, IteratorAggregate, JsonSerializ
     }
 
     /**
-     * @param array $items
      * @return static
      */
     public static function fromArray(array $items): self
@@ -40,7 +35,7 @@ class Context implements ArrayAccess, Countable, IteratorAggregate, JsonSerializ
     }
 
 
-    public static function assertContext($data)
+    public static function assertContext($data): void
     {
         if (is_iterable($data)) {
             foreach ($data as $item) {
@@ -49,14 +44,11 @@ class Context implements ArrayAccess, Countable, IteratorAggregate, JsonSerializ
         } elseif (is_object($data) && !($data instanceof JsonSerializable)) {
             throw new LogicException(
                 sprintf('object with type "%s" can\'t be serialize as it is not implementing JsonSerializable',
-                    get_class($data))
+                    $data::class)
             );
         }
     }
 
-    /**
-     * @return ArrayIterator
-     */
     public function getIterator(): ArrayIterator
     {
         return new ArrayIterator($this->items);
@@ -64,7 +56,6 @@ class Context implements ArrayAccess, Countable, IteratorAggregate, JsonSerializ
 
     /**
      * @param mixed $offset
-     * @return bool
      */
     public function offsetExists($offset): bool
     {
@@ -73,7 +64,6 @@ class Context implements ArrayAccess, Countable, IteratorAggregate, JsonSerializ
 
     /**
      * @param mixed $offset
-     * @return mixed
      */
     public function offsetGet($offset): mixed
     {
@@ -98,9 +88,6 @@ class Context implements ArrayAccess, Countable, IteratorAggregate, JsonSerializ
         unset($this->items[$offset]);
     }
 
-    /**
-     * @return int
-     */
     public function count(): int
     {
         return count($this->items);
@@ -128,24 +115,17 @@ class Context implements ArrayAccess, Countable, IteratorAggregate, JsonSerializ
 
     /**
      * @param $offset
-     * @return bool
      */
     public function has($offset): bool
     {
         return $this->offsetExists($offset);
     }
 
-    /**
-     * @return bool
-     */
     public function isEmpty(): bool
     {
         return $this->count() < 1;
     }
 
-    /**
-     * @return array
-     */
     public function jsonSerialize(): array
     {
         return $this->items;

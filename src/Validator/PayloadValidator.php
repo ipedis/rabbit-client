@@ -1,11 +1,13 @@
 <?php
+
+declare(strict_types=1);
+
 /**
  * Created by PhpStorm.
  * User: digital14
  * Date: 3/16/20
  * Time: 1:44 PM
  */
-
 namespace Ipedis\Rabbit\Validator;
 
 use Opis\JsonSchema\Errors\ValidationError;
@@ -13,15 +15,10 @@ use Opis\JsonSchema\Validator;
 
 class PayloadValidator
 {
-    /**
-     * @var JsonValidator
-     */
-    private JsonValidator $jsonValidator;
+    private readonly JsonValidator $jsonValidator;
 
     private ?ValidationError $error = null;
-    /**
-     * @var bool
-     */
+
     private bool $inputValid = false;
 
     public function __construct()
@@ -46,36 +43,25 @@ class PayloadValidator
         return is_null($this->error);
     }
 
-    /**
-     * @return bool
-     */
     public function isValid(): bool
     {
         return $this->isInputValid() &&
-            $this->error === null;
+            !$this->error instanceof \Opis\JsonSchema\Errors\ValidationError;
     }
 
-    /**
-     * @return bool
-     */
     public function isInputValid(): bool
     {
         return $this->inputValid;
     }
-    /**
-     * @return JsonValidator
-     */
+
     public function getJsonValidator(): JsonValidator
     {
         return $this->jsonValidator;
     }
 
-    /**
-     * @return string
-     */
     public function getErrorAsString(): string
     {
-        if (null === $this->error) {
+        if (!$this->error instanceof \Opis\JsonSchema\Errors\ValidationError) {
             return '';
         }
 

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Ipedis\Demo\Rabbit\Worker\Event;
 
 use Ipedis\Demo\Rabbit\Utils\ConnectorAbstract;
@@ -20,16 +22,6 @@ class Dispatcher extends ConnectorAbstract
 //        'v1.admin.publication.was-deleted'
     ];
 
-    /**
-     * @var ChannelFactory $channelFactory
-     */
-    private ChannelFactory $channelFactory;
-
-    /**
-     * @var ValidatorInterface $messagePayloadValidator
-     */
-    private ValidatorInterface $messagePayloadValidator;
-
     public function __construct(
         string $host,
         int $port,
@@ -37,21 +29,18 @@ class Dispatcher extends ConnectorAbstract
         string $password,
         string $exchange,
         string $type,
-        ChannelFactory $channelFactory,
-        ValidatorInterface $messagePayloadValidator
+        private ChannelFactory $channelFactory,
+        private ValidatorInterface $messagePayloadValidator
     ) {
         parent::__construct($host, $port, $user, $password, $exchange, $type);
-
-        $this->channelFactory = $channelFactory;
-        $this->messagePayloadValidator = $messagePayloadValidator;
     }
 
-    public function main()
+    public function main(): void
     {
         foreach (self::EVENTS_TO_DISPATCH as $eventType) {
             // we construct the event message by providing channel and payload.
             $eventType = EventMessagePayload::build(
-                EventChannel::fromString($eventType),
+                (string)EventChannel::fromString($eventType),
                 [
                     'publication' => [
                         'sid' => 1
@@ -64,17 +53,11 @@ class Dispatcher extends ConnectorAbstract
         }
     }
 
-    /**
-     * @return ChannelFactory
-     */
     public function getChannelFactory(): ChannelFactory
     {
         return $this->channelFactory;
     }
 
-    /**
-     * @return ValidatorInterface
-     */
     public function getMessagePayloadValidator(): ValidatorInterface
     {
         return $this->messagePayloadValidator;
@@ -82,8 +65,6 @@ class Dispatcher extends ConnectorAbstract
 
     /**
      * Url of recovery project
-     *
-     * @return string
      */
     public function getRecoveryEventStoreEndpoint(): string
     {

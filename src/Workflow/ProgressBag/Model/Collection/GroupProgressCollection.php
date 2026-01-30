@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Ipedis\Rabbit\Workflow\ProgressBag\Model\Collection;
 
 class GroupProgressCollection extends CollectionAbstract implements \JsonSerializable

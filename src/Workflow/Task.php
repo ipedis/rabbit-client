@@ -1,12 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Ipedis\Rabbit\Workflow;
 
 use Ipedis\Rabbit\Channel\ChannelAbstract;
 use Ipedis\Rabbit\Consumer\Handler\MessageHandlerInterface;
-use Ipedis\Rabbit\DTO\Type\StatusType;
-use Ipedis\Rabbit\DTO\Type\TaskType;
-use Ipedis\Rabbit\DTO\Type\TimerType;
 use Ipedis\Rabbit\Exception\InvalidUuidException;
 use Ipedis\Rabbit\Exception\Task\InvalidStatusException;
 use Ipedis\Rabbit\Exception\Timer\InvalidSpentTimeException;
@@ -24,72 +23,40 @@ final class Task extends Bindable
 {
     use DateTimeHelper;
 
-    /**
-     * @var string
-     */
-    private $status;
+    private string $status = MessageHandlerInterface::TYPE_PLANIFIED;
 
-    /**
-     * @var \DateTime $timeStart
-     */
-    private $timeStart;
+    private ?\DateTime $timeStart = null;
 
-    /**
-     * @var \DateTime $timeFinished
-     */
-    private $timeFinished;
-
-    /**
-     * @var OrderMessagePayload
-     */
-    private $orderMessage;
+    private ?\DateTime $timeFinished = null;
 
     /**
      * @var ReplyMessagePayload[]
      */
-    private $replyMessages = [];
+    private array $replyMessages = [];
 
-    /**
-     * @var int
-     */
-    private $retryCount;
+    private int $retryCount = 0;
 
-    private function __construct(OrderMessagePayload $orderMessage, $callbacks = [])
+    private function __construct(private OrderMessagePayload $orderMessage, array $callbacks = [])
     {
-        $this->status = MessageHandlerInterface::TYPE_PLANIFIED;
-        $this->retryCount = 0;
-        $this->orderMessage = $orderMessage;
         $this->callbacks = $this->assertCallbacks($callbacks);
     }
 
-    /**
-     * @param OrderMessagePayload $message
-     * @param array $callbacks
-     * @return static
-     */
     public static function build(OrderMessagePayload $message, array $callbacks = []): self
     {
         return new self($message, $callbacks);
     }
 
-    /**
-     * @return string
-     */
     public function getTaskId(): string
     {
-        return $this->getOrderMessage()->getOrderId();
+        return $this->orderMessage->getOrderId();
     }
 
-    /**
-     * @return OrderMessagePayload
-     */
     public function getOrderMessage(): OrderMessagePayload
     {
         return $this->orderMessage;
     }
 
     /**
-     * @param ReplyMessagePayload $message
      * @return $this
      * @throws InvalidStatusException
      */
@@ -102,10 +69,9 @@ final class Task extends Bindable
     }
 
     /**
-     * @param string $newStatus
      * @throws InvalidStatusException
      */
-    protected function transitionTo(string $newStatus)
+    private function transitionTo(string $newStatus): void
     {
         if (!in_array($newStatus, MessageHandlerInterface::AVAILABLE_TYPES)) {
             throw new InvalidStatusException('type not allowed');
@@ -125,17 +91,12 @@ final class Task extends Bindable
 
     /**
      * The task is in progress
-     *
-     * @return bool
      */
     public function isInProgress(): bool
     {
-        return $this->getStatus() === MessageHandlerInterface::TYPE_PROGRESS;
+        return $this->status === MessageHandlerInterface::TYPE_PROGRESS;
     }
 
-    /**
-     * @return string
-     */
     public function getStatus(): string
     {
         return $this->status;
@@ -152,32 +113,29 @@ final class Task extends Bindable
     /**
      * The task has completed either with success
      * or falure
-     *
-     * @return bool
      */
     public function isCompleted(): bool
     {
-        return $this->isSuccess() || $this->isOnFailure();
+        if ($this->isSuccess()) {
+            return true;
+        }
+        return $this->isOnFailure();
     }
 
     /**
      * The task has completed successfully
-     *
-     * @return bool
      */
     public function isSuccess(): bool
     {
-        return $this->getStatus() === MessageHandlerInterface::TYPE_SUCCESS;
+        return $this->status === MessageHandlerInterface::TYPE_SUCCESS;
     }
 
     /**
      * The task has failed
-     *
-     * @return bool
      */
     public function isOnFailure(): bool
     {
-        return $this->getStatus() === MessageHandlerInterface::TYPE_ERROR;
+        return $this->status === MessageHandlerInterface::TYPE_ERROR;
     }
 
     /**
@@ -193,13 +151,12 @@ final class Task extends Bindable
      * - revert status to planified
      * - increment retry count
      *
-     * @return Task
      * @throws InvalidStatusException
      */
     public function retry(): self
     {
         $this->transitionTo(MessageHandlerInterface::TYPE_PLANIFIED);
-        $this->retryCount++;
+        ++$this->retryCount;
 
         return $this;
     }
@@ -207,7 +164,7 @@ final class Task extends Bindable
     /**
      * Task status changed to DISPATCHED
      */
-    public function setTaskAsDispatched()
+    public function setTaskAsDispatched(): void
     {
         if ($this->isPlanified()) {
             $this->transitionTo(MessageHandlerInterface::TYPE_DISPATCHED);
@@ -217,58 +174,41 @@ final class Task extends Bindable
     /**
      * The task has been planified and
      * not yet dispatched
-     *
-     * @return bool
      */
     public function isPlanified(): bool
     {
-        return $this->getStatus() === MessageHandlerInterface::TYPE_PLANIFIED;
+        return $this->status === MessageHandlerInterface::TYPE_PLANIFIED;
     }
 
-    /**
-     * @return array
-     */
     public function getReplyMessages(): array
     {
         return $this->replyMessages;
     }
 
-    /**
-     * @return ReplyMessagePayload|null
-     */
     public function getLastReplyMessage(): ?ReplyMessagePayload
     {
         return $this->hasReplyMessage() ? $this->replyMessages[count($this->replyMessages) - 1] : null;
     }
 
-    /**
-     * @return bool
-     */
     public function hasReplyMessage(): bool
     {
-        return !empty($this->replyMessages);
+        return $this->replyMessages !== [];
     }
 
     /**
      * The task has been dispatched
-     *
-     * @return bool
      */
     public function isDispatched(): bool
     {
-        return $this->getStatus() === MessageHandlerInterface::TYPE_DISPATCHED;
+        return $this->status === MessageHandlerInterface::TYPE_DISPATCHED;
     }
 
-    /**
-     * @return int
-     */
     public function getRetryCount(): int
     {
         return $this->retryCount;
     }
 
     /**
-     * @return TaskProgress
      * @throws InvalidSpentTimeException
      * @throws InvalidTimeException
      * @throws InvalidUuidException
@@ -276,27 +216,21 @@ final class Task extends Bindable
     public function getTaskProgress(): TaskProgress
     {
         return TaskProgress::build(
-            $this->getOrderMessage()->getOrderId(),
+            $this->orderMessage->getOrderId(),
             $this->getType(),
             $this->getProgressStatus(),
             $this->getTimer()
         );
     }
 
-    /**
-     * @return string
-     */
-    public function getType()
+    public function getType(): string
     {
-        return ChannelAbstract::getTypeFromChannelName($this->getOrderMessage()->getChannel());
+        return ChannelAbstract::getTypeFromChannelName($this->orderMessage->getChannel());
     }
 
-    /**
-     * @return Status
-     */
     public function getProgressStatus(): Status
     {
-        switch ($this->getStatus()) {
+        switch ($this->status) {
             case MessageHandlerInterface::TYPE_PLANIFIED:
             case MessageHandlerInterface::TYPE_STARTING:
                 return Status::buildPending();
@@ -311,22 +245,20 @@ final class Task extends Bindable
     }
 
     /**
-     * @return Timer
      * @throws InvalidSpentTimeException
      * @throws InvalidTimeException
      */
-    public function getTimer()
+    public function getTimer(): \Ipedis\Rabbit\Workflow\ProgressBag\Property\Timer
     {
         return Timer::build(
             $this->getExecutionTime(),
-            $this->getStartTime(),
-            $this->getFinishedTime()
+            $this->timeStart,
+            $this->timeFinished
         );
     }
 
     /**
      * Get task execution time
-     * @return float
      */
     public function getExecutionTime(): float
     {
@@ -337,25 +269,16 @@ final class Task extends Bindable
         return $this->getDifferenceWithMicroseconds($this->timeStart, $this->timeFinished);
     }
 
-    /**
-     * @return \DateTime|null
-     */
     public function getStartTime(): ?\DateTime
     {
         return $this->timeStart;
     }
 
-    /**
-     * @return \DateTime|null
-     */
     public function getFinishedTime(): ?\DateTime
     {
         return $this->timeFinished;
     }
 
-    /**
-     * @return array
-     */
     protected function getAllowedBindableTypes(): array
     {
         return BindableEventInterface::TASK_ALLOW_TYPES;

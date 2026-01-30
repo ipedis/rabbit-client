@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Ipedis\Rabbit\Workflow\ProgressBag;
 
 use Ipedis\Rabbit\Exception\InvalidUuidException;
@@ -19,25 +21,18 @@ use Ipedis\Rabbit\Workflow\Workflow;
 
 class WorkflowProgressBag implements ProgressBagInterface
 {
-    /**
+    private readonly string $workflowId;
+
+    public function __construct(/**
      * @var Group[] $groups
      */
-    private $groups;
-
-    /**
-     * @var string
-     */
-    private $workflowId;
-
-    public function __construct(array $groups, string $workflowId)
+    private readonly array $groups, string $workflowId)
     {
         $this->assertUuid($workflowId);
         $this->workflowId = $workflowId;
-        $this->groups = $groups;
     }
 
     /**
-     * @param string $uuid
      * @throws InvalidUuidException
      */
     protected function assertUuid(string $uuid)
@@ -45,29 +40,19 @@ class WorkflowProgressBag implements ProgressBagInterface
         (new UuidValidator())->validate($uuid);
     }
 
-    /**
-     * @return bool
-     */
     public function hasPendingGroups(): bool
     {
-        return count($this->getPendingGroups()) > 0;
+        return $this->getPendingGroups() !== [];
     }
 
     /**
      * Get collection of planified groups waiting for dispatch
-     *
-     * @return array
      */
     public function getPendingGroups(): array
     {
-        return array_filter($this->groups, function (Group $group) {
-            return $group->getProgressBag()->isPending();
-        });
+        return array_filter($this->groups, fn(Group $group) => $group->getProgressBag()->isPending());
     }
 
-    /**
-     * @return mixed
-     */
     public function getNextPendingGroup(): Group
     {
         $pendingGroups = $this->getPendingGroups();
@@ -77,8 +62,6 @@ class WorkflowProgressBag implements ProgressBagInterface
 
     /**
      * Count of pending groups
-     *
-     * @return int
      */
     public function countPendingGroups(): int
     {
@@ -87,8 +70,6 @@ class WorkflowProgressBag implements ProgressBagInterface
 
     /**
      * Count of successful groups
-     *
-     * @return int
      */
     public function countSuccessfulGroups(): int
     {
@@ -97,20 +78,14 @@ class WorkflowProgressBag implements ProgressBagInterface
 
     /**
      * Get Collection of successful groups
-     *
-     * @return array
      */
     public function getSuccessfulGroups(): array
     {
-        return array_filter($this->groups, function (Group $group) {
-            return ($group->getProgressBag()->isCompleted() && !$group->getProgressBag()->hasFailure());
-        });
+        return array_filter($this->groups, fn(Group $group) => $group->getProgressBag()->isCompleted() && !$group->getProgressBag()->hasFailure());
     }
 
     /**
      * Count of total planified orders waiting to be dispatched in workflow
-     *
-     * @return int
      */
     public function countTotalPlanifiedOrders(): int
     {
@@ -128,8 +103,6 @@ class WorkflowProgressBag implements ProgressBagInterface
 
     /**
      * Count of total dispatched orders waiting to be dispatched in workflow
-     *
-     * @return int
      */
     public function countTotalDispatchedOrders(): int
     {
@@ -151,7 +124,6 @@ class WorkflowProgressBag implements ProgressBagInterface
      * - PENDING : no tasks of any group yet dispatched
      * - RUNNING : at least one task of a group has been dispatched
      * - FINISHED : all tasks of all groups have completed
-     * @return Status
      */
     public function getStatus(): Status
     {
@@ -172,8 +144,6 @@ class WorkflowProgressBag implements ProgressBagInterface
 
     /**
      * Has all tasks in all groups completed
-     *
-     * @return bool
      */
     public function isCompleted(): bool
     {
@@ -182,8 +152,6 @@ class WorkflowProgressBag implements ProgressBagInterface
 
     /**
      * Count of group in orders
-     *
-     * @return int
      */
     public function countGroupsInWorkflow(): int
     {
@@ -192,8 +160,6 @@ class WorkflowProgressBag implements ProgressBagInterface
 
     /**
      * Count of completed groups
-     *
-     * @return int
      */
     public function countCompletedGroups(): int
     {
@@ -202,20 +168,14 @@ class WorkflowProgressBag implements ProgressBagInterface
 
     /**
      * Get Collection of completed groups
-     *
-     * @return array
      */
     public function getCompletedGroups(): array
     {
-        return array_filter($this->groups, function (Group $group) {
-            return $group->getProgressBag()->isCompleted();
-        });
+        return array_filter($this->groups, fn(Group $group) => $group->getProgressBag()->isCompleted());
     }
 
     /**
      * At least a group tasks has failed
-     *
-     * @return bool
      */
     public function hasFailure(): bool
     {
@@ -224,8 +184,6 @@ class WorkflowProgressBag implements ProgressBagInterface
 
     /**
      * Count of failed groups
-     *
-     * @return int
      */
     public function countFailedGroups(): int
     {
@@ -234,20 +192,14 @@ class WorkflowProgressBag implements ProgressBagInterface
 
     /**
      * Get Collection of failed groups
-     *
-     * @return array
      */
     public function getFailedGroups(): array
     {
-        return array_filter($this->groups, function (Group $group) {
-            return $group->getProgressBag()->isCompleted() && $group->getProgressBag()->hasFailure();
-        });
+        return array_filter($this->groups, fn(Group $group) => $group->getProgressBag()->isCompleted() && $group->getProgressBag()->hasFailure());
     }
 
     /**
      * At least one group task has been dispatched
-     *
-     * @return bool
      */
     public function isRunning(): bool
     {
@@ -256,8 +208,6 @@ class WorkflowProgressBag implements ProgressBagInterface
 
     /**
      * No group task yet dispatched
-     *
-     * @return bool
      */
     public function isPending(): bool
     {
@@ -266,8 +216,6 @@ class WorkflowProgressBag implements ProgressBagInterface
 
     /**
      * Count of running groups
-     *
-     * @return int
      */
     public function countRunningGroups(): int
     {
@@ -276,20 +224,14 @@ class WorkflowProgressBag implements ProgressBagInterface
 
     /**
      * Get collection of running groups
-     *
-     * @return array
      */
     public function getRunningGroups(): array
     {
-        return array_filter($this->groups, function (Group $group) {
-            return $group->getProgressBag()->isRunning();
-        });
+        return array_filter($this->groups, fn(Group $group) => $group->getProgressBag()->isRunning());
     }
 
     /**
      * Get workflow execution time
-     *
-     * @return float
      */
     public function getExecutionTime(): float
     {
@@ -312,8 +254,6 @@ class WorkflowProgressBag implements ProgressBagInterface
     /**
      * Iterate through groups and find
      * first started group
-     *
-     * @return \DateTime|null
      */
     public function getStartedAt(): ?\DateTime
     {
@@ -333,13 +273,12 @@ class WorkflowProgressBag implements ProgressBagInterface
             /**
              * Ignore group not yet started
              */
-            if (
-                $group->getProgressBag()->isPending() ||
-                is_null($group->getProgressBag()->getStartedAt())
-            ) {
+            if ($group->getProgressBag()->isPending()) {
                 continue;
             }
-
+            if (is_null($group->getProgressBag()->getStartedAt())) {
+                continue;
+            }
             if (is_null($startTime)) {
                 $startTime = $group->getProgressBag()->getStartedAt();
             } elseif ($group->getProgressBag()->getStartedAt() < $startTime) {
@@ -353,8 +292,6 @@ class WorkflowProgressBag implements ProgressBagInterface
     /**
      * Iterate through groups and find
      * last completed group
-     *
-     * @return \DateTime|null
      */
     public function getFinishedAt(): ?\DateTime
     {
@@ -391,7 +328,6 @@ class WorkflowProgressBag implements ProgressBagInterface
     /**
      * Get percentage progression of workflow
      *
-     * @return Percentage
      * @throws InvalidProgressValueException
      */
     public function getPercentage(): Percentage
@@ -407,8 +343,6 @@ class WorkflowProgressBag implements ProgressBagInterface
 
     /**
      * Count of total orders in workflow
-     *
-     * @return int
      */
     public function countTotalOrders(): int
     {
@@ -426,7 +360,6 @@ class WorkflowProgressBag implements ProgressBagInterface
 
     /**
      * Count of total completed orders in workflow
-     * @return int
      */
     public function countTotalCompletedOrders(): int
     {
@@ -444,8 +377,6 @@ class WorkflowProgressBag implements ProgressBagInterface
 
     /**
      * Count of total successfull orders in workflow
-     *
-     * @return int
      */
     public function countTotalSuccessfulOrders(): int
     {
@@ -463,8 +394,6 @@ class WorkflowProgressBag implements ProgressBagInterface
 
     /**
      * Count of total failed orders in workflow
-     *
-     * @return int
      */
     public function countTotalFailedOrders(): int
     {
@@ -488,9 +417,6 @@ class WorkflowProgressBag implements ProgressBagInterface
         return $this->groups;
     }
 
-    /**
-     * @return Status
-     */
     public function getGroupsStatus(): Status
     {
         if ($this->countTotalOrders() === $this->countTotalCompletedOrders()) {
@@ -509,7 +435,6 @@ class WorkflowProgressBag implements ProgressBagInterface
     }
 
     /**
-     * @return WorkflowProgress
      * @throws InvalidProgressValueException
      * @throws InvalidSpentTimeException
      * @throws InvalidTimeException
@@ -522,7 +447,6 @@ class WorkflowProgressBag implements ProgressBagInterface
     /**
      * Get summary of all tasks group by task type inside workflow
      *
-     * @return GroupedTasksProgressCollection
      * @throws InvalidProgressValueException
      */
     public function getGroupedTasks(): GroupedTasksProgressCollection
@@ -543,6 +467,7 @@ class WorkflowProgressBag implements ProgressBagInterface
             } else {
                 $status = Status::buildRunning();
             }
+
             $groupedTasks[$type] = GroupedTasksProgress::build(
                 $type,
                 $status,
@@ -563,9 +488,6 @@ class WorkflowProgressBag implements ProgressBagInterface
 
     /**
      * Get summary of all tasks in group
-     *
-     * @param array $groups
-     * @return array
      */
     private function getGroupTasksSummaryRecursively(array $groups): array
     {
@@ -596,16 +518,12 @@ class WorkflowProgressBag implements ProgressBagInterface
         return $summary;
     }
 
-    /**
-     * @param array $summary
-     * @param Task $task
-     * @return array
-     */
     private function initializeDetailsByType(array $summary, Task $task): array
     {
         if (isset($summary[$task->getType()])) {
             return $summary;
         }
+
         $summary[$task->getType()] = [
             'total' => 0,
             'pending' => 0,
@@ -620,39 +538,34 @@ class WorkflowProgressBag implements ProgressBagInterface
 
     /**
      * Append associated array key by 1
-     * @param array $summary
-     * @param Task $task
-     * @return array
      */
     private function updateDetailsByType(array $summary, Task $task): array
     {
-        $summary[$task->getType()]['total']++;
+        ++$summary[$task->getType()]['total'];
         $summary[$task->getType()]['uuids'][] = $task->getOrderMessage()->getOrderId();
         switch ($task) {
             case $task->isOnFailure():
-                $summary[$task->getType()]['failed']++;
-                $summary[$task->getType()]['completed']++;
+                ++$summary[$task->getType()]['failed'];
+                ++$summary[$task->getType()]['completed'];
                 break;
             case $task->isSuccess():
-                $summary[$task->getType()]['successful']++;
-                $summary[$task->getType()]['completed']++;
+                ++$summary[$task->getType()]['successful'];
+                ++$summary[$task->getType()]['completed'];
                 break;
             case $task->isDispatched():
-                $summary[$task->getType()]['dispatched']++;
+                ++$summary[$task->getType()]['dispatched'];
                 break;
             case $task->isCompleted():
-                $summary[$task->getType()]['completed']++;
+                ++$summary[$task->getType()]['completed'];
                 break;
             case $task->isPlanified():
-                $summary[$task->getType()]['pending']++;
+                ++$summary[$task->getType()]['pending'];
                 break;
         }
+
         return $summary;
     }
 
-    /**
-     * @return string
-     */
     public function getWorkflowId(): string
     {
         return $this->workflowId;
@@ -660,9 +573,8 @@ class WorkflowProgressBag implements ProgressBagInterface
 
     /**
      * Get all tasks in the workflow
-     * @return array
      */
-    public function getOrdersInWorkflow()
+    public function getOrdersInWorkflow(): array
     {
         $tasks = [];
 

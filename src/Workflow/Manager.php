@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Ipedis\Rabbit\Workflow;
 
 use AMQPChannel;
@@ -45,7 +47,6 @@ trait Manager
     /**
      * Run workflow recursively
      *
-     * @param Workflow $workflow
      * @throws AMQPChannelException
      * @throws AMQPConnectionException
      * @throws AMQPQueueException
@@ -53,7 +54,7 @@ trait Manager
      * @throws MessagePayloadValidatorException
      * @throws \AMQPEnvelopeException
      */
-    public function run(Workflow $workflow)
+    public function run(Workflow $workflow): void
     {
         $wasAtLeastOneFailure = false;
 
@@ -148,15 +149,11 @@ trait Manager
 
     /**
      * Store workflow metadata
-     *
-     * @param Workflow $workflow
-     * @param Workflow|null $parentWorkflow
-     * @param Group|null $parentGroup
      */
-    private function addWorkflowToStore(Workflow $workflow, ?Workflow $parentWorkflow = null, ?Group $parentGroup = null)
+    private function addWorkflowToStore(Workflow $workflow, ?Workflow $parentWorkflow = null, ?Group $parentGroup = null): void
     {
-        $parentId = !is_null($parentWorkflow) ? $parentWorkflow->getWorkflowId() : null;
-        $parentGroupId = !is_null($parentGroup) ? $parentGroup->getGroupId() : null;
+        $parentId = is_null($parentWorkflow) ? null : $parentWorkflow->getWorkflowId();
+        $parentGroupId = is_null($parentGroup) ? null : $parentGroup->getGroupId();
 
         $this->workflowStore[$workflow->getWorkflowId()] = WorkflowMeta::build($workflow, $parentId, $parentGroupId);
     }
@@ -176,68 +173,58 @@ trait Manager
     /**
      * Create anonymous queue
      *
-     * @param AMQPChannel $channel
-     * @return AMQPQueue
      * @throws AMQPChannelException
      * @throws AMQPConnectionException
      * @throws AMQPQueueException
      */
     private function createAnonymousQueue(AMQPChannel $channel): AMQPQueue
     {
-        $queue = new AMQPQueue($channel);
-        $queue->setFlags(AMQP_EXCLUSIVE);
-        $queue->declareQueue();
+        $amqpQueue = new AMQPQueue($channel);
+        $amqpQueue->setFlags(AMQP_EXCLUSIVE);
+        $amqpQueue->declareQueue();
 
-        return $queue;
+        return $amqpQueue;
     }
 
     /**
      * Dispatch Group task recursively
      *
-     * @param Group $group
-     * @param Workflow $workflow
      * @throws ChannelFactoryException
      * @throws MessagePayloadValidatorException
      */
-    private function dispatchGroupOrders(Group $group, Workflow $workflow)
+    private function dispatchGroupOrders(Group $group, Workflow $workflow): void
     {
-        foreach ($group->getOrders() as $job) {
-            if ($job instanceof Workflow) {
+        foreach ($group->getOrders() as $task) {
+            if ($task instanceof Workflow) {
                 /**
                  * If workflow, dispatch next pending orders of workflow recursively
                  */
-                $this->addWorkflowToStore($job, $workflow, $group);
-
-                $nextGroup = $job->getProgressBag()->getNextPendingGroup();
-                $this->dispatchGroupOrders($nextGroup, $job);
-            } else {
-                if ($workflow->getConfig()->hasConcurrencyLimitForChannel($job->getType())) {
-                    /**
-                     * Case when limited workers allocated per channel(task type)
-                     * Publish orders until matches number of channel available for order
-                     */
-                    $limitForChannel = $workflow->getConfig()->getConcurrencyLimitForChannel($job->getType());
-                    if (
-                        $job->isPlanified() &&
-                        $group->canDispatchTask($job->getType(), $limitForChannel)
-                    ) {
-                        $this->publish($job, $group, $workflow);
-                        $job->setTaskAsDispatched();
-                        $job->call(BindableEventInterface::TASK_ON_START, $job);
-                    }
-                } else {
-                    $this->publish($job, $group, $workflow);
-                    $job->setTaskAsDispatched();
-                    $job->call(BindableEventInterface::TASK_ON_START, $job);
+                $this->addWorkflowToStore($task, $workflow, $group);
+                $nextGroup = $task->getProgressBag()->getNextPendingGroup();
+                $this->dispatchGroupOrders($nextGroup, $task);
+            } elseif ($workflow->getConfig()->hasConcurrencyLimitForChannel($task->getType())) {
+                /**
+                 * Case when limited workers allocated per channel(task type)
+                 * Publish orders until matches number of channel available for order
+                 */
+                $limitForChannel = $workflow->getConfig()->getConcurrencyLimitForChannel($task->getType());
+                if (
+                    $task->isPlanified() &&
+                    $group->canDispatchTask($task->getType(), $limitForChannel)
+                ) {
+                    $this->publish($task, $group, $workflow);
+                    $task->setTaskAsDispatched();
+                    $task->call(BindableEventInterface::TASK_ON_START, $task);
                 }
+            } else {
+                $this->publish($task, $group, $workflow);
+                $task->setTaskAsDispatched();
+                $task->call(BindableEventInterface::TASK_ON_START, $task);
             }
         }
     }
 
     /**
-     * @param Task $task
-     * @param Group $group
-     * @param Workflow $workflow
      * @return $this
      * @throws ChannelFactoryException
      * @throws MessagePayloadValidatorException
@@ -278,12 +265,8 @@ trait Manager
 
     /**
      * Store task metadata
-     *
-     * @param Task $task
-     * @param Group $group
-     * @param Workflow $workflow
      */
-    private function addTaskToStore(Task $task, Group $group, Workflow $workflow)
+    private function addTaskToStore(Task $task, Group $group, Workflow $workflow): void
     {
         $this->taskStore[$task->getTaskId()] = TaskMeta::build(
             $group->getGroupId(),
@@ -293,7 +276,6 @@ trait Manager
 
     /**
      * @param $queueName
-     * @return string
      * @throws ChannelNamingException
      */
     private function getChannelName($queueName): string
@@ -309,6 +291,7 @@ trait Manager
 
             return (string)$eventObj;
         }
+
         // if it is an instance, get channel full name
         if ($queueName instanceof OrderChannel) {
             return (string)$queueName;
@@ -318,14 +301,11 @@ trait Manager
         throw new ChannelNamingException('Invalid channel provided.');
     }
 
-    /**
-     * @param Workflow $workflow
-     * @param Group $group
-     */
-    private function onGroupFinish(Workflow $workflow, Group $group)
+    private function onGroupFinish(Workflow $workflow, Group $group): void
     {
         $group->call($group->getProgressBag()->hasFailure() ? BindableEventInterface::GROUP_ON_FAILURE : BindableEventInterface::GROUP_ON_SUCCESS, $group);
         $group->call(BindableEventInterface::GROUP_ON_FINISH, $group);
+
         $workflow->call($group->getProgressBag()->hasFailure() ? BindableEventInterface::WORKFLOW_ON_GROUPS_FAILURE : BindableEventInterface::WORKFLOW_ON_GROUPS_SUCCESS, $group);
         $workflow->call(BindableEventInterface::WORKFLOW_ON_GROUPS_FINISH, $group);
     }
@@ -333,8 +313,6 @@ trait Manager
     /**
      * Executed when worker replies back
      *
-     * @param \AMQPEnvelope $envelope
-     * @param AMQPQueue $q
      * @return bool
      * @throws AMQPChannelException
      * @throws AMQPConnectionException
@@ -438,27 +416,22 @@ trait Manager
              * Stop waiting as root workflow group has completed
              */
             return false;
-        } else {
-            /**
-             * Check if all parent workflows are completed
-             */
-            $allParentsCompleted = $this->isParentWorkflowsCompleted(
-                $workflowMeta->getParent(),
-                $workflowMeta->getGroup()
-            );
-
-            /**
-             * wait until entire group is finish.
-             */
-            return !($group->getProgressBag()->isCompleted() && $allParentsCompleted);
         }
+        /**
+         * Check if all parent workflows are completed
+         */
+        $allParentsCompleted = $this->isParentWorkflowsCompleted(
+            $workflowMeta->getParent(),
+            $workflowMeta->getGroup()
+        );
+        /**
+         * wait until entire group is finish.
+         */
+        return !($group->getProgressBag()->isCompleted() && $allParentsCompleted);
     }
 
     /**
      * Find task by task id
-     *
-     * @param string $taskId
-     * @return TaskMeta
      */
     private function findTask(string $taskId): TaskMeta
     {
@@ -467,8 +440,6 @@ trait Manager
 
     /**
      * Find workflow by workflowId
-     * @param string $workflowId
-     * @return WorkflowMeta
      */
     private function findWorkflow(string $workflowId): WorkflowMeta
     {
@@ -477,18 +448,13 @@ trait Manager
 
     /**
      * notify callback
-     *
-     * @param ReplyMessagePayload $message
-     * @param Workflow $workflow
-     * @param Group $group
-     * @param Task $task
      */
     private function onUpdatedTaskStatus(
         ReplyMessagePayload $message,
         Workflow $workflow,
         Group $group,
         Task $task
-    ) {
+    ): void {
         switch ($message->getStatus()) {
             case MessageHandlerInterface::TYPE_SUCCESS:
                 $task->call(BindableEventInterface::TASK_ON_SUCCESS, $task);
@@ -518,12 +484,8 @@ trait Manager
 
     /**
      * Call workflow Hook recursively
-     *
-     * @param Workflow $workflow
-     * @param string $event
-     * @param Task $task
      */
-    private function callWorkflowHookRecursively(Workflow $workflow, string $event, Task $task)
+    private function callWorkflowHookRecursively(Workflow $workflow, string $event, Task $task): void
     {
         /**
          * Call workflow hook
@@ -569,14 +531,12 @@ trait Manager
             if ($group->getProgressBag()->isCompleted()) {
                 return true;
             }
-        } else {
+        } elseif ($workflow->getProgressBag()->isCompleted()) {
             // Sub Workflow
-            if ($workflow->getProgressBag()->isCompleted()) {
-                return $this->isParentWorkflowsCompleted(
-                    $workflowMeta->getParent(),
-                    $workflowMeta->getGroup()
-                );
-            }
+            return $this->isParentWorkflowsCompleted(
+                $workflowMeta->getParent(),
+                $workflowMeta->getGroup()
+            );
         }
 
         return false;
@@ -584,10 +544,6 @@ trait Manager
 
     abstract protected function getExchangeName(): string;
 
-    /**
-     * @param string $workflowId
-     * @return bool
-     */
     private function hasWorkflow(string $workflowId): bool
     {
         return isset($this->workflowStore[$workflowId]);

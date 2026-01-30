@@ -6,7 +6,7 @@ use Ipedis\Rabbit\MessagePayload\ReplyMessagePayload;
 
 $channelName = 'amq.gen-j-pzpTUoJdVrj_MU2__SWw';
 
-it('must build from valid json', function () use ($channelName) {
+it('must build from valid json', function () use ($channelName): void {
     $event = ReplyMessagePayload::fromJson('{
 	"data": [],
 	"header": {
@@ -20,12 +20,12 @@ it('must build from valid json', function () use ($channelName) {
 });
 
 
-it('must throw exception on empty array', function () use ($channelName) {
+it('must throw exception on empty array', function (): void {
     $this->expectException(MessagePayloadFormatException::class);
     ReplyMessagePayload::fromArray([]);
 });
 
-it('must throw exception when only array header key is present', function () use ($channelName) {
+it('must throw exception when only array header key is present', function () use ($channelName): void {
     $this->expectException(MessagePayloadFormatException::class);
     ReplyMessagePayload::fromArray(['header' => [
         'channel' => $channelName,
@@ -34,12 +34,12 @@ it('must throw exception when only array header key is present', function () use
     ]]);
 });
 
-it('must throw exception when only array data key is present', function () use ($channelName) {
+it('must throw exception when only array data key is present', function (): void {
     $this->expectException(MessagePayloadFormatException::class);
     ReplyMessagePayload::fromArray(['data' => []]);
 });
 
-it('must throw exception when status is not valid', function () use ($channelName) {
+it('must throw exception when status is not valid', function () use ($channelName): void {
     $event = ReplyMessagePayload::fromArray([
         'data' => [],
         'header' => [
@@ -53,7 +53,7 @@ it('must throw exception when status is not valid', function () use ($channelNam
 });
 
 
-it('must build from valid array', function () use ($channelName) {
+it('must build from valid array', function () use ($channelName): void {
     $event = ReplyMessagePayload::fromArray([
         'data' => [],
         'header' => [

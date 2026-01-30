@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Ipedis\Demo\Rabbit\Worker\Workflow\Manager;
 
 use Ipedis\Rabbit\Channel\OrderChannel;
@@ -12,7 +14,7 @@ use Closure;
 
 class ProgressManager extends ManagerAbstract
 {
-    public function main()
+    public function main(): void
     {
         /**
          * Having group like following
@@ -34,11 +36,11 @@ class ProgressManager extends ManagerAbstract
 
     public function craftGroup(string $channel, $numberOfTasks = 2, bool $shouldFailed = true): Closure
     {
-        return function (Group $group) use ($channel, $numberOfTasks, $shouldFailed) {
-            for ($i = 0; $i < $numberOfTasks; $i++) {
+        return function (Group $group) use ($channel, $numberOfTasks, $shouldFailed): void {
+            for ($i = 0; $i < $numberOfTasks; ++$i) {
                 $group->planifyOrder(
                     OrderMessagePayload::build(
-                        OrderChannel::fromString($channel),
+                        (string)OrderChannel::fromString($channel),
                         ['failure' => $shouldFailed && ($i % 2 === 0)]
                     )
                 );
@@ -50,26 +52,24 @@ class ProgressManager extends ManagerAbstract
      * echo completed task : $workflow->getProgressPercentage() . '%'
      * get progress on specific channel $workflow->getProgressBag()->getTasks()->getProgressOnChannel('v1.admin.publication.waiter')
      * get finished tasks $workflow->getProgressBag()->getTasks()->getFinishedTasks()
-     * @param Workflow $workflow
-     * @return Closure
      */
     public function json(Workflow $workflow): Closure
     {
-        return function () use ($workflow) {
+        return function () use ($workflow): void {
             echo "\n\n\n\n";
             echo json_encode($workflow->getProgressBag()->getWorkflowProgress(), JSON_PRETTY_PRINT);
             echo "\n\n\n\n";
         };
     }
 
-    public function print(WorkflowProgressBag $progressBag)
+    public function print(WorkflowProgressBag $progressBag): void
     {
         $done = $progressBag->countTotalCompletedOrders();
         $total = $progressBag->countTotalOrders();
 
         $perc = floor(($done / $total) * 100);
         $left = 100 - $perc;
-        $write = sprintf("\033[0G\033[2K[%'={$perc}s>%-{$left}s] - $perc%% - $done/$total", "", "");
+        $write = sprintf("\033[0G\033[2K[%'={$perc}s>%-{$left}s] - {$perc}%% - {$done}/{$total}", "", "");
         fwrite(STDERR, $write);
     }
 

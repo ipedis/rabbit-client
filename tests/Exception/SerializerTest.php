@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Ipedis\Test\Rabbit\Exception;
 
 use Exception;
@@ -12,9 +14,9 @@ use JsonSerializable;
 use LogicException;
 use PHPUnit\Framework\TestCase;
 
-class SerializerTest extends TestCase
+final class SerializerTest extends TestCase
 {
-    public function testFromExceptionTyping()
+    public function testFromExceptionTyping(): void
     {
         // check if Serializer have a right type..
         $this->assertInstanceOf(
@@ -39,7 +41,7 @@ class SerializerTest extends TestCase
         $this->assertEquals($context[1], $contextBag->get(1));
     }
 
-    public function testAddContext()
+    public function testAddContext(): void
     {
         $context1 = ['foo' => 'bar'];
         $context2 = ['another' => 'one'];
@@ -60,7 +62,7 @@ class SerializerTest extends TestCase
         $serializer->addContext('deep', ['deep' => ['tree' => new self('test')]]);
     }
 
-    public function testJsonSerialize()
+    public function testJsonSerialize(): void
     {
         $serializer = Serializer::fromException(new Exception('foo message'), Context::fromArray(['this', 'context']));
         $json = json_encode($serializer);
@@ -74,7 +76,7 @@ class SerializerTest extends TestCase
         );
     }
 
-    public function testFromMessage()
+    public function testFromMessage(): void
     {
         $error = Serializer::fromMessage(new class() implements JsonSerializable, MessagePayloadInterface, ReplyMessagePayloadInterface {
             public function getHeaders(): array
@@ -102,7 +104,7 @@ class SerializerTest extends TestCase
                 return '';
             }
 
-            public function getReply()
+            public function getReply(): array
             {
                 return ['error' => [
                     'exception' => ['message' => 'foo message', 'code' => 0],

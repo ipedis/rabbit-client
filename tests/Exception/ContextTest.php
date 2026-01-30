@@ -1,14 +1,16 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Ipedis\Test\Rabbit\Exception;
 
 use Ipedis\Rabbit\Exception\Helper\Context;
 use PHPUnit\Framework\TestCase;
 use LogicException;
 
-class ContextTest extends TestCase
+final class ContextTest extends TestCase
 {
-    public function testAssertContext()
+    public function testAssertContext(): void
     {
         $this->expectException(LogicException::class);
         Context::assertContext(new self('test'));
@@ -16,23 +18,23 @@ class ContextTest extends TestCase
         $this->expectException(LogicException::class);
         Context::assertContext(['very' => ['deep' => ['information' => new self('test')]]]);
 
-        $this->assertNull(Context::assertContext(['very' => ['deep' => ['information' => new self()]]]));
+        $this->assertNull(Context::assertContext(['very' => ['deep' => ['information' => new self('test')]]]));
     }
 
-    public function testAdd()
+    public function testAdd(): void
     {
         $context = $this->makeContext();
-        $this->assertEquals(2, count($context));
+        $this->assertCount(2, $context);
         // add new context.
         $context->add('another', 'data');
-        $this->assertEquals(3, count($context));
+        $this->assertCount(3, $context);
         // also try to override data
         $context->add('another', 'databis');
-        $this->assertEquals(3, count($context));
+        $this->assertCount(3, $context);
     }
 
 
-    public function testJsonSerialize()
+    public function testJsonSerialize(): void
     {
         $this->assertJsonStringEqualsJsonString(
             '[]',
@@ -45,20 +47,20 @@ class ContextTest extends TestCase
         );
     }
 
-    public function testGet()
+    public function testGet(): void
     {
         $this->assertEquals('flat', $this->makeContext()->get('bar'));
         $this->assertNull($this->makeContext()->get('notdefined'));
     }
 
-    public function testHas()
+    public function testHas(): void
     {
         $this->assertTrue($this->makeContext()->has('foo'));
         $this->assertTrue($this->makeContext()->has('bar'));
         $this->assertFalse($this->makeContext()->has('notdefined'));
     }
 
-    public function testFromArray()
+    public function testFromArray(): void
     {
         $this->assertInstanceOf(
             Context::class,
@@ -71,7 +73,7 @@ class ContextTest extends TestCase
         );
     }
 
-    public function testInitialize()
+    public function testInitialize(): void
     {
         $this->assertInstanceOf(
             Context::class,
@@ -79,7 +81,7 @@ class ContextTest extends TestCase
         );
     }
 
-    public function testIsEmpty()
+    public function testIsEmpty(): void
     {
         $this->assertNotTrue($this->makeContext()->isEmpty());
         $this->assertTrue(Context::initialize()->isEmpty());

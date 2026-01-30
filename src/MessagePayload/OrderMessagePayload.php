@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Ipedis\Rabbit\MessagePayload;
 
 use Ipedis\Rabbit\Exception\MessagePayload\MessagePayloadFormatException;
@@ -7,6 +9,7 @@ use Ipedis\Rabbit\Exception\MessagePayload\MessagePayloadFormatException;
 class OrderMessagePayload extends MessagePayloadAbstract
 {
     public const HEADER_CORRELATION_ID = 'correlation_id';
+
     public const HEADER_REPLY_QUEUE = 'replyQueue';
 
     /**
@@ -35,7 +38,6 @@ class OrderMessagePayload extends MessagePayloadAbstract
     }
 
     /**
-     * @param array $state
      * @return static
      * @throws MessagePayloadFormatException
      */
@@ -61,8 +63,6 @@ class OrderMessagePayload extends MessagePayloadAbstract
     /**
      * Helper function
      * to return custom properties for rabbitmq message obj
-     *
-     * @return array
      */
     public function getMessageProperties(): array
     {
@@ -72,9 +72,6 @@ class OrderMessagePayload extends MessagePayloadAbstract
         ];
     }
 
-    /**
-     * @return string
-     */
     public function getOrderId(): string
     {
         return $this->orderId;
@@ -82,9 +79,6 @@ class OrderMessagePayload extends MessagePayloadAbstract
 
     /**
      * Set Task Id
-     *
-     * @param string $orderId
-     * @return OrderMessagePayload
      */
     public function setOrderId(string $orderId): self
     {
@@ -94,9 +88,6 @@ class OrderMessagePayload extends MessagePayloadAbstract
         return $this;
     }
 
-    /**
-     * @return string
-     */
     public function getReplyQueue(): string
     {
         return $this->replyQueue;
@@ -104,9 +95,6 @@ class OrderMessagePayload extends MessagePayloadAbstract
 
     /**
      * Set reply queue
-     *
-     * @param string $replyQueue
-     * @return OrderMessagePayload
      */
     public function setReplyQueue(string $replyQueue): self
     {

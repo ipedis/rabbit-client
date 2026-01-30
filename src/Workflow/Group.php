@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Ipedis\Rabbit\Workflow;
 
 use Ipedis\Rabbit\Consumer\Handler\MessageHandlerInterface;
@@ -26,38 +28,25 @@ class Group extends Bindable
      * @var $orders []
      */
     protected $orders = [];
-    /**
-     * @var GroupConfig
-     */
-    protected $config;
-    /**
-     * Group Identifier
-     *
-     * @var string $groupId
-     */
-    private $groupId;
+
 
     /**
      * Group constructor.
-     * @param string $groupId
-     * @param array $orders
-     * @param array $callbacks
-     * @param GroupConfig|null $config
      * @throws InvalidGroupArgumentException
      */
-    protected function __construct(string $groupId, array $orders = [], array $callbacks = [], ?GroupConfig $config = null)
+    protected function __construct(/**
+     * Group Identifier
+     */
+    private readonly string $groupId, array $orders = [], array $callbacks = [], protected ?\Ipedis\Rabbit\Workflow\Config\GroupConfig $config = null)
     {
-        $this->groupId = $groupId;
         $this->prepareOrders($orders);
         $this->callbacks = $this->assertCallbacks($callbacks);
-        $this->config = $config;
     }
 
     /**
-     * @param array $orders
      * @throws InvalidGroupArgumentException
      */
-    private function prepareOrders(array $orders)
+    private function prepareOrders(array $orders): void
     {
         foreach ($orders as $order) {
             if (!$order instanceof Task && !$order instanceof Workflow) {
@@ -78,7 +67,6 @@ class Group extends Bindable
      * @param array $orders Array of tasks|workflow
      * @param array $callbacks Key/value array of callbacks
      * where key correspond to event name and value list of callbacks for event
-     * @param GroupConfig|null $config
      * @return static
      * @throws InvalidGroupArgumentException
      */
@@ -90,9 +78,6 @@ class Group extends Bindable
     /**
      * Planify a task in the group
      *
-     * @param OrderMessagePayload $order
-     * @param array $callbacks
-     * @return Group
      * @throws InvalidGroupArgumentException
      */
     public function planifyOrder(OrderMessagePayload $order, array $callbacks = []): self
@@ -104,7 +89,6 @@ class Group extends Bindable
      * Planify a job in the group
      *
      * @param $order
-     * @return Group
      * @throws InvalidGroupArgumentException
      */
     public function planify($order): self
@@ -125,8 +109,6 @@ class Group extends Bindable
     /**
      * Planify a workflow in the group
      *
-     * @param Workflow $workflow
-     * @return Group
      * @throws InvalidGroupArgumentException
      */
     public function planifyWorkflow(Workflow $workflow): self
@@ -136,9 +118,6 @@ class Group extends Bindable
 
     /**
      * Group has order matching orderId
-     *
-     * @param string $orderId
-     * @return bool
      */
     public function has(string $orderId): bool
     {
@@ -146,8 +125,6 @@ class Group extends Bindable
     }
 
     /**
-     * @param ReplyMessagePayload $message
-     * @return array
      * @throws InvalidStatusException
      */
     public function update(ReplyMessagePayload $message): array
@@ -158,18 +135,12 @@ class Group extends Bindable
         return [$this, $order];
     }
 
-    /**
-     * @param string $orderId
-     * @return Task
-     */
     public function find(string $orderId): Task
     {
         return $this->orders[$orderId];
     }
 
     /**
-     * @param ReplyMessagePayload $message
-     * @return array
      * @throws InvalidStatusException
      */
     public function retryTask(ReplyMessagePayload $message): array
@@ -182,9 +153,6 @@ class Group extends Bindable
 
     /**
      * Check if retry is allowed for task
-     *
-     * @param Task $task
-     * @return bool
      */
     public function canRetryTask(Task $task): bool
     {
@@ -194,17 +162,11 @@ class Group extends Bindable
             $task->getRetryCount() < $this->getConfig()->getMaxRetry();
     }
 
-    /**
-     * @return bool
-     */
     public function hasConfig(): bool
     {
         return !is_null($this->config);
     }
 
-    /**
-     * @return GroupConfig
-     */
     public function getConfig(): GroupConfig
     {
         return $this->config;
@@ -213,21 +175,17 @@ class Group extends Bindable
     /**
      * Check if further tasks can be dispatched for channel
      *
-     * @param string $channelName
      * @param $maxWorkers
-     * @return bool
      */
     public function canDispatchTask(string $channelName, $maxWorkers): bool
     {
         return
             $this->getProgressBag()->countDispatchedTasks($channelName) < $maxWorkers &&
-            $this->getProgressBag()->countInProgressTasks($channelName) < $maxWorkers;
+            $this->getProgressBag()->countInProgressTasks() < $maxWorkers;
     }
 
     /**
      * Get progress bag for tasks
-     *
-     * @return GroupProgressBag
      */
     public function getProgressBag(): GroupProgressBag
     {
@@ -249,7 +207,7 @@ class Group extends Bindable
      */
     public function getFailedOrders(): array
     {
-        return array_filter($this->getOrders(), fn (Task $task) => $task->getStatus() === MessageHandlerInterface::TYPE_ERROR);
+        return array_filter($this->getOrders(), fn (Task $task): bool => $task->getStatus() === MessageHandlerInterface::TYPE_ERROR);
     }
 
     /**
@@ -257,36 +215,28 @@ class Group extends Bindable
      */
     public function getErrors(): array
     {
-        return array_map(fn (Task $task) => Serializer::fromMessage($task->getLastReplyMessage()), $this->getFailedOrders());
+        return array_map(fn (Task $task): \Ipedis\Rabbit\Exception\Helper\Error => Serializer::fromMessage($task->getLastReplyMessage()), $this->getFailedOrders());
     }
 
-    /**
-     * @return string
-     */
     public function getGroupId(): string
     {
         return $this->groupId;
     }
 
-    /**
-     * @return ProgressBag\Property\Status
-     */
-    public function getStatus()
+    public function getStatus(): \Ipedis\Rabbit\Workflow\ProgressBag\Property\Status
     {
         return $this->getProgressBag()->getStatus();
     }
 
     /**
-     * @return ProgressBag\Property\Percentage
      * @throws \Ipedis\Rabbit\Exception\Progress\InvalidProgressValueException
      */
-    public function getPercentage()
+    public function getPercentage(): \Ipedis\Rabbit\Workflow\ProgressBag\Property\Percentage
     {
         return $this->getProgressBag()->getPercentage();
     }
 
     /**
-     * @return Timer
      * @throws InvalidSpentTimeException
      * @throws InvalidTimeException
      */
@@ -299,9 +249,6 @@ class Group extends Bindable
         );
     }
 
-    /**
-     * @return array
-     */
     protected function getAllowedBindableTypes(): array
     {
         return BindableEventInterface::GROUP_ALLOW_TYPES;

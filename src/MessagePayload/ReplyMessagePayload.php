@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Ipedis\Rabbit\MessagePayload;
 
 use Ipedis\Rabbit\Consumer\Handler\MessageHandlerInterface;
@@ -8,33 +10,21 @@ use Ipedis\Rabbit\Exception\MessagePayload\MessagePayloadFormatException;
 final class ReplyMessagePayload extends MessagePayloadAbstract implements ReplyMessagePayloadInterface
 {
     public const HEADER_CORRELATION_ID = 'correlation_id';
+
     public const HEADER_STATUS = 'status';
+
     public const HEADER_EXECTIME = 'executionTime';
-
-    /**
-     * @var string $orderId
-     */
-    private string $orderId;
-
-    /**
-     * @var string $status
-     */
-    private string $status;
 
     protected function __construct(
         string $channel,
-        string $taskId,
-        string $status,
+        private readonly string $orderId,
+        private readonly string $status,
         array $data = [],
         array $headers = []
     ) {
         parent::__construct($channel, $data, $headers);
-
-        $this->orderId = $taskId;
-        $this->addHeader(self::HEADER_CORRELATION_ID, $taskId);
-
-        $this->status = $status;
-        $this->addHeader(self::HEADER_STATUS, $status);
+        $this->addHeader(self::HEADER_CORRELATION_ID, $this->orderId);
+        $this->addHeader(self::HEADER_STATUS, $this->status);
 
         if (!empty($headers[self::HEADER_EXECTIME])) {
             $this->addHeader(self::HEADER_EXECTIME, $headers[self::HEADER_EXECTIME]);
@@ -44,11 +34,6 @@ final class ReplyMessagePayload extends MessagePayloadAbstract implements ReplyM
     /**
      * Factory method to build reply from order message
      *
-     * @param OrderMessagePayload $orderMessagePayload
-     * @param string $status
-     * @param array $data
-     * @param array $headers
-     * @return ReplyMessagePayload
      * @throws MessagePayloadFormatException
      */
     public static function buildFromOrderMessagePayload(
@@ -64,10 +49,7 @@ final class ReplyMessagePayload extends MessagePayloadAbstract implements ReplyM
         /**
          * Add order payload to data
          */
-        $data = array_merge(
-            [ReplyMessagePayloadInterface::REPLY_INDEX => $data],
-            ['orderPayload' => $orderMessagePayload->getData()]
-        );
+        $data = [ReplyMessagePayloadInterface::REPLY_INDEX => $data, 'orderPayload' => $orderMessagePayload->getData()];
 
         return new self(
             $orderMessagePayload->getReplyQueue(),
@@ -79,8 +61,6 @@ final class ReplyMessagePayload extends MessagePayloadAbstract implements ReplyM
     }
 
     /**
-     * @param array $state
-     * @return static
      * @throws MessagePayloadFormatException
      */
     public static function fromArray(array $state): self
@@ -104,9 +84,6 @@ final class ReplyMessagePayload extends MessagePayloadAbstract implements ReplyM
         );
     }
 
-    /**
-     * @return string
-     */
     public function getStatus(): string
     {
         return $this->status;
@@ -115,19 +92,14 @@ final class ReplyMessagePayload extends MessagePayloadAbstract implements ReplyM
     /**
      * Helper function
      * to return custom properties for rabbitmq message obj
-     *
-     * @return array
      */
     public function getMessageProperties(): array
     {
         return [
-            'correlation_id' => $this->getOrderId()
+            'correlation_id' => $this->orderId
         ];
     }
 
-    /**
-     * @return string
-     */
     public function getOrderId(): string
     {
         return $this->orderId;
@@ -140,26 +112,22 @@ final class ReplyMessagePayload extends MessagePayloadAbstract implements ReplyM
     {
         if ($this->hasReply()) {
             return $this->getData()[self::REPLY_INDEX];
-        } else {
-            return null;
         }
+        return null;
     }
 
-    /**
-     * @return bool
-     */
     public function hasReply(): bool
     {
-        return !empty($this->getData()) && !empty($this->getData()[self::REPLY_INDEX]);
+        return $this->getData() !== [] && !empty($this->getData()[self::REPLY_INDEX]);
     }
 
     public function isError(): bool
     {
-        return $this->getStatus() === MessageHandlerInterface::TYPE_ERROR;
+        return $this->status === MessageHandlerInterface::TYPE_ERROR;
     }
 
     public function isSuccess(): bool
     {
-        return $this->getStatus() === MessageHandlerInterface::TYPE_SUCCESS;
+        return $this->status === MessageHandlerInterface::TYPE_SUCCESS;
     }
 }

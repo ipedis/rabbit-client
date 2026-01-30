@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Ipedis\Rabbit\Workflow\ProgressBag\Model\Summary;
 
 use Ipedis\Rabbit\Exception\Progress\InvalidProgressValueException;
@@ -11,32 +13,14 @@ use Ipedis\Rabbit\Workflow\ProgressBag\WorkflowProgressBag;
 
 class GroupProgressSummary implements \JsonSerializable
 {
-    /**
-     * @var Status
-     */
-    private Status $status;
-    /**
-     * @var Summary
-     */
-    private Summary $summary;
-    /**
-     * @var GroupProgressCollection
-     */
-    private GroupProgressCollection $groupProgressCollection;
-
-    public function __construct(Status $status, Summary $summary, GroupProgressCollection $groupProgressCollection)
+    public function __construct(private readonly Status $status, private readonly Summary $summary, private readonly GroupProgressCollection $groupProgressCollection)
     {
-        $this->status = $status;
-        $this->summary = $summary;
-        $this->groupProgressCollection = $groupProgressCollection;
     }
 
     /**
-     * @param WorkflowProgressBag $workflowProgressBag
-     * @return GroupProgressSummary
      * @throws InvalidProgressValueException
      */
-    public static function fromWorkflow(WorkflowProgressBag $workflowProgressBag)
+    public static function fromWorkflow(WorkflowProgressBag $workflowProgressBag): self
     {
         return new self(
             $workflowProgressBag->getGroupsStatus(),
@@ -48,15 +32,10 @@ class GroupProgressSummary implements \JsonSerializable
                 $workflowProgressBag->countSuccessfulGroups(),
                 $workflowProgressBag->countFailedGroups()
             ),
-            new GroupProgressCollection(array_map(function (Group $group) {
-                return $group->getProgressBag()->getGroupProgress();
-            }, $workflowProgressBag->getGroupInWorkflow()))
+            new GroupProgressCollection(array_map(fn(Group $group) => $group->getProgressBag()->getGroupProgress(), $workflowProgressBag->getGroupInWorkflow()))
         );
     }
 
-    /**
-     * @return array
-     */
     public function jsonSerialize(): array
     {
         return [
@@ -66,25 +45,16 @@ class GroupProgressSummary implements \JsonSerializable
         ];
     }
 
-    /**
-     * @return Status
-     */
     public function getStatus(): Status
     {
         return $this->status;
     }
 
-    /**
-     * @return Summary
-     */
     public function getSummary(): Summary
     {
         return $this->summary;
     }
 
-    /**
-     * @return GroupProgressCollection
-     */
     public function getGroupProgressCollection(): GroupProgressCollection
     {
         return $this->groupProgressCollection;
