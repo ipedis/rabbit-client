@@ -12,7 +12,6 @@ use Ipedis\Rabbit\Workflow\ProgressBag\Model\Summary\GroupProgressSummary;
 use Ipedis\Rabbit\Workflow\ProgressBag\Property\Percentage;
 use Ipedis\Rabbit\Workflow\ProgressBag\Property\Status;
 use Ipedis\Rabbit\Workflow\ProgressBag\Property\Timer;
-use Ipedis\Rabbit\Workflow\ProgressBag\Summary;
 use Ipedis\Rabbit\Workflow\ProgressBag\WorkflowProgressBag;
 
 class WorkflowProgress implements \JsonSerializable
@@ -24,9 +23,6 @@ class WorkflowProgress implements \JsonSerializable
     {
     }
 
-    /**
-     * @return $this
-     */
     public static function build(
         string $uuid,
         Status $status,
@@ -59,6 +55,9 @@ class WorkflowProgress implements \JsonSerializable
         );
     }
 
+    /**
+     * @return array{uuid: string, status: Status, timer: Timer, percentage: Percentage, groups: GroupProgressSummary, tasks: GroupedTasksProgressSummary}
+     */
     public function jsonSerialize(): array
     {
         return [

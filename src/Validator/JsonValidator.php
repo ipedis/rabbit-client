@@ -8,6 +8,7 @@ declare(strict_types=1);
  * Date: 3/16/20
  * Time: 1:44 PM
  */
+
 namespace Ipedis\Rabbit\Validator;
 
 class JsonValidator

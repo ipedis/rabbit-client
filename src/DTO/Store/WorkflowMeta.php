@@ -6,27 +6,15 @@ namespace Ipedis\Rabbit\DTO\Store;
 
 use Ipedis\Rabbit\Workflow\Workflow;
 
-class WorkflowMeta
+final readonly class WorkflowMeta
 {
     public function __construct(
-        private readonly Workflow $workflow,
-        /**
-         * @var string
-         */
-        private readonly ?string $parent = null,
-        /**
-         * @var string
-         */
-        private readonly ?string $group = null
-    )
-    {
+        private Workflow $workflow,
+        private ?string $parent = null,
+        private ?string $group = null
+    ) {
     }
 
-    /**
-     * @param string $parentWorkflow
-     * @param string $parentGroup
-     * @return static
-     */
     public static function build(Workflow $workflow, ?string $parentWorkflow = null, ?string $parentGroup = null): self
     {
         return new self($workflow, $parentWorkflow, $parentGroup);
@@ -37,7 +25,7 @@ class WorkflowMeta
         return $this->workflow;
     }
 
-    public function getParent(): string
+    public function getParent(): ?string
     {
         return $this->parent;
     }
@@ -47,7 +35,7 @@ class WorkflowMeta
         return !is_null($this->group);
     }
 
-    public function getGroup(): string
+    public function getGroup(): ?string
     {
         return $this->group;
     }

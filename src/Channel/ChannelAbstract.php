@@ -6,6 +6,7 @@ namespace Ipedis\Rabbit\Channel;
 
 use Ipedis\Rabbit\Exception\Channel\ChannelNamingException;
 
+/** @phpstan-consistent-constructor */
 abstract class ChannelAbstract implements \Stringable
 {
     /**
@@ -71,10 +72,9 @@ abstract class ChannelAbstract implements \Stringable
     }
 
     /**
-     * @return static
      * @throws ChannelNamingException
      */
-    public static function fromString(string $channel): self
+    public static function fromString(string $channel): static
     {
         $catched = self::assertChannel($channel);
 
@@ -87,6 +87,7 @@ abstract class ChannelAbstract implements \Stringable
     }
 
     /**
+     * @return array{protocol: string, service: string, aggregate: string, action: string}
      * @throws ChannelNamingException
      */
     private static function assertChannel(string $channel): array
@@ -101,7 +102,12 @@ abstract class ChannelAbstract implements \Stringable
             throw new ChannelNamingException("Channel can't be parsed.");
         }
 
-        return $catched;
+        return [
+            'protocol' => $catched['protocol'],
+            'service' => $catched['service'],
+            'aggregate' => $catched['aggregate'],
+            'action' => $catched['action'],
+        ];
     }
 
     /**
@@ -114,10 +120,7 @@ abstract class ChannelAbstract implements \Stringable
         return sprintf('%s.%s.%s', $channelDetails['service'], $channelDetails['aggregate'], $channelDetails['action']);
     }
 
-    /**
-     * @return static
-     */
-    public static function build(string $protocol, string $service, string $aggregate, string $action): self
+    public static function build(string $protocol, string $service, string $aggregate, string $action): static
     {
         return new static(
             $protocol,

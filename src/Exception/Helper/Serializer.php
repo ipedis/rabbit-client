@@ -7,52 +7,52 @@ namespace Ipedis\Rabbit\Exception\Helper;
 use Exception;
 use Ipedis\Rabbit\MessagePayload\ReplyMessagePayloadInterface;
 use JsonSerializable;
-use LogicException;
 
-class Serializer implements JsonSerializable
+final class Serializer implements JsonSerializable
 {
     /**
      * Serializer constructor.
      */
-    protected function __construct(private readonly Exception $exception, private Context $context)
+    private function __construct(private readonly Exception $exception, private Context $context)
     {
     }
 
-    /**
-     * @return static
-     */
     public static function fromException(Exception $exception, ?Context $context = null): self
     {
-        return new static($exception, $context ?? Context::initialize());
+        return new self($exception, $context ?? Context::initialize());
     }
 
     public static function fromMessage(ReplyMessagePayloadInterface $message): Error
     {
-        return Error::fromArray($message->getReply()['error']);
+        /** @var array<string, mixed> $reply */
+        $reply = $message->getReply();
+
+        /** @var array<string, mixed> $error */
+        $error = $reply['error'];
+
+        return Error::fromArray($error);
     }
 
     /**
-     * @param Context | array $context
+     * @param Context|array<string, mixed> $context
      * @return $this
      */
-    public function setContext($context): self
+    public function setContext(Context|array $context): self
     {
         if ($context instanceof Context) {
             $this->context = $context;
-        } elseif (is_array($context)) {
-            $this->context = Context::fromArray($context);
         } else {
-            throw new LogicException(sprintf('%s::setContext parameter must have type array or Context class.', static::class));
+            $this->context = Context::fromArray($context);
         }
 
         return $this;
     }
 
     /**
-     * @param string | int | object | array $state
+     * @param string|int|object|array<string, mixed> $state
      * @return $this
      */
-    public function addContext(string $name, $state): self
+    public function addContext(string $name, string|int|object|array $state): self
     {
         Context::assertContext($state);
         $this->context->add($name, $state);
@@ -64,7 +64,10 @@ class Serializer implements JsonSerializable
         return $this->context;
     }
 
-    protected function serializeException(): array
+    /**
+     * @return array{message: string, code: int, className: string}
+     */
+    private function serializeException(): array
     {
         return [
            'message' => $this->exception->getMessage(),
@@ -73,6 +76,9 @@ class Serializer implements JsonSerializable
         ];
     }
 
+    /**
+     * @return array{context: Context, exception: array{message: string, code: int, className: string}}
+     */
     public function jsonSerialize(): array
     {
         return [

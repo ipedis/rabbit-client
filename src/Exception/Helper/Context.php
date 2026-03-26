@@ -11,10 +11,18 @@ use IteratorAggregate;
 use JsonSerializable;
 use LogicException;
 
-class Context implements ArrayAccess, Countable, IteratorAggregate, JsonSerializable
+/**
+ * @implements ArrayAccess<string|int, mixed>
+ * @implements IteratorAggregate<string|int, mixed>
+ */
+final class Context implements ArrayAccess, Countable, IteratorAggregate, JsonSerializable
 {
-    protected array $items;
+    /** @var array<string|int, mixed> */
+    private array $items;
 
+    /**
+     * @param array<string|int, mixed> $items
+     */
     public function __construct(array $items = [])
     {
         self::assertContext($items);
@@ -22,20 +30,20 @@ class Context implements ArrayAccess, Countable, IteratorAggregate, JsonSerializ
     }
 
     /**
-     * @return static
+     * @param array<string|int, mixed> $items
      */
     public static function fromArray(array $items): self
     {
-        return new static($items);
+        return new self($items);
     }
 
     public static function initialize(): self
     {
-        return new static();
+        return new self();
     }
 
 
-    public static function assertContext($data): void
+    public static function assertContext(mixed $data): void
     {
         if (is_iterable($data)) {
             foreach ($data as $item) {
@@ -43,12 +51,17 @@ class Context implements ArrayAccess, Countable, IteratorAggregate, JsonSerializ
             }
         } elseif (is_object($data) && !($data instanceof JsonSerializable)) {
             throw new LogicException(
-                sprintf('object with type "%s" can\'t be serialize as it is not implementing JsonSerializable',
-                    $data::class)
+                sprintf(
+                    'object with type "%s" can\'t be serialize as it is not implementing JsonSerializable',
+                    $data::class
+                )
             );
         }
     }
 
+    /**
+     * @return ArrayIterator<string|int, mixed>
+     */
     public function getIterator(): ArrayIterator
     {
         return new ArrayIterator($this->items);
@@ -59,6 +72,8 @@ class Context implements ArrayAccess, Countable, IteratorAggregate, JsonSerializ
      */
     public function offsetExists($offset): bool
     {
+        assert(is_string($offset) || is_int($offset));
+
         return array_key_exists($offset, $this->items);
     }
 
@@ -67,6 +82,8 @@ class Context implements ArrayAccess, Countable, IteratorAggregate, JsonSerializ
      */
     public function offsetGet($offset): mixed
     {
+        assert(is_string($offset) || is_int($offset));
+
         return $this->items[$offset];
     }
 
@@ -76,6 +93,7 @@ class Context implements ArrayAccess, Countable, IteratorAggregate, JsonSerializ
      */
     public function offsetSet($offset, $value): void
     {
+        assert(is_string($offset) || is_int($offset));
         self::assertContext($value);
         $this->items[$offset] = $value;
     }
@@ -85,6 +103,7 @@ class Context implements ArrayAccess, Countable, IteratorAggregate, JsonSerializ
      */
     public function offsetUnset($offset): void
     {
+        assert(is_string($offset) || is_int($offset));
         unset($this->items[$offset]);
     }
 
@@ -94,29 +113,20 @@ class Context implements ArrayAccess, Countable, IteratorAggregate, JsonSerializ
     }
 
     /**
-     * @param $offset
-     * @param $value
      * @return $this
      */
-    public function add($offset, $value): self
+    public function add(mixed $offset, mixed $value): self
     {
         $this->offsetSet($offset, $value);
         return $this;
     }
 
-    /**
-     * @param $offset
-     * @return mixed|null
-     */
-    public function get($offset): mixed
+    public function get(mixed $offset): mixed
     {
         return ($this->offsetExists($offset)) ? $this->offsetGet($offset) : null;
     }
 
-    /**
-     * @param $offset
-     */
-    public function has($offset): bool
+    public function has(mixed $offset): bool
     {
         return $this->offsetExists($offset);
     }
@@ -126,6 +136,9 @@ class Context implements ArrayAccess, Countable, IteratorAggregate, JsonSerializ
         return $this->count() < 1;
     }
 
+    /**
+     * @return array<string|int, mixed>
+     */
     public function jsonSerialize(): array
     {
         return $this->items;

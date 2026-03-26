@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Ipedis\Rabbit\DTO\Order;
 
+use Ipedis\Rabbit\Consumer\Handler\MessageHandlerInterface;
+
 /**
  * DTO class to abstract a task
  * A task should have a task id and a status
@@ -16,28 +18,19 @@ final class Order
     public function __construct(
         private readonly string $orderId,
         private string $status,
-        /**
-         * @var $handler
-         */
-        private $handler
-    )
-    {
+        private readonly \Closure|MessageHandlerInterface $handler
+    ) {
     }
 
     /**
      * Factory method
-     *
-     * @param callable $handler
      */
-    public static function build(string $orderId, string $status, $handler): self
+    public static function build(string $orderId, string $status, \Closure|MessageHandlerInterface $handler): self
     {
         return new self($orderId, $status, $handler);
     }
 
-    /**
-     * @param $newStatus
-     */
-    public function transitionTo($newStatus): self
+    public function transitionTo(string $newStatus): self
     {
         $this->status = $newStatus;
 
@@ -54,7 +47,7 @@ final class Order
         return $this->status;
     }
 
-    public function getHandler()
+    public function getHandler(): \Closure|MessageHandlerInterface
     {
         return $this->handler;
     }

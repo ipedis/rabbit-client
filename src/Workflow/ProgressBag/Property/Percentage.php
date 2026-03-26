@@ -71,6 +71,9 @@ class Percentage implements \JsonSerializable
         return (100 * $completed) / $total;
     }
 
+    /**
+     * @return array{completed: float, success: float, failed: float}
+     */
     public function jsonSerialize(): array
     {
         return [

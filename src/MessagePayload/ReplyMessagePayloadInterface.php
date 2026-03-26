@@ -8,7 +8,7 @@ interface ReplyMessagePayloadInterface extends MessagePayloadInterface
 {
     public const REPLY_INDEX = 'reply';
 
-    public function getReply();
+    public function getReply(): mixed;
 
     public function hasReply(): bool;
 }

@@ -5,25 +5,19 @@ declare(strict_types=1);
 namespace Ipedis\Rabbit\Workflow\Event;
 
 use Ipedis\Rabbit\Exception\Helper\Serializer;
+use Ipedis\Rabbit\MessagePayload\ReplyMessagePayloadInterface;
 
 abstract class Bindable
 {
     /**
-     * @var callable[][]
+     * @var array<string, list<callable>>
      */
     protected array $callbacks = [];
 
-    /**
-     * @return static
-     */
-    public function bind(string $eventType, callable $callback): self
+    public function bind(string $eventType, callable $callback): static
     {
         if (!in_array($eventType, $this->getAllowedBindableTypes())) {
             throw new \LogicException(sprintf("event type : %s is not allowed.", $eventType));
-        }
-
-        if (!is_callable($callback)) {
-            throw new \LogicException(sprintf("event type : %s parameter is not a callable", $eventType));
         }
 
         if (empty($this->callbacks[$eventType])) {
@@ -36,31 +30,18 @@ abstract class Bindable
     }
 
     /**
-     * @return string[]
+     * @return list<string>
      */
     abstract protected function getAllowedBindableTypes(): array;
 
-    /**
-     * @return static
-     */
-    public function call(string $eventType, $payload = null): self
+    public function call(string $eventType, mixed $payload = null): static
     {
         // Ignore undefined array.
         if (empty($this->callbacks[$eventType])) {
             return $this;
         }
 
-        // If is not array but pure callable, cast it to array.
-        if (is_callable($this->callbacks[$eventType])) {
-            $this->callbacks[$eventType] = [$this->callbacks[$eventType]];
-        }
-
         foreach ($this->callbacks[$eventType] as $callback) {
-            //ignore evey type which is not callable.
-            if (!is_callable($callback)) {
-                continue;
-            }
-
             // if you do not have any payload, we only provide the event type.
             if (is_null($payload)) {
                 $callback($eventType);
@@ -68,9 +49,12 @@ abstract class Bindable
                 // TODO we should have Interface to materialize Bindable Class which also can have Error.
                 // if we are on case error.
                 preg_match('#(?:failed|error)$#', $eventType) &&
+                is_object($payload) &&
                 method_exists($payload, 'getLastReplyMessage')
             ) {
-                $callback($payload, $eventType, Serializer::fromMessage($payload->getLastReplyMessage()));
+                $replyMessage = $payload->getLastReplyMessage();
+                assert($replyMessage instanceof ReplyMessagePayloadInterface);
+                $callback($payload, $eventType, Serializer::fromMessage($replyMessage));
             } else {
                 // any other callable type.
                 $callback($payload, $eventType);
@@ -80,8 +64,15 @@ abstract class Bindable
         return $this;
     }
 
+    /**
+     * @param array<string, callable|list<callable>> $callbacks
+     * @return array<string, list<callable>>
+     */
     protected function assertCallbacks(array $callbacks): array
     {
+        /** @var array<string, list<callable>> $result */
+        $result = [];
+
         foreach ($callbacks as $eventType => $callback) {
             if (!in_array($eventType, $this->getAllowedBindableTypes())) {
                 throw new \LogicException(sprintf("event type : %s is not allowed.", $eventType));
@@ -99,8 +90,11 @@ abstract class Bindable
                     throw new \LogicException(sprintf("event type : %s parameter is not a callable or array of callable", $eventType));
                 }
             }
+
+            /** @var list<callable> $callback */
+            $result[$eventType] = $callback;
         }
 
-        return $callbacks;
+        return $result;
     }
 }

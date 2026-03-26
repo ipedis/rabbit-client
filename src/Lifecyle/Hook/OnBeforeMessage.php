@@ -6,5 +6,5 @@ namespace Ipedis\Rabbit\Lifecyle\Hook;
 
 interface OnBeforeMessage
 {
-    public function beforeMessageHandled();
+    public function beforeMessageHandled(): void;
 }

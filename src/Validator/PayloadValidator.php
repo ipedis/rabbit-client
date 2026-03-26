@@ -8,6 +8,7 @@ declare(strict_types=1);
  * Date: 3/16/20
  * Time: 1:44 PM
  */
+
 namespace Ipedis\Rabbit\Validator;
 
 use Opis\JsonSchema\Errors\ValidationError;
@@ -38,7 +39,9 @@ class PayloadValidator
         $this->inputValid = true;
         $dataJson = json_decode($payload, false);
         $validator = new Validator();
-        $schemaJson = $validator->loader()->loadObjectSchema(json_decode($schema, false));
+        /** @var object $schemaDecoded */
+        $schemaDecoded = json_decode($schema, false);
+        $schemaJson = $validator->loader()->loadObjectSchema($schemaDecoded);
         $this->error = $validator->schemaValidation($dataJson, $schemaJson);
         return is_null($this->error);
     }
@@ -46,7 +49,7 @@ class PayloadValidator
     public function isValid(): bool
     {
         return $this->isInputValid() &&
-            !$this->error instanceof \Opis\JsonSchema\Errors\ValidationError;
+            !$this->error instanceof ValidationError;
     }
 
     public function isInputValid(): bool
@@ -61,14 +64,14 @@ class PayloadValidator
 
     public function getErrorAsString(): string
     {
-        if (!$this->error instanceof \Opis\JsonSchema\Errors\ValidationError) {
+        if (!$this->error instanceof ValidationError) {
             return '';
         }
 
         return sprintf(
             "Error: %s\n%s\n",
             $this->error->keyword(),
-            json_encode($this->error->args(), JSON_PRETTY_PRINT)
+            (string) json_encode($this->error->args(), JSON_PRETTY_PRINT)
         );
     }
 }

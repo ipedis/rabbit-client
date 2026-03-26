@@ -7,10 +7,14 @@ namespace Ipedis\Test\Rabbit\Exception;
 use Ipedis\Rabbit\Exception\Helper\Context;
 use PHPUnit\Framework\TestCase;
 use LogicException;
+use PHPUnit\Framework\Attributes\Test;
 
 final class ContextTest extends TestCase
 {
-    public function testAssertContext(): void
+    /**
+     */
+    #[Test]
+    public function assert_context(): void
     {
         $this->expectException(LogicException::class);
         Context::assertContext(new self('test'));
@@ -21,7 +25,10 @@ final class ContextTest extends TestCase
         $this->assertNull(Context::assertContext(['very' => ['deep' => ['information' => new self('test')]]]));
     }
 
-    public function testAdd(): void
+    /**
+     */
+    #[Test]
+    public function add(): void
     {
         $context = $this->makeContext();
         $this->assertCount(2, $context);
@@ -34,7 +41,10 @@ final class ContextTest extends TestCase
     }
 
 
-    public function testJsonSerialize(): void
+    /**
+     */
+    #[Test]
+    public function json_serialize(): void
     {
         $this->assertJsonStringEqualsJsonString(
             '[]',
@@ -47,20 +57,29 @@ final class ContextTest extends TestCase
         );
     }
 
-    public function testGet(): void
+    /**
+     */
+    #[Test]
+    public function get(): void
     {
         $this->assertEquals('flat', $this->makeContext()->get('bar'));
         $this->assertNull($this->makeContext()->get('notdefined'));
     }
 
-    public function testHas(): void
+    /**
+     */
+    #[Test]
+    public function has(): void
     {
         $this->assertTrue($this->makeContext()->has('foo'));
         $this->assertTrue($this->makeContext()->has('bar'));
         $this->assertFalse($this->makeContext()->has('notdefined'));
     }
 
-    public function testFromArray(): void
+    /**
+     */
+    #[Test]
+    public function from_array(): void
     {
         $this->assertInstanceOf(
             Context::class,
@@ -73,7 +92,10 @@ final class ContextTest extends TestCase
         );
     }
 
-    public function testInitialize(): void
+    /**
+     */
+    #[Test]
+    public function initialize(): void
     {
         $this->assertInstanceOf(
             Context::class,
@@ -81,7 +103,10 @@ final class ContextTest extends TestCase
         );
     }
 
-    public function testIsEmpty(): void
+    /**
+     */
+    #[Test]
+    public function is_empty(): void
     {
         $this->assertNotTrue($this->makeContext()->isEmpty());
         $this->assertTrue(Context::initialize()->isEmpty());

@@ -44,6 +44,7 @@ trait Manager
 
     /**
      * Collection of orders
+     * @var array<string, Order>
      */
     private array $orders;
 
@@ -85,15 +86,12 @@ trait Manager
     /**
      * Publish an order
      *
-     * @param $callback
-     *
-     *
      * @throws ChannelFactoryException
      * @throws ChannelNamingException
      * @throws InvalidCallableException
      * @throws MessagePayloadValidatorException|MessagePayloadInvalidSchemaException|RabbitClientPublishException
      */
-    public function publish(OrderMessagePayload $messagePayload, $callback = null): self
+    public function publish(OrderMessagePayload $messagePayload, Closure|MessageHandlerInterface|null $callback = null): self
     {
         /**
          * Channel factory must be provided to
@@ -176,17 +174,11 @@ trait Manager
     }
 
     /**
-     * @param $callback
      * @throws InvalidCallableException
      */
-    protected function assertCallback(OrderMessagePayload $messagePayload, $callback): void
+    protected function assertCallback(OrderMessagePayload $messagePayload, Closure|MessageHandlerInterface $callback): void
     {
-        if (
-            !is_callable($callback)
-            && !$callback instanceof MessageHandlerInterface
-        ) {
-            throw new InvalidCallableException(sprintf('Invalid callable provided for chanel {%s}', $messagePayload->getChannel()));
-        }
+        // Type system ensures callback validity via \Closure|MessageHandlerInterface
     }
 
     /**
@@ -218,10 +210,8 @@ trait Manager
 
     /**
      * Append new order to collection
-     *
-     * @param callable $callback
      */
-    private function addOrderToDispatchedList(string $orderId, $callback): void
+    private function addOrderToDispatchedList(string $orderId, Closure|MessageHandlerInterface $callback): void
     {
         $this->orders[$orderId] = Order::build(
             $orderId,
@@ -273,7 +263,7 @@ trait Manager
          */
         $callback = $order->getHandler();
 
-        if ($order->getHandler() instanceof MessageHandlerInterface) {
+        if ($callback instanceof MessageHandlerInterface) {
             /**
              * Automatically bind to the on method
              */
@@ -295,6 +285,7 @@ trait Manager
         if ($this->isCompleted()) {
             return false;
         }
+
         return null;
     }
 
@@ -345,7 +336,7 @@ trait Manager
      */
     public function getInProgressOrders(): array
     {
-        return array_filter($this->orders, fn(Order $order) => in_array($order->getStatus(), [MessageHandlerInterface::TYPE_PROGRESS, MessageHandlerInterface::TYPE_STARTING]));
+        return array_filter($this->orders, fn (Order $order): bool => in_array($order->getStatus(), [MessageHandlerInterface::TYPE_PROGRESS, MessageHandlerInterface::TYPE_STARTING], true));
     }
 
     /**
@@ -353,7 +344,7 @@ trait Manager
      */
     public function bind(string $event, Closure $handler): self
     {
-        if (in_array($event, MessageHandlerInterface::AVAILABLE_TYPES)) {
+        if (in_array($event, MessageHandlerInterface::AVAILABLE_TYPES, true)) {
             $this->eventHandlers[$event] = $handler;
         }
 
@@ -365,7 +356,7 @@ trait Manager
      */
     public function getSuccessfulOrders(): array
     {
-        return array_filter($this->orders, fn(Order $order) => $order->getStatus() === MessageHandlerInterface::TYPE_SUCCESS);
+        return array_filter($this->orders, fn (Order $order): bool => $order->getStatus() === MessageHandlerInterface::TYPE_SUCCESS);
     }
 
     /**
@@ -373,7 +364,7 @@ trait Manager
      */
     public function getFailedOrders(): array
     {
-        return array_filter($this->orders, fn(Order $order) => $order->getStatus() === MessageHandlerInterface::TYPE_ERROR);
+        return array_filter($this->orders, fn (Order $order): bool => $order->getStatus() === MessageHandlerInterface::TYPE_ERROR);
     }
 
     /**
@@ -391,7 +382,7 @@ trait Manager
      */
     public function getCompletedOrders(): array
     {
-        return array_filter($this->orders, fn(Order $order) => $order->getStatus() === MessageHandlerInterface::TYPE_SUCCESS ||
+        return array_filter($this->orders, fn (Order $order): bool => $order->getStatus() === MessageHandlerInterface::TYPE_SUCCESS ||
             $order->getStatus() === MessageHandlerInterface::TYPE_ERROR);
     }
 

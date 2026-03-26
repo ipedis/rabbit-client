@@ -65,7 +65,7 @@ trait Connector
 
             $this->exchange->publish($message, $routingKey, AMQP_NOPARAM, $messageProperties);
         } catch (\Exception $exception) {
-            throw new RabbitClientPublishException(sprintf('IPEDIS RABBIT CLIENT - Publishing message on exchange failed with error { %s }', $exception->getMessage()));
+            throw new RabbitClientPublishException(sprintf('IPEDIS RABBIT CLIENT - Publishing message on exchange failed with error { %s }', $exception->getMessage()), $exception->getCode(), $exception);
         }
     }
 
@@ -125,7 +125,7 @@ trait Connector
              */
             $this->setExchange();
         } catch (\Exception $exception) {
-            throw new RabbitClientConnectException(sprintf('IPEDIS RABBIT CLIENT - Connection to rabbitMQ failed with error { %s }', $exception->getMessage()));
+            throw new RabbitClientConnectException(sprintf('IPEDIS RABBIT CLIENT - Connection to rabbitMQ failed with error { %s }', $exception->getMessage()), $exception->getCode(), $exception);
         }
     }
 

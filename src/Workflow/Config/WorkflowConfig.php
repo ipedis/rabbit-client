@@ -5,12 +5,15 @@ declare(strict_types=1);
 namespace Ipedis\Rabbit\Workflow\Config;
 
 use Ipedis\Rabbit\Channel\Config\ChannelConfig;
-use Ipedis\Rabbit\Exception\Channel\InvalidChannelConfigException;
 
 class WorkflowConfig
 {
-    private array $channelsConfig;
+    /** @var array<string, ChannelConfig> */
+    private array $channelsConfig = [];
 
+    /**
+     * @param array<int, ChannelConfig> $channelsConfig
+     */
     public function __construct(
         private readonly bool $continueOnFailure = false,
         private readonly bool $retry = false,
@@ -24,15 +27,11 @@ class WorkflowConfig
     /**
      * Set channel configs
      *
-     * @throws InvalidChannelConfigException
+     * @param array<int, ChannelConfig> $channelConfigs
      */
-    protected function setChannelsConfig(array $channelConfigs)
+    protected function setChannelsConfig(array $channelConfigs): void
     {
         foreach ($channelConfigs as $channelConfig) {
-            if (!($channelConfig instanceof ChannelConfig)) {
-                throw new InvalidChannelConfigException('Invalid channel config supplied for workflow');
-            }
-
             $this->channelsConfig[$channelConfig->getChannelName()] = $channelConfig;
         }
     }

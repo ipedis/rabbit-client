@@ -14,26 +14,24 @@ use Ipedis\Rabbit\Workflow\ProgressBag\Property\Timer;
 class GroupProgress implements \JsonSerializable
 {
     private readonly string $uuid;
-    private readonly TaskProgressCollection $tasks;
 
     /**
      * Group constructor.
      * @throws InvalidUuidException
      */
-    private function __construct(string $uuid, private readonly Status $status, private readonly Timer $timer, private readonly Percentage $percentage, TaskProgressCollection $tasks)
+    private function __construct(string $uuid, private readonly Status $status, private readonly Timer $timer, private readonly Percentage $percentage, private readonly TaskProgressCollection $tasks)
     {
-        $this->validateInputs($uuid, $tasks);
+        $this->validateInputs($uuid);
         $this->uuid = $uuid;
-        $this->tasks = $tasks;
     }
 
     /**
      * @throws InvalidUuidException
      */
-    private function validateInputs(string $uuid, TaskProgressCollection $taskCollection): void
+    private function validateInputs(string $uuid): void
     {
         $this->assertUuid($uuid);
-        $this->assertTasks($taskCollection);
+        $this->assertTasks();
     }
 
     /**
@@ -44,13 +42,8 @@ class GroupProgress implements \JsonSerializable
         (new UuidValidator())->validate($uuid);
     }
 
-    private function assertTasks(TaskProgressCollection $tasks): void
+    private function assertTasks(): void
     {
-        foreach ($tasks as $task) {
-            if (!$task instanceof TaskProgress) {
-                throw new \InvalidArgumentException(sprintf('Object of %s expected.', TaskProgress::class));
-            }
-        }
     }
 
     /**
@@ -61,6 +54,9 @@ class GroupProgress implements \JsonSerializable
         return new self($uuid, $status, $timer, $percentage, $tasks);
     }
 
+    /**
+     * @return array{uuid: string, status: Status, timer: Timer, percentage: Percentage, tasks: TaskProgressCollection}
+     */
     public function jsonSerialize(): array
     {
         return [

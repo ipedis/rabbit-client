@@ -59,7 +59,7 @@ class ConcurrencyManager extends ManagerAbstract
     private function craftFirstGroup(): Closure
     {
         return function (Group $group): void {
-            for ($i=0;$i<10;++$i) {
+            for ($i = 0;$i < 10;++$i) {
                 $group->planifyOrder(
                     OrderMessagePayload::build(
                         'v1.admin.publication.generate-html',

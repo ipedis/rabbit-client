@@ -26,6 +26,9 @@ abstract class MessagePayloadAbstract implements MessagePayloadInterface
     /**
      * PayloadAbstract constructor.
      *
+     * @param array<string, mixed> $data
+     * @param array<string, mixed> $headers
+     *
      * @throws Exception
      */
     protected function __construct(/**
@@ -44,26 +47,25 @@ abstract class MessagePayloadAbstract implements MessagePayloadInterface
          */
         $this->setDefaultHeader();
         $this->addHeader(self::HEADER_CHANNEL, $this->channel);
-        $this->jsonEncodedData = json_encode($this->getData());
+        $this->jsonEncodedData = (string) json_encode($this->getData());
     }
 
     /**
      * Factory method
      *
-     * @throws \Exception
+     * @param array<string, mixed> $data
+     * @param array<string, mixed> $headers
+     *
+     * @throws Exception
      */
-    public static function build(string $channel, array $data = [], array $headers = []): self
-    {
-        return new static($channel, $data, $headers);
-    }
+    abstract public static function build(string $channel, array $data = [], array $headers = []): static;
 
     /**
      * Factory method to create message payload from json
      *
-     * @return EventMessagePayload
      * @throws MessagePayloadFormatException
      */
-    public static function fromJson(string $msg): self
+    public static function fromJson(string $msg): static
     {
         $state = json_decode($msg, true);
 
@@ -71,15 +73,20 @@ abstract class MessagePayloadAbstract implements MessagePayloadInterface
             throw new MessagePayloadFormatException(sprintf('Event message body format is invalid : {%s}', $msg));
         }
 
+        if (!is_array($state)) {
+            throw new MessagePayloadFormatException(sprintf('Event message body format is invalid : {%s}', $msg));
+        }
+
+        /** @var array<string, mixed> $state */
         return static::fromArray($state);
     }
 
-    abstract public static function fromArray(array $state): self;
-
     /**
-     * @param $value
+     * @param array<string, mixed> $state
      */
-    protected function addHeader(string $key, $value): self
+    abstract public static function fromArray(array $state): static;
+
+    protected function addHeader(string $key, mixed $value): static
     {
         $this->headers[$key] = $value;
 
@@ -99,6 +106,9 @@ abstract class MessagePayloadAbstract implements MessagePayloadInterface
         return $this->jsonEncodedData;
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public function getData(): array
     {
         return $this->data;
@@ -106,6 +116,8 @@ abstract class MessagePayloadAbstract implements MessagePayloadInterface
 
     /**
      * @alias
+     *
+     * @return array<string, mixed>
      */
     public function toArray(): array
     {
@@ -114,6 +126,8 @@ abstract class MessagePayloadAbstract implements MessagePayloadInterface
 
     /**
      * Get context of event without actual payload.
+     *
+     * @return array<string, mixed>
      */
     public function getContext(): array
     {
@@ -127,13 +141,13 @@ abstract class MessagePayloadAbstract implements MessagePayloadInterface
 
     public function getUuid(): string
     {
-        return $this->getHeader(self::HEADER_UUID);
+        /** @var string $uuid */
+        $uuid = $this->getHeader(self::HEADER_UUID);
+
+        return $uuid;
     }
 
-    /**
-     * @return mixed|null
-     */
-    public function getHeader(string $key, $default = null)
+    public function getHeader(string $key, mixed $default = null): mixed
     {
         return ($this->hasHeader($key)) ?
             $this->headers[$key] :
@@ -155,9 +169,15 @@ abstract class MessagePayloadAbstract implements MessagePayloadInterface
         return $this->getHeader(self::HEADER_TIMESTAMP);
     }
 
+    /**
+     * @return array{timezone: string}
+     */
     public function getTimezone(): array
     {
-        return $this->getHeader(self::HEADER_TIMEZONE);
+        /** @var array{timezone: string} $timezone */
+        $timezone = $this->getHeader(self::HEADER_TIMEZONE);
+
+        return $timezone;
     }
 
     public function getTimezoneName(): string
@@ -165,6 +185,9 @@ abstract class MessagePayloadAbstract implements MessagePayloadInterface
         return $this->getTimezone()['timezone'];
     }
 
+    /**
+     * @return array{header: array<string, mixed>, data: array<string, mixed>}
+     */
     public function jsonSerialize(): array
     {
         return [
@@ -199,6 +222,9 @@ abstract class MessagePayloadAbstract implements MessagePayloadInterface
         }
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public function getHeaders(): array
     {
         return $this->headers;

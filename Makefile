@@ -1,16 +1,42 @@
-install:
-	composer install
-test:
-	vendor/bin/pest
+DC := docker compose exec app
 
-manager:
-	clear && php demo/index.php manager
+.PHONY: up down install update test coverage phpstan pint pint-check rector rector-check qa shell
 
-worker:
-	clear && php demo/index.php worker
+up:
+	docker compose up -d --build
 
-listener:
-	clear && php demo/index.php listener
+down:
+	docker compose down
 
-dispatcher:
-	clear && php demo/index.php dispatcher
+install: up
+	$(DC) composer install --prefer-dist --no-interaction --no-progress
+
+update: up
+	$(DC) composer update --prefer-dist --no-interaction --no-progress
+
+test: up
+	$(DC) composer test
+
+coverage: up
+	$(DC) composer test:coverage
+
+phpstan: up
+	$(DC) composer phpstan
+
+pint: up
+	$(DC) composer pint
+
+pint-check: up
+	$(DC) composer pint:check
+
+rector: up
+	$(DC) composer rector
+
+rector-check: up
+	$(DC) composer rector:check
+
+qa: up
+	$(DC) composer qa
+
+shell: up
+	docker compose exec app /bin/sh

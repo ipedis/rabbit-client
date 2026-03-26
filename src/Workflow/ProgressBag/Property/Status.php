@@ -8,6 +8,7 @@ declare(strict_types=1);
  * Date: 7/2/20
  * Time: 10:36 AM
  */
+
 namespace Ipedis\Rabbit\Workflow\ProgressBag\Property;
 
 use Ipedis\Rabbit\Exception\Progress\InvalidStatusException;
@@ -56,7 +57,7 @@ class Status implements \JsonSerializable, \Stringable
      */
     private function isStatusValid(string $status): bool
     {
-        return in_array($status, self::AVAILABLE_STATUS);
+        return in_array($status, self::AVAILABLE_STATUS, true);
     }
 
     /**
@@ -75,25 +76,16 @@ class Status implements \JsonSerializable, \Stringable
         return new self(self::STATUS_PENDING);
     }
 
-    /**
-     * @return static
-     */
     public static function buildRunning(): self
     {
         return new self(self::STATUS_RUNNING);
     }
 
-    /**
-     * @return static
-     */
     public static function buildSuccess(): self
     {
         return new self(self::STATUS_SUCCESS);
     }
 
-    /**
-     * @return static
-     */
     public static function buildFailed(): self
     {
         return new self(self::STATUS_FAILED);
@@ -129,6 +121,9 @@ class Status implements \JsonSerializable, \Stringable
         return $this->status;
     }
 
+    /**
+     * @return array{status: string}
+     */
     public function jsonSerialize(): array
     {
         return [

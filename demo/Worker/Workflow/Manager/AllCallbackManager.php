@@ -68,7 +68,7 @@ class AllCallbackManager extends ManagerAbstract
      */
     private function craftSecondStep(): Closure
     {
-        return function (Group $group): \Ipedis\Rabbit\Workflow\Group {
+        return function (Group $group): Group {
             /**
              * You can create your own task from scratch, bind manually your callback.
              * It is useful for conditional and programmatic creation.

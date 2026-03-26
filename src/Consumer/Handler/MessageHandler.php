@@ -19,17 +19,19 @@ abstract class MessageHandler implements MessageHandlerInterface
             case self::TYPE_SUCCESS:
                 $this->onSuccess($message);
                 $this->onFinish($message);
-            break;
+                break;
             case self::TYPE_ERROR:
-                $this->onError($message, Error::fromArray($message->getData()['error']));
+                /** @var array<string, mixed> $errorData */
+                $errorData = $message->getData()['error'];
+                $this->onError($message, Error::fromArray($errorData));
                 $this->onFinish($message);
-            break;
+                break;
             case self::TYPE_PROGRESS:
                 $this->onProgress($message);
-            break;
+                break;
             case self::TYPE_STARTING:
                 $this->onStarting($message);
-            break;
+                break;
         }
     }
 }

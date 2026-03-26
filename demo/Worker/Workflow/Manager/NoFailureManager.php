@@ -12,14 +12,16 @@ use Ipedis\Rabbit\Workflow\Event\BindableEventInterface;
 use Ipedis\Rabbit\Workflow\Task;
 use Ipedis\Rabbit\Workflow\Workflow;
 use Ipedis\Rabbit\Workflow\Group;
+use Ipedis\Rabbit\Exception\Group\InvalidGroupArgumentException;
+use Ipedis\Rabbit\Exception\Workflow\InvalidWorkflowArgumentException;
 
 class NoFailureManager extends ManagerAbstract
 {
     public const ACTIVATE_FULL_LOG = true;
 
     /**
-     * @throws \Ipedis\Rabbit\Exception\Group\InvalidGroupArgumentException
-     * @throws \Ipedis\Rabbit\Exception\Workflow\InvalidWorkflowArgumentException
+     * @throws InvalidGroupArgumentException
+     * @throws InvalidWorkflowArgumentException
      */
     public function main(): void
     {

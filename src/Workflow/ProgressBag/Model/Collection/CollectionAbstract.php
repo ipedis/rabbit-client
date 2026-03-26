@@ -5,52 +5,48 @@ declare(strict_types=1);
 namespace Ipedis\Rabbit\Workflow\ProgressBag\Model\Collection;
 
 use Ipedis\Rabbit\Workflow\ProgressBag\Contract\CollectionInterface;
-use Traversable;
 
+/**
+ * @template T
+ * @implements CollectionInterface<T>
+ */
 abstract class CollectionAbstract implements CollectionInterface
 {
+    /**
+     * @param array<string|int, T> $items
+     */
     public function __construct(protected array $items)
     {
     }
 
     /**
-     * @return \ArrayIterator|Traversable
+     * @return \ArrayIterator<string|int, T>
      */
-    public function getIterator()
+    public function getIterator(): \ArrayIterator
     {
         return new \ArrayIterator($this->items);
     }
 
-    /**
-     * @param mixed $offset
-     */
-    public function offsetExists($offset): bool
+    public function offsetExists(mixed $offset): bool
     {
         return isset($this->items[$offset]);
     }
 
-    /**
-     * @param mixed $offset
-     * @return mixed|null
-     */
-    public function offsetGet($offset)
+    public function offsetGet(mixed $offset): mixed
     {
         return $this->items[$offset] ?? null;
     }
 
-    /**
-     * @param mixed $offset
-     * @param mixed $value
-     */
-    public function offsetSet($offset, $value): void
+    public function offsetSet(mixed $offset, mixed $value): void
     {
-        $this->items[$offset] = $value;
+        if ($offset === null) {
+            $this->items[] = $value;
+        } else {
+            $this->items[$offset] = $value;
+        }
     }
 
-    /**
-     * @param mixed $offset
-     */
-    public function offsetUnset($offset): void
+    public function offsetUnset(mixed $offset): void
     {
         if (isset($this->items[$offset])) {
             unset($this->items[$offset]);
@@ -62,26 +58,21 @@ abstract class CollectionAbstract implements CollectionInterface
         return count($this->items);
     }
 
+    /**
+     * @return array<string|int, T>
+     */
     public function toArray(): array
     {
         return $this->items;
     }
 
-    public function filter(\Closure $closure): CollectionInterface
+    public function filter(\Closure $closure): static
     {
-        return $this->build(array_filter($this->items, $closure, ARRAY_FILTER_USE_BOTH));
+        return new static(array_filter($this->items, $closure, ARRAY_FILTER_USE_BOTH)); // @phpstan-ignore return.type, new.static
     }
 
-    /**
-     * @return $this
-     */
-    protected function build(array $items)
+    public function map(\Closure $closure): static
     {
-        return new static($items);
-    }
-
-    public function map(\Closure $closure): CollectionInterface
-    {
-        return $this->build(array_map($closure, $this->items));
+        return new static(array_map($closure, $this->items)); // @phpstan-ignore return.type, new.static
     }
 }
