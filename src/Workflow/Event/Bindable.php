@@ -91,7 +91,7 @@ abstract class Bindable
                 }
             }
 
-            /** @var list<callable(): mixed> $callback */
+            /** @var list<callable> $callback */
             $result[$eventType] = $callback;
         }
 

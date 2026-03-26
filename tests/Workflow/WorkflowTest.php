@@ -158,7 +158,7 @@ final class WorkflowTest extends TestCase
         $workflow = new Workflow(Group::build([$this->makeTask()]));
 
         $this->expectException(Exception::class);
-        $this->expectExceptionMessage('No group found for order');
+        $this->expectExceptionMessage('No group found for order non-existent-id');
 
         $reply = $this->makeReplyMessage(MessageHandlerInterface::TYPE_SUCCESS, 'non-existent-id');
         $workflow->taskReply($reply);
@@ -187,7 +187,7 @@ final class WorkflowTest extends TestCase
         $workflow = new Workflow(Group::build([$this->makeTask()]));
 
         $this->expectException(Exception::class);
-        $this->expectExceptionMessage('No group found for order');
+        $this->expectExceptionMessage('No group found for order non-existent-id');
 
         $reply = $this->makeReplyMessage(MessageHandlerInterface::TYPE_SUCCESS, 'non-existent-id');
         $workflow->retryGroupTask($reply);
