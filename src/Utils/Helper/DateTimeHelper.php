@@ -11,8 +11,13 @@ trait DateTimeHelper
     protected function getCurrentDateTimeWithMicroseconds(): DateTime
     {
         $microseconds = sprintf('%.4f', microtime(true));
+        $dateTime = DateTime::createFromFormat('U.u', $microseconds);
 
-        return DateTime::createFromFormat('U.u', $microseconds);
+        if ($dateTime === false) {
+            throw new \RuntimeException('Failed to create DateTime from microseconds format.');
+        }
+
+        return $dateTime;
     }
 
     protected function getDifferenceInMilliseconds(DateTime $startTime, DateTime $endTime): float

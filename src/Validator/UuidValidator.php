@@ -20,6 +20,6 @@ class UuidValidator
 
     public function isValid(string $uuid): bool
     {
-        return uuid_is_valid($uuid);
+        return (bool) uuid_is_valid($uuid);
     }
 }

@@ -6,10 +6,8 @@ namespace Ipedis\Demo\Rabbit\Worker\Workflow\Manager;
 
 use Closure;
 use Ipedis\Rabbit\MessagePayload\OrderMessagePayload;
-
 use Ipedis\Rabbit\Workflow\Event\BindableEventInterface;
 use Ipedis\Rabbit\Workflow\Group;
-use Ipedis\Rabbit\Workflow\Manager;
 use Ipedis\Rabbit\Workflow\ProgressBag\Model\GroupedTasksProgress;
 use Ipedis\Rabbit\Workflow\Workflow;
 

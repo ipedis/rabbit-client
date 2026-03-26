@@ -10,6 +10,7 @@ use Ipedis\Rabbit\Workflow\ProgressBag\Model\Collection\GroupProgressCollection;
 use Ipedis\Rabbit\Workflow\ProgressBag\Property\Status;
 use Ipedis\Rabbit\Workflow\ProgressBag\Summary;
 use Ipedis\Rabbit\Workflow\ProgressBag\WorkflowProgressBag;
+use Ipedis\Rabbit\Workflow\ProgressBag\Model\GroupProgress;
 
 class GroupProgressSummary implements \JsonSerializable
 {
@@ -32,10 +33,13 @@ class GroupProgressSummary implements \JsonSerializable
                 $workflowProgressBag->countSuccessfulGroups(),
                 $workflowProgressBag->countFailedGroups()
             ),
-            new GroupProgressCollection(array_map(fn(Group $group) => $group->getProgressBag()->getGroupProgress(), $workflowProgressBag->getGroupInWorkflow()))
+            new GroupProgressCollection(array_map(fn (Group $group): GroupProgress => $group->getProgressBag()->getGroupProgress(), $workflowProgressBag->getGroupInWorkflow()))
         );
     }
 
+    /**
+     * @return array{status: Status, summary: Summary, details: GroupProgressCollection}
+     */
     public function jsonSerialize(): array
     {
         return [

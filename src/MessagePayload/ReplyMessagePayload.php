@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Ipedis\Rabbit\MessagePayload;
 
+use Exception;
 use Ipedis\Rabbit\Consumer\Handler\MessageHandlerInterface;
 use Ipedis\Rabbit\Exception\MessagePayload\MessagePayloadFormatException;
 
@@ -15,6 +16,12 @@ final class ReplyMessagePayload extends MessagePayloadAbstract implements ReplyM
 
     public const HEADER_EXECTIME = 'executionTime';
 
+    /**
+     * @param array<string, mixed> $data
+     * @param array<string, mixed> $headers
+     *
+     * @throws Exception
+     */
     protected function __construct(
         string $channel,
         private readonly string $orderId,
@@ -32,7 +39,21 @@ final class ReplyMessagePayload extends MessagePayloadAbstract implements ReplyM
     }
 
     /**
+     * @param array<string, mixed> $data
+     * @param array<string, mixed> $headers
+     *
+     * @throws Exception
+     */
+    public static function build(string $channel, array $data = [], array $headers = []): static
+    {
+        throw new \LogicException('Use buildFromOrderMessagePayload() or fromArray() instead.');
+    }
+
+    /**
      * Factory method to build reply from order message
+     *
+     * @param array<string, mixed> $data
+     * @param array<string, mixed> $headers
      *
      * @throws MessagePayloadFormatException
      */
@@ -42,7 +63,7 @@ final class ReplyMessagePayload extends MessagePayloadAbstract implements ReplyM
         array $data = [],
         array $headers = []
     ): self {
-        if (!in_array($status, MessageHandlerInterface::AVAILABLE_TYPES)) {
+        if (!in_array($status, MessageHandlerInterface::AVAILABLE_TYPES, true)) {
             throw new MessagePayloadFormatException(sprintf('Invalid Status {%s} for building reply message.', $status));
         }
 
@@ -61,26 +82,41 @@ final class ReplyMessagePayload extends MessagePayloadAbstract implements ReplyM
     }
 
     /**
+     * @param array<string, mixed> $state
+     *
      * @throws MessagePayloadFormatException
      */
-    public static function fromArray(array $state): self
+    public static function fromArray(array $state): static
     {
         if (
             !isset($state['header']) ||
+            !is_array($state['header']) ||
             !isset($state['header'][self::HEADER_CHANNEL]) ||
+            !is_string($state['header'][self::HEADER_CHANNEL]) ||
             !isset($state['header'][self::HEADER_CORRELATION_ID]) ||
+            !is_string($state['header'][self::HEADER_CORRELATION_ID]) ||
             !isset($state['header'][self::HEADER_STATUS]) ||
-            !isset($state['data'])
+            !is_string($state['header'][self::HEADER_STATUS]) ||
+            !isset($state['data']) ||
+            !is_array($state['data'])
         ) {
             throw new MessagePayloadFormatException('Array structure is invalid');
         }
 
+        $channel = $state['header'][self::HEADER_CHANNEL];
+        $correlationId = $state['header'][self::HEADER_CORRELATION_ID];
+        $status = $state['header'][self::HEADER_STATUS];
+        /** @var array<string, mixed> $header */
+        $header = $state['header'];
+        /** @var array<string, mixed> $data */
+        $data = $state['data'];
+
         return new self(
-            $state['header'][self::HEADER_CHANNEL],
-            $state['header'][self::HEADER_CORRELATION_ID],
-            $state['header'][self::HEADER_STATUS],
-            $state['data'],
-            $state['header']
+            $channel,
+            $correlationId,
+            $status,
+            $data,
+            $header
         );
     }
 
@@ -92,6 +128,8 @@ final class ReplyMessagePayload extends MessagePayloadAbstract implements ReplyM
     /**
      * Helper function
      * to return custom properties for rabbitmq message obj
+     *
+     * @return array{correlation_id: string}
      */
     public function getMessageProperties(): array
     {
@@ -105,14 +143,12 @@ final class ReplyMessagePayload extends MessagePayloadAbstract implements ReplyM
         return $this->orderId;
     }
 
-    /**
-     * @return mixed
-     */
-    public function getReply()
+    public function getReply(): mixed
     {
         if ($this->hasReply()) {
             return $this->getData()[self::REPLY_INDEX];
         }
+
         return null;
     }
 

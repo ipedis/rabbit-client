@@ -64,6 +64,9 @@ class Summary implements \JsonSerializable
         return new self($total, $pending, $dispatched, $completed, $successful, $failed);
     }
 
+    /**
+     * @return array{total: int, pending: int, dispatched: int, completed: int, successful: int, failed: int}
+     */
     public function jsonSerialize(): array
     {
         return [

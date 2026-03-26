@@ -27,15 +27,15 @@ interface MessageHandlerInterface
 
     public const STATUS_KEY = 'status';
 
-    public function on(ReplyMessagePayload $message);
+    public function on(ReplyMessagePayload $message): void;
 
-    public function onSuccess(ReplyMessagePayload $messagePayload);
+    public function onSuccess(ReplyMessagePayload $messagePayload): void;
 
-    public function onError(ReplyMessagePayload $messagePayload, Error $error);
+    public function onError(ReplyMessagePayload $messagePayload, Error $error): void;
 
-    public function onProgress(ReplyMessagePayload $messagePayload);
+    public function onProgress(ReplyMessagePayload $messagePayload): void;
 
-    public function onFinish(ReplyMessagePayload $messagePayload);
+    public function onFinish(ReplyMessagePayload $messagePayload): void;
 
-    public function onStarting(ReplyMessagePayload $messagePayload);
+    public function onStarting(ReplyMessagePayload $messagePayload): void;
 }

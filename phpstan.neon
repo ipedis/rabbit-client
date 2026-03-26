@@ -1,0 +1,25 @@
+parameters:
+    level: max
+    paths:
+        - src
+    tmpDir: .phpstan
+    ignoreErrors:
+        -
+            identifier: trait.unused
+            reportUnmatched: false
+        -
+            identifier: isset.offset
+            path: src/Channel/Factory/ChannelFactory.php
+            reportUnmatched: false
+        -
+            identifier: identical.alwaysFalse
+            path: src/Channel/Factory/ChannelFactory.php
+            reportUnmatched: false
+        -
+            identifier: notIdentical.alwaysTrue
+            path: src/Channel/Factory/ChannelFactory.php
+            reportUnmatched: false
+        -
+            identifier: booleanAnd.alwaysTrue
+            path: src/Channel/Factory/ChannelFactory.php
+            reportUnmatched: false

@@ -46,7 +46,7 @@ class Listener extends WorkerAbstract implements OnBeforeMessage, OnAfterMessage
     public function makeExceptionHandler(): Closure
     {
         return function (Exception $exception, ?EventMessagePayload $messagePayload): void {
-            printf($exception->getMessage()."\n\n");
+            printf($exception->getMessage() . "\n\n");
         };
     }
 
@@ -59,7 +59,7 @@ class Listener extends WorkerAbstract implements OnBeforeMessage, OnAfterMessage
     public function getBindingKey(): array
     {
 
-//        return 'v1.preview.admin.publication.was-updated';
+        //        return 'v1.preview.admin.publication.was-updated';
         return ['v1.admin.publication.*', 'v1.preview.publication.was-updated'];
     }
 
@@ -68,12 +68,16 @@ class Listener extends WorkerAbstract implements OnBeforeMessage, OnAfterMessage
      */
     protected function isSubscribed(string $eventName): bool
     {
-        return in_array($eventName, [
+        return in_array(
+            $eventName,
+            [
             'v1.admin.publication.was-created',
             'v1.admin.publication.was-exported',
             'v1.preview.publication.was-updated',
             'v1.admin.publication.was-deleted',
-        ]);
+        ],
+            true
+        );
     }
 
     protected function getHandledMessages(): iterable
@@ -87,7 +91,7 @@ class Listener extends WorkerAbstract implements OnBeforeMessage, OnAfterMessage
      */
     public function beforeMessageHandled(): void
     {
-        printf("Worker lifecycle hook : before handling message..."."\n\n");
+        printf("Worker lifecycle hook : before handling message..." . "\n\n");
     }
 
     /**
@@ -95,7 +99,7 @@ class Listener extends WorkerAbstract implements OnBeforeMessage, OnAfterMessage
      */
     public function afterMessageHandled(): void
     {
-        printf("Worker lifecycle hook : after handling message..."."\n\n");
+        printf("Worker lifecycle hook : after handling message..." . "\n\n");
     }
 
     public function getQueuePrefix(): string

@@ -20,6 +20,8 @@ use Ipedis\Rabbit\Exception\MessagePayload\MessagePayloadValidatorException;
 use Ipedis\Rabbit\MessagePayload\ReplyMessagePayload;
 use Ipedis\Rabbit\MessagePayload\Validator\ValidatorInterface;
 use Ipedis\Rabbit\Workflow\Event\BindableEventInterface;
+use Ipedis\Rabbit\Exception\MessagePayload\MessagePayloadFormatException;
+use Ipedis\Rabbit\Exception\Task\InvalidStatusException;
 
 trait Manager
 {
@@ -318,8 +320,8 @@ trait Manager
      * @throws AMQPConnectionException
      * @throws ChannelFactoryException
      * @throws MessagePayloadValidatorException
-     * @throws \Ipedis\Rabbit\Exception\MessagePayload\MessagePayloadFormatException
-     * @throws \Ipedis\Rabbit\Exception\Task\InvalidStatusException
+     * @throws MessagePayloadFormatException
+     * @throws InvalidStatusException
      */
     public function onTaskReply(\AMQPEnvelope $envelope, AMQPQueue $q)
     {
@@ -417,6 +419,7 @@ trait Manager
              */
             return false;
         }
+
         /**
          * Check if all parent workflows are completed
          */

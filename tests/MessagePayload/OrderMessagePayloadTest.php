@@ -1,56 +1,74 @@
 <?php
 
+declare(strict_types=1);
+
+namespace Ipedis\Test\Rabbit\MessagePayload;
+
 use Ipedis\Rabbit\Exception\MessagePayload\MessagePayloadFormatException;
 use Ipedis\Rabbit\MessagePayload\MessagePayloadAbstract;
 use Ipedis\Rabbit\MessagePayload\OrderMessagePayload;
+use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\TestCase;
 
-$replyQueue = 'amq.gen-j-pzpTUoJdVrj_MU2__SWw';
-$channelName = 'v1.service.aggregate.some-fact';
+final class OrderMessagePayloadTest extends TestCase
+{
+    private string $replyQueue = 'amq.gen-j-pzpTUoJdVrj_MU2__SWw';
 
-it('must build from valid json', function () use ($channelName, $replyQueue): void {
-    $event = OrderMessagePayload::fromJson('{
+    private string $channelName = 'v1.service.aggregate.some-fact';
+
+    #[Test]
+    public function it_must_build_from_valid_json(): void
+    {
+        $event = OrderMessagePayload::fromJson('{
 	"data": [],
 	"header": {
-		"channel": "'.$channelName.'",
-		"replyQueue": "'.$replyQueue.'",
+		"channel": "' . $this->channelName . '",
+		"replyQueue": "' . $this->replyQueue . '",
         "correlation_id": "583e3241-0cfe-497c-84ae-2371aef74a7c"
 	}
 }');
-    $this->assertInstanceOf(OrderMessagePayload::class, $event);
-    $this->assertInstanceOf(MessagePayloadAbstract::class, $event);
-});
+        $this->assertInstanceOf(OrderMessagePayload::class, $event);
+        $this->assertInstanceOf(MessagePayloadAbstract::class, $event);
+    }
 
+    #[Test]
+    public function it_must_throw_exception_on_empty_array(): void
+    {
+        $this->expectException(MessagePayloadFormatException::class);
+        OrderMessagePayload::fromArray([]);
+    }
 
-it('must throw exception on empty array', function (): void {
-    $this->expectException(MessagePayloadFormatException::class);
-    OrderMessagePayload::fromArray([]);
-});
-
-it('must throw exception when only array header key is present', function () use ($channelName): void {
-    $this->expectException(MessagePayloadFormatException::class);
-    OrderMessagePayload::fromArray(['header' => [
-        'channel' => $channelName,
-        'replyQueue' => $channelName,
-        'correlation_id' => '583e3241-0cfe-497c-84ae-2371aef74a7c'
-    ]]);
-});
-
-it('must throw exception when only array data key is present', function (): void {
-    $this->expectException(MessagePayloadFormatException::class);
-    OrderMessagePayload::fromArray(['data' => []]);
-});
-
-
-it('must build from valid array', function () use ($channelName): void {
-    $event = OrderMessagePayload::fromArray([
-        'data' => [],
-        'header' => [
-            'channel' => $channelName,
-            'replyQueue' => $channelName,
+    #[Test]
+    public function it_must_throw_exception_when_only_array_header_key_is_present(): void
+    {
+        $this->expectException(MessagePayloadFormatException::class);
+        OrderMessagePayload::fromArray(['header' => [
+            'channel' => $this->channelName,
+            'replyQueue' => $this->channelName,
             'correlation_id' => '583e3241-0cfe-497c-84ae-2371aef74a7c',
-            'status' => 'success'
-        ]
-    ]);
-    $this->assertInstanceOf(OrderMessagePayload::class, $event);
-    $this->assertInstanceOf(MessagePayloadAbstract::class, $event);
-});
+        ]]);
+    }
+
+    #[Test]
+    public function it_must_throw_exception_when_only_array_data_key_is_present(): void
+    {
+        $this->expectException(MessagePayloadFormatException::class);
+        OrderMessagePayload::fromArray(['data' => []]);
+    }
+
+    #[Test]
+    public function it_must_build_from_valid_array(): void
+    {
+        $event = OrderMessagePayload::fromArray([
+            'data' => [],
+            'header' => [
+                'channel' => $this->channelName,
+                'replyQueue' => $this->channelName,
+                'correlation_id' => '583e3241-0cfe-497c-84ae-2371aef74a7c',
+                'status' => 'success',
+            ],
+        ]);
+        $this->assertInstanceOf(OrderMessagePayload::class, $event);
+        $this->assertInstanceOf(MessagePayloadAbstract::class, $event);
+    }
+}

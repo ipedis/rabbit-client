@@ -30,17 +30,23 @@ final class Task extends Bindable
     private ?\DateTime $timeFinished = null;
 
     /**
-     * @var ReplyMessagePayload[]
+     * @var list<ReplyMessagePayload>
      */
     private array $replyMessages = [];
 
     private int $retryCount = 0;
 
+    /**
+     * @param array<string, callable|list<callable>> $callbacks
+     */
     private function __construct(private OrderMessagePayload $orderMessage, array $callbacks = [])
     {
         $this->callbacks = $this->assertCallbacks($callbacks);
     }
 
+    /**
+     * @param array<string, callable|list<callable>> $callbacks
+     */
     public static function build(OrderMessagePayload $message, array $callbacks = []): self
     {
         return new self($message, $callbacks);
@@ -73,7 +79,7 @@ final class Task extends Bindable
      */
     private function transitionTo(string $newStatus): void
     {
-        if (!in_array($newStatus, MessageHandlerInterface::AVAILABLE_TYPES)) {
+        if (!in_array($newStatus, MessageHandlerInterface::AVAILABLE_TYPES, true)) {
             throw new InvalidStatusException('type not allowed');
         }
 
@@ -119,6 +125,7 @@ final class Task extends Bindable
         if ($this->isSuccess()) {
             return true;
         }
+
         return $this->isOnFailure();
     }
 
@@ -180,6 +187,9 @@ final class Task extends Bindable
         return $this->status === MessageHandlerInterface::TYPE_PLANIFIED;
     }
 
+    /**
+     * @return list<ReplyMessagePayload>
+     */
     public function getReplyMessages(): array
     {
         return $this->replyMessages;
@@ -230,25 +240,19 @@ final class Task extends Bindable
 
     public function getProgressStatus(): Status
     {
-        switch ($this->status) {
-            case MessageHandlerInterface::TYPE_PLANIFIED:
-            case MessageHandlerInterface::TYPE_STARTING:
-                return Status::buildPending();
-            case MessageHandlerInterface::TYPE_SUCCESS:
-                return Status::buildSuccess();
-            case MessageHandlerInterface::TYPE_ERROR:
-                return Status::buildFailed();
-            case MessageHandlerInterface::TYPE_PROGRESS:
-            case MessageHandlerInterface::TYPE_DISPATCHED:
-                return Status::buildRunning();
-        }
+        return match ($this->status) {
+            MessageHandlerInterface::TYPE_PLANIFIED, MessageHandlerInterface::TYPE_STARTING => Status::buildPending(),
+            MessageHandlerInterface::TYPE_SUCCESS => Status::buildSuccess(),
+            MessageHandlerInterface::TYPE_ERROR => Status::buildFailed(),
+            default => Status::buildRunning(),
+        };
     }
 
     /**
      * @throws InvalidSpentTimeException
      * @throws InvalidTimeException
      */
-    public function getTimer(): \Ipedis\Rabbit\Workflow\ProgressBag\Property\Timer
+    public function getTimer(): Timer
     {
         return Timer::build(
             $this->getExecutionTime(),
@@ -279,6 +283,9 @@ final class Task extends Bindable
         return $this->timeFinished;
     }
 
+    /**
+     * @return list<string>
+     */
     protected function getAllowedBindableTypes(): array
     {
         return BindableEventInterface::TASK_ALLOW_TYPES;

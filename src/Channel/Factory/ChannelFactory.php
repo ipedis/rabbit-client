@@ -20,14 +20,13 @@ class ChannelFactory
     }
 
     /**
-     * @param string $protocolVersion
      * @throws ChannelNamingException
      */
     public function getEvent(string $partialChannel, ?string $protocolVersion = null): EventChannel
     {
         preg_match(EventChannel::PARTIAL_CHANNEL_PATTERN, $partialChannel, $matched);
 
-        if (($matched['aggregate'] || $matched['action']) === false) {
+        if (!isset($matched['aggregate']) || !isset($matched['action']) || $matched['aggregate'] === '' || $matched['action'] === '') {
             throw new ChannelNamingException('impossible to parse : ' . $partialChannel);
         }
 
@@ -49,14 +48,13 @@ class ChannelFactory
     }
 
     /**
-     * @param string $protocolVersion
      * @throws ChannelNamingException
      */
     public function getOrder(string $partialChannel, ?string $protocolVersion = null): OrderChannel
     {
         preg_match(OrderChannel::PARTIAL_CHANNEL_PATTERN, $partialChannel, $matched);
 
-        if (($matched['aggregate'] || $matched['action']) === false) {
+        if (!isset($matched['aggregate']) || !isset($matched['action']) || $matched['aggregate'] === '' || $matched['action'] === '') {
             throw new ChannelNamingException('impossible to parse : ' . $partialChannel);
         }
 
@@ -68,17 +66,17 @@ class ChannelFactory
     {
         preg_match(OrderChannel::PARTIAL_CHANNEL_PATTERN, $channel, $matches);
 
-        return isset($matches['aggregate']) && ($matches['aggregate'] !== '' && $matches['aggregate'] !== '0') &&
-            (isset($matches['action']) && ($matches['action'] !== '' && $matches['action'] !== '0'));
+        return isset($matches['aggregate']) && $matches['aggregate'] !== '' &&
+            isset($matches['action']) && $matches['action'] !== '';
     }
 
     public function match(string $channel): bool
     {
         preg_match(OrderChannel::CHANNEL_PATTERN, $channel, $matches);
 
-        return isset($matches['protocol']) && ($matches['protocol'] !== '' && $matches['protocol'] !== '0') &&
-            (isset($matches['service']) && ($matches['service'] !== '' && $matches['service'] !== '0')) &&
-            (isset($matches['aggregate']) && ($matches['aggregate'] !== '' && $matches['aggregate'] !== '0')) &&
-            (isset($matches['action']) && ($matches['action'] !== '' && $matches['action'] !== '0'));
+        return isset($matches['protocol']) && $matches['protocol'] !== '' &&
+            isset($matches['service']) && $matches['service'] !== '' &&
+            isset($matches['aggregate']) && $matches['aggregate'] !== '' &&
+            isset($matches['action']) && $matches['action'] !== '';
     }
 }

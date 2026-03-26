@@ -75,7 +75,7 @@ class Worker extends WorkerAbstract implements OnBeforeMessage, OnAfterMessage
     protected function makeExceptionHandler(): Closure
     {
         return function (\Exception $exception, ?OrderMessagePayload $messagePayload): array {
-            printf($exception->getMessage()."\n\n");
+            printf($exception->getMessage() . "\n\n");
             // we can return extra context for better manager context handling.
             // you can also return a Context object if you prefer.
             return ['publication' => 1234, 'another' => 'context'];
@@ -87,7 +87,7 @@ class Worker extends WorkerAbstract implements OnBeforeMessage, OnAfterMessage
      */
     public function beforeMessageHandled(): void
     {
-        printf("Worker lifecycle hook : before handling message..."."\n\n");
+        printf("Worker lifecycle hook : before handling message..." . "\n\n");
     }
 
     /**
@@ -95,7 +95,7 @@ class Worker extends WorkerAbstract implements OnBeforeMessage, OnAfterMessage
      */
     public function afterMessageHandled(): void
     {
-        printf("Worker lifecycle hook : after handling message..."."\n\n");
+        printf("Worker lifecycle hook : after handling message..." . "\n\n");
     }
 
     public function getQueuePrefix(): string

@@ -8,6 +8,7 @@ use Ipedis\Demo\Rabbit\Utils\ConnectorAbstract;
 use Ipedis\Rabbit\Channel\Factory\ChannelFactory;
 use Ipedis\Rabbit\MessagePayload\Validator\ValidatorInterface;
 use Ipedis\Rabbit\Workflow\Manager;
+use Ipedis\Rabbit\Exception\RabbitClientConnectException;
 
 abstract class ManagerAbstract extends ConnectorAbstract
 {
@@ -15,7 +16,7 @@ abstract class ManagerAbstract extends ConnectorAbstract
 
     /**
      * Manager constructor.
-     * @throws \Ipedis\Rabbit\Exception\RabbitClientConnectException
+     * @throws RabbitClientConnectException
      */
     public function __construct(
         string $host,
@@ -24,8 +25,8 @@ abstract class ManagerAbstract extends ConnectorAbstract
         string $password,
         string $exchange,
         string $type,
-        protected \Ipedis\Rabbit\Channel\Factory\ChannelFactory $channelFactory,
-        protected \Ipedis\Rabbit\MessagePayload\Validator\ValidatorInterface $messagePayloadValidator
+        protected ChannelFactory $channelFactory,
+        protected ValidatorInterface $messagePayloadValidator
     ) {
         parent::__construct($host, $port, $user, $password, $exchange, $type);
         $this->connect();

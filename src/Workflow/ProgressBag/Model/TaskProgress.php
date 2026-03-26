@@ -39,6 +39,9 @@ class TaskProgress implements \JsonSerializable
         return new self($uuid, $type, $status, $timer);
     }
 
+    /**
+     * @return array{uuid: string, type: string, status: Status, timer: Timer}
+     */
     public function jsonSerialize(): array
     {
         return [

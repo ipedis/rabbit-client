@@ -21,12 +21,12 @@ class ManagerHandler extends MessageHandler
 
     public function onStarting(ReplyMessagePayload $messagePayload): void
     {
-//        print_r("\t starting :) - ".json_encode($messagePayload->getData())."\n\n\n");
+        //        print_r("\t starting :) - ".json_encode($messagePayload->getData())."\n\n\n");
     }
 
     public function onProgress(ReplyMessagePayload $messagePayload): void
     {
-//        print_r("\t progress :| - ".json_encode($messagePayload->getData())."\n\n\n");
+        //        print_r("\t progress :| - ".json_encode($messagePayload->getData())."\n\n\n");
     }
 
     public function onSuccess(ReplyMessagePayload $messagePayload): void

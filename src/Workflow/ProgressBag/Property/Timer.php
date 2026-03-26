@@ -60,7 +60,7 @@ class Timer implements \JsonSerializable
      */
     private function assertTime(?DateTime $startedAt = null, ?DateTime $finishedAt = null): void
     {
-        if ($startedAt instanceof \DateTime && $finishedAt instanceof \DateTime && $startedAt->getTimestamp() > $finishedAt->getTimestamp()) {
+        if ($startedAt instanceof DateTime && $finishedAt instanceof DateTime && $startedAt->getTimestamp() > $finishedAt->getTimestamp()) {
             throw new InvalidTimeException('Start time is greater than end time. Unless you have "time stone" with you, its not possible.');
         }
     }
@@ -77,13 +77,16 @@ class Timer implements \JsonSerializable
         return new self($spent, $startedAt, $finishedAt);
     }
 
+    /**
+     * @return array{spent: float, spentTime: string, startedAt: string|null, finishedAt: string|null}
+     */
     public function jsonSerialize(): array
     {
         return [
             'spent' => $this->getSpent(),
             'spentTime' => sprintf('%s ms', $this->getSpent() * 1000),
-            'startedAt' => ($this->getStartedAt() instanceof \DateTime) ? $this->getStartedAt()->format('U.u') : null,
-            'finishedAt' => ($this->getFinishedAt() instanceof \DateTime) ? $this->getFinishedAt()->format('U.u') : null
+            'startedAt' => ($this->getStartedAt() instanceof DateTime) ? $this->getStartedAt()->format('U.u') : null,
+            'finishedAt' => ($this->getFinishedAt() instanceof DateTime) ? $this->getFinishedAt()->format('U.u') : null
         ];
     }
 

@@ -13,10 +13,14 @@ use Ipedis\Rabbit\MessagePayload\ReplyMessagePayloadInterface;
 use JsonSerializable;
 use LogicException;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\Test;
 
 final class SerializerTest extends TestCase
 {
-    public function testFromExceptionTyping(): void
+    /**
+     */
+    #[Test]
+    public function from_exception_typing(): void
     {
         // check if Serializer have a right type..
         $this->assertInstanceOf(
@@ -41,7 +45,10 @@ final class SerializerTest extends TestCase
         $this->assertEquals($context[1], $contextBag->get(1));
     }
 
-    public function testAddContext(): void
+    /**
+     */
+    #[Test]
+    public function add_context(): void
     {
         $context1 = ['foo' => 'bar'];
         $context2 = ['another' => 'one'];
@@ -62,7 +69,10 @@ final class SerializerTest extends TestCase
         $serializer->addContext('deep', ['deep' => ['tree' => new self('test')]]);
     }
 
-    public function testJsonSerialize(): void
+    /**
+     */
+    #[Test]
+    public function json_serialize(): void
     {
         $serializer = Serializer::fromException(new Exception('foo message'), Context::fromArray(['this', 'context']));
         $json = json_encode($serializer);
@@ -76,9 +86,12 @@ final class SerializerTest extends TestCase
         );
     }
 
-    public function testFromMessage(): void
+    /**
+     */
+    #[Test]
+    public function from_message(): void
     {
-        $error = Serializer::fromMessage(new class() implements JsonSerializable, MessagePayloadInterface, ReplyMessagePayloadInterface {
+        $error = Serializer::fromMessage(new class () implements JsonSerializable, MessagePayloadInterface, ReplyMessagePayloadInterface {
             public function getHeaders(): array
             {
                 return [];

@@ -8,10 +8,14 @@ use Ipedis\Rabbit\Exception\Helper\Context;
 use Ipedis\Rabbit\Exception\Helper\Error;
 use Ipedis\Rabbit\Exception\MessagePayload\MessagePayloadFormatException;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\Test;
 
 final class ErrorTest extends TestCase
 {
-    public function testFromArray(): void
+    /**
+     */
+    #[Test]
+    public function from_array(): void
     {
         $this->assertInstanceOf(
             Error::class,
@@ -19,7 +23,10 @@ final class ErrorTest extends TestCase
         );
     }
 
-    public function testJsonSerialize(): void
+    /**
+     */
+    #[Test]
+    public function json_serialize(): void
     {
         $this->assertJsonStringEqualsJsonString(
             json_encode([
@@ -34,24 +41,36 @@ final class ErrorTest extends TestCase
         $this->makeNotSerializableError();
     }
 
-    public function testGetMessage(): void
+    /**
+     */
+    #[Test]
+    public function get_message(): void
     {
         $this->assertSame('foo message', $this->makeError()->getMessage());
     }
 
-    public function testHasContext(): void
+    /**
+     */
+    #[Test]
+    public function has_context(): void
     {
         $this->assertEquals(true, $this->makeError()->hasContext());
     }
 
-    public function testGetCode(): void
+    /**
+     */
+    #[Test]
+    public function get_code(): void
     {
         $error = $this->makeError();
         $this->assertIsNumeric($error->getCode());
         $this->assertSame(0, $error->getCode());
     }
 
-    public function testGetContext(): void
+    /**
+     */
+    #[Test]
+    public function get_context(): void
     {
         $context = $this->makeError()->getContext();
         $this->assertInstanceOf(

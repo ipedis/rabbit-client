@@ -7,27 +7,36 @@ namespace Ipedis\Rabbit\Exception\Helper;
 use Ipedis\Rabbit\Exception\MessagePayload\MessagePayloadFormatException;
 use JsonSerializable;
 
-class Error implements JsonSerializable
+final class Error implements JsonSerializable
 {
     /**
      * Error constructor.
+     *
+     * @param array{message: string, code: int} $exception
      */
-    protected function __construct(private array $exception, private readonly Context $context)
+    private function __construct(private array $exception, private readonly Context $context)
     {
     }
 
     /**
+     * @param array<string, mixed> $error
      * @throws MessagePayloadFormatException
      */
-    public static function fromArray(array $error): static
+    public static function fromArray(array $error): self
     {
         if (empty($error['exception'])) {
             throw new MessagePayloadFormatException('error message status must contain [error][exception]');
         }
 
-        return new static(
-            $error['exception'],
-            Context::fromArray(empty($error['context']) ? [] : $error['context'])
+        /** @var array{message: string, code: int} $exception */
+        $exception = $error['exception'];
+
+        /** @var array<string, mixed> $context */
+        $context = empty($error['context']) ? [] : $error['context'];
+
+        return new self(
+            $exception,
+            Context::fromArray($context)
         );
     }
 
@@ -51,12 +60,15 @@ class Error implements JsonSerializable
         return !$this->context->isEmpty();
     }
 
+    /**
+     * @return array{message: string, code: int, context: Context}
+     */
     public function jsonSerialize(): array
     {
         return [
             'message' => $this->getMessage(),
             'code' => $this->getCode(),
-            'context' => $this->getContext(),
+            'context' => $this->context,
         ];
     }
 }

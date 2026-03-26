@@ -68,12 +68,12 @@ class Manager extends ConnectorAbstract
              */
             $orderMessagePayload = OrderMessagePayload::build((string)OrderChannel::fromString('v1.admin.publication.generate'), [
                 "hasToFail" => $i % 2 === 0, // Simulate failure on each pair message.
-                "name"      => 'task ' . $i
+                "name" => 'task ' . $i
             ]);
 
             $this->publish($orderMessagePayload)
                 ->bind(MessageHandlerInterface::TYPE_ERROR, function (ReplyMessagePayload $message, Error $error): void {
-//                    var_dump($error);
+                    //                    var_dump($error);
                 })
             ;
 

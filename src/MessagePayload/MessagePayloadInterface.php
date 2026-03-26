@@ -10,11 +10,15 @@ interface MessagePayloadInterface extends JsonSerializable
 {
     /**
      * Get headers
+     *
+     * @return array<string, mixed>
      */
     public function getHeaders(): array;
 
     /**
      * Get data
+     *
+     * @return array<string, mixed>
      */
     public function getData(): array;
 

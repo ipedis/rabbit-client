@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 
 use Ipedis\Demo\Rabbit\Utils\MessagePayloadValidator\MessagePayloadValidator;
 use Ipedis\Demo\Rabbit\Worker\Event\Listener;
@@ -20,7 +22,7 @@ use Ipedis\Demo\Rabbit\Worker\Workflow\Manager\AllCallbackManager;
 use Ipedis\Demo\Rabbit\Worker\Workflow\Worker\Waiter;
 use Ipedis\Rabbit\Channel\Factory\ChannelFactory;
 
-require __DIR__.'/../vendor/autoload.php';
+require __DIR__ . '/../vendor/autoload.php';
 
 $configOrder = [
     'host' => 'localhost',

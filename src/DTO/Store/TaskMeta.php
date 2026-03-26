@@ -4,15 +4,12 @@ declare(strict_types=1);
 
 namespace Ipedis\Rabbit\DTO\Store;
 
-class TaskMeta
+final readonly class TaskMeta
 {
-    public function __construct(private readonly string $groupId, private readonly string $workflowId)
+    public function __construct(private string $groupId, private string $workflowId)
     {
     }
 
-    /**
-     * @return static
-     */
     public static function build(string $groupId, string $workflowId): self
     {
         return new self($groupId, $workflowId);
