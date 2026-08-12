@@ -2,6 +2,7 @@
     "name": "ipedis/rabbit-client",
     "description": "Event and Order client library",
     "type": "library",
+    "license": "CC-BY-1.0",
     "authors": [
         {
             "name": "Yanis Ghidouche",
