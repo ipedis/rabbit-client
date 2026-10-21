@@ -10,11 +10,11 @@ use Ipedis\Rabbit\Exception\MessagePayload\MessagePayloadFormatException;
 
 final class ReplyMessagePayload extends MessagePayloadAbstract implements ReplyMessagePayloadInterface
 {
-    public const HEADER_CORRELATION_ID = 'correlation_id';
+    public const string HEADER_CORRELATION_ID = 'correlation_id';
 
-    public const HEADER_STATUS = 'status';
+    public const string HEADER_STATUS = 'status';
 
-    public const HEADER_EXECTIME = 'executionTime';
+    public const string HEADER_EXECTIME = 'executionTime';
 
     /**
      * @param array<string, mixed> $data

@@ -151,6 +151,7 @@ class AllCallbackManager extends ManagerAbstract
         return $workflow;
     }
 
+    #[\Override]
     public function getQueuePrefix(): string
     {
         return 'demo.workflow';

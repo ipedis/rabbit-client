@@ -17,9 +17,9 @@ use PHPUnit\Framework\TestCase;
 
 final class TaskTest extends TestCase
 {
-    private const CHANNEL = 'v1.service.aggregate.action';
+    private const string CHANNEL = 'v1.service.aggregate.action';
 
-    private const REPLY_QUEUE = 'reply.queue';
+    private const string REPLY_QUEUE = 'reply.queue';
 
     private function makeOrderMessage(): OrderMessagePayload
     {

@@ -73,6 +73,7 @@ class ProgressManager extends ManagerAbstract
         fwrite(STDERR, $write);
     }
 
+    #[\Override]
     public function getQueuePrefix(): string
     {
         return 'demo.workflow';

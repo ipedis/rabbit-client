@@ -47,6 +47,7 @@ abstract class ManagerAbstract extends ConnectorAbstract
         return $this->messagePayloadValidator;
     }
 
+    #[\Override]
     public function getQueuePrefix(): string
     {
         return 'demo.workflow';

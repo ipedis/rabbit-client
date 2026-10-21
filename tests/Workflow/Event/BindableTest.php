@@ -16,9 +16,9 @@ use PHPUnit\Framework\TestCase;
 
 final class BindableTest extends TestCase
 {
-    private const CHANNEL = 'v1.service.aggregate.action';
+    private const string CHANNEL = 'v1.service.aggregate.action';
 
-    private const REPLY_QUEUE = 'reply.queue';
+    private const string REPLY_QUEUE = 'reply.queue';
 
     #[Test]
     public function bind_and_call_single_callback(): void
