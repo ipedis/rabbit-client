@@ -105,7 +105,6 @@ This library depends on [`ipedis/http-signature`](https://github.com/ipedis/http
 
 | PHP | Status |
 |-----|--------|
-| 8.2 | ✅ |
 | 8.3 | ✅ |
 | 8.4 | ✅ |
 | 8.5 | ✅ |

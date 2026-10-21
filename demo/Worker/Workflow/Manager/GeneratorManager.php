@@ -56,6 +56,7 @@ class GeneratorManager extends ManagerAbstract
         $this->run($generation);
     }
 
+    #[\Override]
     public function getQueuePrefix(): string
     {
         return 'demo.workflow';

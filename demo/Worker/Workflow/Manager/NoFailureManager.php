@@ -44,6 +44,7 @@ class NoFailureManager extends ManagerAbstract
         print_r(sprintf("Summary : %s", json_encode($workflow->getProgressBag()->getWorkflowProgress())));
     }
 
+    #[\Override]
     public function getQueuePrefix(): string
     {
         return 'demo.workflow';

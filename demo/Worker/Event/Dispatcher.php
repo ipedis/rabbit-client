@@ -77,6 +77,7 @@ class Dispatcher extends ConnectorAbstract
     }
 
 
+    #[\Override]
     public function getQueuePrefix(): string
     {
         return 'demo.event';

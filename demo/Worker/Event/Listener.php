@@ -102,6 +102,7 @@ class Listener extends WorkerAbstract implements OnBeforeMessage, OnAfterMessage
         printf("Worker lifecycle hook : after handling message..." . "\n\n");
     }
 
+    #[\Override]
     public function getQueuePrefix(): string
     {
         return 'demo.event';

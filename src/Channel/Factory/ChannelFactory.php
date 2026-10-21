@@ -11,9 +11,9 @@ use Ipedis\Rabbit\Exception\Channel\ChannelNamingException;
 
 class ChannelFactory
 {
-    private const TYPE_EVENT = 'event';
+    private const string TYPE_EVENT = 'event';
 
-    private const TYPE_ORDER = 'order';
+    private const string TYPE_ORDER = 'order';
 
     public function __construct(private readonly string $protocolVersion, private readonly string $serviceName)
     {

@@ -25,6 +25,7 @@ abstract class WorkerAbstract extends ConnectorAbstract
         return $this->channelFactory;
     }
 
+    #[\Override]
     public function getQueuePrefix(): string
     {
         return 'demo.workflow';
