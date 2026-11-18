@@ -63,20 +63,6 @@ class Dispatcher extends ConnectorAbstract
         return $this->messagePayloadValidator;
     }
 
-    /**
-     * Url of recovery project
-     */
-    public function getRecoveryEventStoreEndpoint(): string
-    {
-        return 'http://recovery.publispeak.local/api/event/store';
-    }
-
-    public function getSignatureKey(): string
-    {
-        return 'ThisIsNotASecretKey';
-    }
-
-
     #[\Override]
     public function getQueuePrefix(): string
     {
