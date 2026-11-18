@@ -14,10 +14,9 @@
         "php": ">=8.3",
         "ext-json": "*",
         "ext-amqp": "*",
+        "ext-mbstring": "*",
         "symfony/polyfill-uuid": "^1.14",
         "opis/json-schema": "^2.6",
-        "guzzlehttp/guzzle": "~7.0",
-        "ipedis/http-signature": "^2.1.0",
         "filp/whoops": "^2.18"
     },
     "autoload": {

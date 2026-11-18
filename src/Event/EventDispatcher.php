@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Ipedis\Rabbit\Event;
 
-use Ipedis\HttpSignature\HttpClient\HttpClient;
 use Ipedis\Rabbit\Channel\EventChannel;
 use Ipedis\Rabbit\Channel\Factory\ChannelFactory;
 use Ipedis\Rabbit\Connector;
@@ -25,7 +24,6 @@ use Ipedis\Rabbit\MessagePayload\Validator\ValidatorInterface;
 trait EventDispatcher
 {
     use Connector;
-    use HttpClient;
 
     public function __destruct()
     {
@@ -39,48 +37,42 @@ trait EventDispatcher
      * @throws ChannelFactoryException
      * @throws ChannelNamingException
      * @throws MessagePayloadValidatorException
+     * @throws RabbitClientConnectException when RabbitMQ cannot be reached
+     * @throws RabbitClientPublishException when the message cannot be published
      */
     public function dispatch(EventMessagePayload $messagePayload): void
     {
-        try {
-            if ($this->channel === null) {
-                $this->connect();
-            }
-
-            if (!$this->getChannelFactory() instanceof ChannelFactory) {
-                throw new ChannelFactoryException('Must provide channel factory {channelFactory} with version and service.');
-            }
-
-            if (!$this->getMessagePayloadValidator() instanceof ValidatorInterface) {
-                throw new MessagePayloadValidatorException("Must provide message payload validator {messagePayloadValidator}");
-            }
-
-            /**
-             * Validate channel naming and return event name
-             */
-            $eventName = $this->getEventName($messagePayload->getChannel());
-
-            /**
-             * Validate message payload data schema
-             */
-            $this->getMessagePayloadValidator()->validate($messagePayload);
-
-            /**
-             *  ensure that payload data is correctly encoded to utf-8 before json encode it
-             */
-            $messagePayload = $this->preparePayloadData($messagePayload);
-
-            /**
-             * Publish message on exchange
-             */
-            $this->publishToExchange(json_encode($messagePayload), $eventName);
-        } catch (RabbitClientConnectException | RabbitClientPublishException) {
-            /**
-             * Error occured while connecting to RabbitMQ OR
-             * publishing to exchange : event is stored on recovery
-             */
-            $this->storeEventOnRecovery($messagePayload);
+        if ($this->channel === null) {
+            $this->connect();
         }
+
+        if (!$this->getChannelFactory() instanceof ChannelFactory) {
+            throw new ChannelFactoryException('Must provide channel factory {channelFactory} with version and service.');
+        }
+
+        if (!$this->getMessagePayloadValidator() instanceof ValidatorInterface) {
+            throw new MessagePayloadValidatorException("Must provide message payload validator {messagePayloadValidator}");
+        }
+
+        /**
+         * Validate channel naming and return event name
+         */
+        $eventName = $this->getEventName($messagePayload->getChannel());
+
+        /**
+         * Validate message payload data schema
+         */
+        $this->getMessagePayloadValidator()->validate($messagePayload);
+
+        /**
+         *  ensure that payload data is correctly encoded to utf-8 before json encode it
+         */
+        $messagePayload = $this->preparePayloadData($messagePayload);
+
+        /**
+         * Publish message on exchange
+         */
+        $this->publishToExchange(json_encode($messagePayload), $eventName);
     }
 
     /**
@@ -132,20 +124,4 @@ trait EventDispatcher
         //rebuild payload with encoded data
         return EventMessagePayload::build($payload->getChannel(), $data, $payload->getHeaders());
     }
-
-    /**
-     * Store event on recovery
-     */
-    private function storeEventOnRecovery(EventMessagePayload $payload): void
-    {
-        $this->getClient()
-            ->post($this->getRecoveryEventStoreEndpoint(), [
-                'body' => json_encode($payload),
-                'headers' => [
-                    'Accept' => 'application/json'
-                ]
-            ]);
-    }
-
-    abstract public function getRecoveryEventStoreEndpoint(): string;
 }
